@@ -40,26 +40,9 @@
 
 .nav {
   display: flex;
-  gap: 18px;
-  font-size: 13px;
-  color: var(--ink-700);
-}
-
-.nav a {
-  padding: 6px 12px;
-  border-radius: 999px;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.nav a:hover {
-  background: rgba(15, 143, 141, 0.12);
-  color: var(--ink-900);
-}
-
-.active {
-  background: rgba(15, 143, 141, 0.18);
-  color: var(--teal-700);
-  font-weight: 600;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 }
 
 .headerActions {

@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useDemoAuth } from "@/lib/demo-auth";
+import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./page.module.css";
 
 type DemoProfile = {
@@ -17,9 +20,13 @@ const DEMO_PROFILES: DemoProfile[] = [
 ];
 
 export default function Home() {
+  const { user, signIn } = useDemoAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState<DemoProfile["role"] | null>(null);
+  const [label, setLabel] = useState("Demo Student");
   const [status, setStatus] = useState("");
 
   const statusTone = useMemo(() => {
@@ -31,6 +38,7 @@ export default function Home() {
     setEmail(profile.email);
     setPassword("demo-login");
     setRole(profile.role);
+    setLabel(profile.label);
     setStatus(`Demo loaded for ${profile.role}.`);
   };
 
@@ -40,8 +48,22 @@ export default function Home() {
       setStatus("Add an email and password to enter the demo.");
       return;
     }
-    setStatus(`Welcome back! You are signed in as ${role ?? "Student"}.`);
+    const nextRole = role ?? "Student";
+    signIn({ email, role: nextRole, label });
+    setStatus(`Welcome back! You are signed in as ${nextRole}.`);
+    const redirect = searchParams.get("redirect");
+    router.push(redirect ?? "/dashboard");
   };
+
+  useEffect(() => {
+    if (user && !status) {
+      setStatus(`Welcome back! You are signed in as ${user.role}.`);
+      return;
+    }
+    if (searchParams.get("demo") === "required") {
+      setStatus("Please sign in to access the demo experience.");
+    }
+  }, [searchParams, status, user]);
 
   return (
     <div className={styles.page}>
@@ -50,11 +72,7 @@ export default function Home() {
           <span className={styles.brandMark} />
           <span>BairePorbo</span>
         </div>
-        <nav className={styles.navLinks}>
-          <a href="#features">Features</a>
-          <a href="#workflow">Workflow</a>
-          <a href="#stories">Stories</a>
-        </nav>
+        <PrimaryNav className={styles.navLinks} />
         <button className={styles.navButton}>Join waitlist</button>
       </header>
 
@@ -68,7 +86,9 @@ export default function Home() {
               AI, localized advice, and a curated scholarship map.
             </p>
             <div className={styles.heroActions}>
-              <button className={styles.primaryButton}>Start demo</button>
+              <Link className={styles.primaryButton} href="/chat">
+                Start demo
+              </Link>
               <Link className={styles.ghostButton} href="/scholarships">
                 Browse scholarships
               </Link>
@@ -140,7 +160,7 @@ export default function Home() {
               <div className={`${styles.status} ${statusTone}`}>{status}</div>
             ) : null}
 
-            {status.includes("Welcome") ? (
+            {user ? (
               <Link className={styles.dashboardLink} href="/dashboard">
                 Open demo dashboard
               </Link>

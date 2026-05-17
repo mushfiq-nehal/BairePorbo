@@ -1,4 +1,7 @@
 import Link from "next/link";
+import DemoGuard from "@/app/demo-guard";
+import DemoSignOutButton from "@/app/demo-signout-button";
+import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./dashboard.module.css";
 
 type Scholarship = {
@@ -54,60 +57,55 @@ const BOOKMARKS = [
 
 export default function DashboardPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} />
-          <div>
-            <p className={styles.brandName}>BairePorbo</p>
-            <span className={styles.brandTag}>Demo dashboard</span>
+    <DemoGuard>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <span className={styles.brandMark} />
+            <div>
+              <p className={styles.brandName}>BairePorbo</p>
+              <span className={styles.brandTag}>Demo dashboard</span>
+            </div>
           </div>
-        </div>
-        <nav className={styles.nav}>
-          <a className={styles.active} href="#overview">
-            Overview
-          </a>
-          <a href="#shortlist">Shortlist</a>
-          <a href="#roadmap">Roadmap</a>
-          <a href="#messages">Messages</a>
-        </nav>
-        <div className={styles.headerActions}>
-          <Link className={styles.linkButton} href="/">
-            Back home
-          </Link>
-          <button className={styles.primaryButton}>New scholarship search</button>
-        </div>
-      </header>
+          <PrimaryNav className={styles.nav} />
+          <div className={styles.headerActions}>
+            <Link className={styles.linkButton} href="/">
+              Back home
+            </Link>
+            <DemoSignOutButton className={styles.linkButton} />
+            <button className={styles.primaryButton}>New scholarship search</button>
+          </div>
+        </header>
 
-      <main className={styles.main}>
-        <section id="overview" className={styles.hero}>
-          <div>
-            <p className={styles.kicker}>Welcome, Demo Student</p>
-            <h1>Your scholarship mission control</h1>
-            <p className={styles.subtitle}>
-              Track deadlines, get AI explanations, and move from eligibility to application with
-              confidence.
-            </p>
-            <div className={styles.heroActions}>
-              <button className={styles.secondaryButton}>Update profile</button>
-              <button className={styles.ghostButton}>Export roadmap</button>
-            </div>
-          </div>
-          <div className={styles.heroPanel}>
-            <h3>Today's focus</h3>
-            <p>Finish SOP outline + shortlist 2 matches with full funding.</p>
-            <div className={styles.focusRow}>
-              <div>
-                <span className={styles.focusLabel}>Readiness</span>
-                <span className={styles.focusValue}>68%</span>
-              </div>
-              <div>
-                <span className={styles.focusLabel}>Deadlines</span>
-                <span className={styles.focusValue}>3 this month</span>
+        <main className={styles.main}>
+          <section id="overview" className={styles.hero}>
+            <div>
+              <p className={styles.kicker}>Welcome, Demo Student</p>
+              <h1>Your scholarship mission control</h1>
+              <p className={styles.subtitle}>
+                Track deadlines, get AI explanations, and move from eligibility to application with
+                confidence.
+              </p>
+              <div className={styles.heroActions}>
+                <button className={styles.secondaryButton}>Update profile</button>
+                <button className={styles.ghostButton}>Export roadmap</button>
               </div>
             </div>
-          </div>
-        </section>
+            <div className={styles.heroPanel}>
+              <h3>Today's focus</h3>
+              <p>Finish SOP outline + shortlist 2 matches with full funding.</p>
+              <div className={styles.focusRow}>
+                <div>
+                  <span className={styles.focusLabel}>Readiness</span>
+                  <span className={styles.focusValue}>68%</span>
+                </div>
+                <div>
+                  <span className={styles.focusLabel}>Deadlines</span>
+                  <span className={styles.focusValue}>3 this month</span>
+                </div>
+              </div>
+            </div>
+          </section>
 
         <section className={styles.stats}>
           <div>
@@ -200,7 +198,8 @@ export default function DashboardPage() {
             </div>
           </aside>
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+    </DemoGuard>
   );
 }

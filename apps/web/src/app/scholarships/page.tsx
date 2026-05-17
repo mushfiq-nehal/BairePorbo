@@ -1,4 +1,6 @@
-import Link from "next/link";
+import DemoGuard from "@/app/demo-guard";
+import DemoSignOutButton from "@/app/demo-signout-button";
+import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./scholarships.module.css";
 
 type Scholarship = {
@@ -59,48 +61,44 @@ const LEVELS = ["Bachelors", "Masters", "PhD", "Postdoc"];
 
 export default function ScholarshipsPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} />
-          <div>
-            <p className={styles.brandName}>BairePorbo</p>
-            <span className={styles.brandTag}>Scholarship listings</span>
-          </div>
-        </div>
-        <nav className={styles.nav}>
-          <Link href="/dashboard">Dashboard</Link>
-          <Link href="/">Home</Link>
-          <Link className={styles.active} href="/scholarships">
-            Scholarships
-          </Link>
-        </nav>
-        <div className={styles.headerActions}>
-          <button className={styles.ghostButton}>Save search</button>
-          <button className={styles.primaryButton}>AI match me</button>
-        </div>
-      </header>
-
-      <main className={styles.main}>
-        <section className={styles.hero}>
-          <div>
-            <p className={styles.kicker}>Curated and explained</p>
-            <h1>Scholarships filtered for South Asian applicants</h1>
-            <p className={styles.subtitle}>
-              Use smart filters to surface opportunities that match your GPA, degree level, and
-              funding expectations.
-            </p>
-          </div>
-          <div className={styles.heroPanel}>
-            <h3>Search snapshot</h3>
-            <p>14 matches, 6 closing soon, 3 fully funded for Masters.</p>
-            <div className={styles.heroChips}>
-              <span>Bangladesh</span>
-              <span>STEM</span>
-              <span>Full funding</span>
+    <DemoGuard>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.brand}>
+            <span className={styles.brandMark} />
+            <div>
+              <p className={styles.brandName}>BairePorbo</p>
+              <span className={styles.brandTag}>Scholarship listings</span>
             </div>
           </div>
-        </section>
+          <PrimaryNav className={styles.nav} />
+          <div className={styles.headerActions}>
+            <DemoSignOutButton className={styles.ghostButton} />
+            <button className={styles.ghostButton}>Save search</button>
+            <button className={styles.primaryButton}>AI match me</button>
+          </div>
+        </header>
+
+        <main className={styles.main}>
+          <section className={styles.hero}>
+            <div>
+              <p className={styles.kicker}>Curated and explained</p>
+              <h1>Scholarships filtered for South Asian applicants</h1>
+              <p className={styles.subtitle}>
+                Use smart filters to surface opportunities that match your GPA, degree level, and
+                funding expectations.
+              </p>
+            </div>
+            <div className={styles.heroPanel}>
+              <h3>Search snapshot</h3>
+              <p>14 matches, 6 closing soon, 3 fully funded for Masters.</p>
+              <div className={styles.heroChips}>
+                <span>Bangladesh</span>
+                <span>STEM</span>
+                <span>Full funding</span>
+              </div>
+            </div>
+          </section>
 
         <section className={styles.filters}>
           <div className={styles.searchBox}>
@@ -195,7 +193,8 @@ export default function ScholarshipsPage() {
             ))}
           </div>
         </section>
-      </main>
-    </div>
+        </main>
+      </div>
+    </DemoGuard>
   );
 }

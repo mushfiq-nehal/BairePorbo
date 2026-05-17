@@ -1,0 +1,329 @@
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.sidebar {
+  background: rgba(255, 255, 255, 0.92);
+  border-right: 1px solid var(--sand-200);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+  gap: 20px;
+}
+
+.sidebarHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--teal-500), var(--coral-400));
+  box-shadow: 0 8px 20px rgba(15, 143, 141, 0.3);
+}
+
+.brandName {
+  font-family: var(--font-display), serif;
+  font-size: 18px;
+}
+
+.brandTag {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.navVertical {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sessionList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.sessionCard {
+  text-align: left;
+  border: 1px solid var(--sand-200);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 12px;
+  cursor: pointer;
+  transition: border 0.2s ease, transform 0.2s ease;
+}
+
+.sessionCard:hover {
+  border-color: var(--teal-500);
+  transform: translateY(-1px);
+}
+
+.sessionTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sessionCard p {
+  font-size: 12px;
+  color: var(--ink-500);
+  margin-top: 6px;
+}
+
+.sessionTime {
+  color: var(--ink-500);
+  font-weight: 500;
+}
+
+.sidebarFooter {
+  font-size: 11px;
+  color: var(--ink-500);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 28px 5vw 32px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: var(--teal-700);
+  font-weight: 600;
+}
+
+.header h1 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.9rem, 3.2vw, 2.5rem);
+  margin-top: 6px;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.contextBar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--sand-200);
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-size: 12px;
+  color: var(--ink-700);
+}
+
+.contextLabel {
+  display: block;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: var(--ink-500);
+  margin-bottom: 6px;
+}
+
+.chatWindow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 12px 0;
+  overflow-y: auto;
+}
+
+.messageAssistant,
+.messageStudent {
+  display: flex;
+}
+
+.messageAssistant {
+  justify-content: flex-start;
+}
+
+.messageStudent {
+  justify-content: flex-end;
+}
+
+.messageBubble {
+  max-width: 65%;
+  background: #ffffff;
+  border: 1px solid var(--sand-200);
+  border-radius: 18px;
+  padding: 12px 14px;
+  box-shadow: 0 12px 24px rgba(15, 34, 52, 0.08);
+}
+
+.messageStudent .messageBubble {
+  background: rgba(15, 143, 141, 0.12);
+  border-color: rgba(15, 143, 141, 0.2);
+}
+
+.messageBubble p {
+  font-size: 13px;
+  color: var(--ink-900);
+}
+
+.messageBubble span {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-500);
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.suggestionLabel {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.suggestionGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.suggestionChip {
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.inputBar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--sand-200);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+.inputLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-500);
+  flex: 1;
+}
+
+.inputLabel textarea {
+  border: 1px solid var(--sand-200);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  resize: none;
+}
+
+.inputActions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryButton {
+  background: var(--teal-500);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 143, 141, 0.2);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.primaryButton:hover {
+  background: var(--teal-700);
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: var(--ink-900);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid var(--sand-200);
+  color: var(--ink-900);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--sand-200);
+  }
+}
+
+@media (max-width: 760px) {
+  .header,
+  .headerActions,
+  .inputBar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .messageBubble {
+    max-width: 90%;
+  }
+
+  .contextBar {
+    grid-template-columns: 1fr;
+  }
+}
