@@ -1,0 +1,384 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  padding: 28px 6vw 60px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.brandMark {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--teal-500), var(--coral-400));
+  box-shadow: 0 8px 20px rgba(15, 143, 141, 0.3);
+}
+
+.brandName {
+  font-family: var(--font-display), serif;
+  font-size: 20px;
+  letter-spacing: -0.4px;
+}
+
+.brandTag {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--ink-700);
+}
+
+.nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav a:hover {
+  background: rgba(15, 143, 141, 0.12);
+  color: var(--ink-900);
+}
+
+.active {
+  background: rgba(15, 143, 141, 0.18);
+  color: var(--teal-700);
+  font-weight: 600;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.linkButton {
+  border: none;
+  background: transparent;
+  color: var(--ink-700);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 6px 0;
+}
+
+.primaryButton {
+  background: var(--teal-500);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 143, 141, 0.2);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.primaryButton:hover {
+  background: var(--teal-700);
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: var(--ink-900);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.secondaryButton:hover {
+  transform: translateY(-1px);
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid var(--sand-200);
+  color: var(--ink-900);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 32px;
+  align-items: center;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: var(--teal-700);
+  font-weight: 600;
+}
+
+.hero h1 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(2.2rem, 3.8vw, 3rem);
+  margin: 12px 0 10px;
+}
+
+.subtitle {
+  color: var(--ink-700);
+  max-width: 520px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.heroPanel {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+
+.heroPanel h3 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.focusRow {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+}
+
+.focusLabel {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.focusValue {
+  font-weight: 600;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.statValue {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 24px;
+}
+
+.columnMain,
+.columnSide {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 18px 38px rgba(15, 34, 52, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.scholarshipList,
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scholarshipCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--sand-200);
+}
+
+.scholarshipCard h3 {
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.scholarshipCard p {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.scholarshipMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.matchTag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(240, 138, 104, 0.18);
+  color: var(--coral-500);
+  font-weight: 600;
+  text-align: center;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--sand-200);
+}
+
+.taskRow h4 {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.taskRow p {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.taskNow,
+.taskSoon,
+.taskPlanned {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.taskNow {
+  background: rgba(15, 143, 141, 0.16);
+  color: var(--teal-700);
+}
+
+.taskSoon {
+  background: rgba(240, 138, 104, 0.18);
+  color: var(--coral-500);
+}
+
+.taskPlanned {
+  background: rgba(93, 109, 126, 0.15);
+  color: var(--ink-700);
+}
+
+.summaryText {
+  font-size: 13px;
+  color: var(--ink-700);
+  line-height: 1.5;
+  margin: 12px 0 16px;
+}
+
+.bookmarkList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--ink-700);
+}
+
+.bookmarkList li {
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--sand-100);
+}
+
+@media (max-width: 1100px) {
+  .hero,
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 24px 5vw 50px;
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .stats {
+    grid-template-columns: 1fr;
+  }
+
+  .heroActions,
+  .headerActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .focusRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+}

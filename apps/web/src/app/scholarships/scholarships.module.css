@@ -1,0 +1,378 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 28px 6vw 60px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brandMark {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--teal-500), var(--coral-400));
+  box-shadow: 0 8px 20px rgba(15, 143, 141, 0.3);
+}
+
+.brandName {
+  font-family: var(--font-display), serif;
+  font-size: 20px;
+  letter-spacing: -0.4px;
+}
+
+.brandTag {
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.nav {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+  color: var(--ink-700);
+}
+
+.nav a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav a:hover {
+  background: rgba(15, 143, 141, 0.12);
+  color: var(--ink-900);
+}
+
+.active {
+  background: rgba(15, 143, 141, 0.18);
+  color: var(--teal-700);
+  font-weight: 600;
+}
+
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+.primaryButton {
+  background: var(--teal-500);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 143, 141, 0.2);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.primaryButton:hover {
+  background: var(--teal-700);
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: var(--ink-900);
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ghostButton {
+  background: transparent;
+  border: 1px solid var(--sand-200);
+  color: var(--ink-900);
+  padding: 10px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.kicker {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 11px;
+  color: var(--teal-700);
+  font-weight: 600;
+}
+
+.hero h1 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
+  margin: 12px 0 10px;
+}
+
+.subtitle {
+  color: var(--ink-700);
+  max-width: 520px;
+}
+
+.heroPanel {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: var(--shadow);
+}
+
+.heroPanel h3 {
+  font-size: 16px;
+  margin-bottom: 8px;
+}
+
+.heroChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.heroChips span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--sand-200);
+  font-size: 12px;
+  color: var(--ink-700);
+}
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 24px;
+  padding: 20px;
+  border: 1px solid var(--sand-200);
+  box-shadow: 0 18px 30px rgba(15, 34, 52, 0.08);
+}
+
+.searchBox {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.searchBox label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-500);
+  flex: 1 1 240px;
+}
+
+.searchBox input {
+  border: 1px solid var(--sand-200);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.quickFilters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.filterChip {
+  border: 1px solid var(--sand-200);
+  border-radius: 999px;
+  padding: 6px 12px;
+  background: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.filterGrid h4 {
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.filterGroup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.filterItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ink-700);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.resultsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--ink-500);
+}
+
+.sortRow label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortRow select {
+  border: 1px solid var(--sand-200);
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 20px;
+  padding: 18px;
+  border: 1px solid var(--sand-200);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 16px 32px rgba(15, 34, 52, 0.08);
+}
+
+.cardTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cardLabel {
+  font-size: 11px;
+  color: var(--teal-700);
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  margin-bottom: 6px;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: var(--ink-500);
+  margin-top: 6px;
+}
+
+.deadline {
+  font-size: 12px;
+  color: var(--coral-500);
+  font-weight: 600;
+}
+
+.tagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tagRow span {
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--sand-100);
+  font-size: 11px;
+  color: var(--ink-700);
+}
+
+.cardActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1100px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .cardGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 820px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+  }
+
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 24px 5vw 50px;
+  }
+
+  .headerActions,
+  .cardActions,
+  .searchBox {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroChips {
+    justify-content: flex-start;
+  }
+}
