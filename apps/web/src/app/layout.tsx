@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Fraunces, Manrope } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
@@ -27,7 +28,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <Link
+            className="aiFaqButton"
+            href="/chat?question=What%20scholarships%20match%20a%20CGPA%203.1%20for%20Masters%3F"
+          >
+            AI Mentor
+          </Link>
+        </Providers>
       </body>
     </html>
   );
