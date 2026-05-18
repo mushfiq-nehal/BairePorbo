@@ -1,7 +1,7 @@
 "use client";
 
-import { DemoAuthProvider } from "@/lib/demo-auth";
+import { AuthProvider } from "@/lib/auth";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <DemoAuthProvider>{children}</DemoAuthProvider>;
+  return <AuthProvider>{children}</AuthProvider>;
 }

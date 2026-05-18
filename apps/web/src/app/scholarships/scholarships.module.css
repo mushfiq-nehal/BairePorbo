@@ -295,6 +295,7 @@
   display: flex;
   justify-content: space-between;
   gap: 16px;
+  align-items: flex-start;
 }
 
 .cardLabel {
@@ -312,9 +313,34 @@
 }
 
 .deadline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 116px;
+  padding: 6px 10px;
+  border-radius: 10px;
   font-size: 12px;
   color: var(--coral-500);
   font-weight: 600;
+  background: rgba(255, 120, 92, 0.12);
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.deadlineSoon {
+  color: #c0392b;
+  background: rgba(220, 53, 69, 0.18);
+}
+
+.cardThumb {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  max-height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: -4px;
 }
 
 .tagRow {

@@ -1,165 +1,230 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import DemoGuard from "@/app/demo-guard";
-import DemoSignOutButton from "@/app/demo-signout-button";
+import { useParams } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./detail.module.css";
 
-type SummaryTab = "Overview" | "Eligibility" | "Competitiveness" | "Strategy";
+type SummaryTab = "Overview" | "Eligibility" | "Competitiveness" | "Tips";
 
 type ScholarshipDetail = {
+  id: string;
   title: string;
   country: string;
-  funding: string;
-  deadline: string;
-  level: string;
-  university: string;
-  summary: Record<SummaryTab, string>;
-  requirements: string[];
-  tags: string[];
+  funding_type: string;
+  deadline: string | null;
+  degree_level: string;
+  official_url: string | null;
+  raw_description: string | null;
+  eligibility_summary: string | null;
+  competitiveness: string | null;
+  tips: string | null;
+  tags: string[] | null;
+  ai_summary: string | null;
+  thumbnail_url: string | null;
 };
 
-const MOCK_DETAIL: ScholarshipDetail = {
-  title: "DAAD EPOS Scholarship",
-  country: "Germany",
-  funding: "Full funding",
-  deadline: "Jun 30, 2026",
-  level: "Masters",
-  university: "Multiple public universities",
-  summary: {
-    Overview:
-      "DAAD EPOS funds development-related Masters programs in Germany for early-career professionals. It covers tuition, monthly stipend, travel, and insurance.",
-    Eligibility:
-      "You need a strong academic record, at least two years of relevant work experience, and a clear development-focused motivation aligned with your chosen program.",
-    Competitiveness:
-      "Highly competitive. Stand out with measurable impact in your work experience and a tailored SOP connecting your goals to the program curriculum.",
-    Strategy:
-      "Focus on a concise SOP, secure strong recommendations, and align your CV with leadership impact. Shortlist 2 backup programs with similar funding.",
-  },
-  requirements: [
-    "Minimum 2 years of relevant work experience",
-    "Bachelor degree completed before the deadline",
-    "Proof of English proficiency (IELTS/TOEFL)",
-    "Motivation letter and CV",
-  ],
-  tags: ["Development", "Public Policy", "Engineering", "2+ yrs experience"],
+const FUNDING_MAP: Record<string, string> = {
+  full: "Full funding", partial: "Partial funding",
+  tuition_only: "Tuition only", stipend: "Stipend only", other: "Other",
+};
+const LEVEL_MAP: Record<string, string> = {
+  bachelors: "Bachelor's", masters: "Master's", phd: "PhD", postdoc: "Postdoc", any: "Any level",
 };
 
-const TABS: SummaryTab[] = ["Overview", "Eligibility", "Competitiveness", "Strategy"];
+const TABS: SummaryTab[] = ["Overview", "Eligibility", "Competitiveness", "Tips"];
 
 export default function ScholarshipDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const { user, signOut } = useAuth();
+  const [scholarship, setScholarship] = useState<ScholarshipDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<SummaryTab>("Overview");
 
-  const summaryText = useMemo(() => MOCK_DETAIL.summary[activeTab], [activeTab]);
+  useEffect(() => {
+    if (!id) return;
+    const supabase = createClient();
+    supabase
+      .from("scholarships")
+      .select("*")
+      .eq("id", id)
+      .eq("status", "published")
+      .single()
+      .then(({ data }) => {
+        setScholarship(data);
+        setLoading(false);
+      });
+  }, [id]);
+
+  const tabContent: Record<SummaryTab, string> = {
+    Overview: scholarship?.ai_summary ?? scholarship?.raw_description ?? "No summary available yet.",
+    Eligibility: scholarship?.eligibility_summary ?? "Eligibility details not yet available.",
+    Competitiveness: scholarship?.competitiveness
+      ? `Competitiveness: ${scholarship.competitiveness}\n\n${scholarship?.tips ?? ""}`
+      : "Competitiveness analysis not yet available.",
+    Tips: scholarship?.tips ?? "Application tips not yet available.",
+  };
+
+  const formatDeadline = (d: string | null) => {
+    if (!d) return "Open deadline";
+    return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div style={{ padding: "60px", textAlign: "center", color: "var(--ink-500)" }}>
+          Loading scholarship…
+        </div>
+      </div>
+    );
+  }
+
+  if (!scholarship) {
+    return (
+      <div className={styles.page}>
+        <div style={{ padding: "60px", textAlign: "center" }}>
+          <h2>Scholarship not found</h2>
+          <Link href="/scholarships" className={styles.primaryButton} style={{ display: "inline-block", marginTop: 16 }}>
+            Back to listings
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <DemoGuard>
-      <div className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.brand}>
-            <span className={styles.brandMark} />
-            <div>
-              <p className={styles.brandName}>BairePorbo</p>
-              <span className={styles.brandTag}>Scholarship detail</span>
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.brandMark} />
+          <div>
+            <p className={styles.brandName}>BairePorbo</p>
+            <span className={styles.brandTag}>Scholarship detail</span>
+          </div>
+        </div>
+        <PrimaryNav className={styles.nav} />
+        <div className={styles.headerActions}>
+          {user ? (
+            <button className={styles.ghostButton} onClick={signOut}>Sign out</button>
+          ) : (
+            <Link className={styles.ghostButton} href="/auth/login">Sign in</Link>
+          )}
+          <Link className={styles.ghostButton} href="/scholarships">Back to list</Link>
+          {scholarship.official_url && (
+            <a className={styles.primaryButton} href={scholarship.official_url} target="_blank" rel="noopener noreferrer">
+              Apply now ↗
+            </a>
+          )}
+        </div>
+      </header>
+
+      <main className={styles.main}>
+        <section className={styles.hero}>
+          <div>
+            {scholarship.thumbnail_url && (
+              <img
+                src={scholarship.thumbnail_url}
+                alt={scholarship.title}
+                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 16, marginBottom: 16 }}
+              />
+            )}
+            <p className={styles.kicker}>Scholarship detail</p>
+            <h1>{scholarship.title}</h1>
+            <p className={styles.subtitle}>{scholarship.country}</p>
+            <div className={styles.metaRow}>
+              <span>{scholarship.country}</span>
+              <span>{LEVEL_MAP[scholarship.degree_level] ?? scholarship.degree_level}</span>
+              <span>{FUNDING_MAP[scholarship.funding_type] ?? scholarship.funding_type}</span>
+              <span>Deadline: {formatDeadline(scholarship.deadline)}</span>
             </div>
           </div>
-          <PrimaryNav className={styles.nav} />
-          <div className={styles.headerActions}>
-            <DemoSignOutButton className={styles.ghostButton} />
-            <Link className={styles.ghostButton} href="/scholarships">
-              Back to list
-            </Link>
-            <button className={styles.primaryButton}>Bookmark</button>
+          <div className={styles.heroPanel}>
+            <h3>Quick facts</h3>
+            {scholarship.competitiveness && (
+              <p>Competitiveness: <strong>{scholarship.competitiveness}</strong></p>
+            )}
+            {scholarship.tags && scholarship.tags.length > 0 && (
+              <div className={styles.tagRow} style={{ marginTop: 10 }}>
+                {scholarship.tags.map((t) => <span key={t}>{t}</span>)}
+              </div>
+            )}
+            {scholarship.official_url && (
+              <a className={styles.secondaryButton} href={scholarship.official_url} target="_blank" rel="noopener noreferrer"
+                style={{ display: "block", textAlign: "center", marginTop: 14 }}>
+                Official page ↗
+              </a>
+            )}
           </div>
-        </header>
+        </section>
 
-        <main className={styles.main}>
-          <section className={styles.hero}>
-            <div>
-              <p className={styles.kicker}>Scholarship detail</p>
-              <h1>{MOCK_DETAIL.title}</h1>
-              <p className={styles.subtitle}>{MOCK_DETAIL.university}</p>
-              <div className={styles.metaRow}>
-                <span>{MOCK_DETAIL.country}</span>
-                <span>{MOCK_DETAIL.level}</span>
-                <span>{MOCK_DETAIL.funding}</span>
-                <span>Deadline: {MOCK_DETAIL.deadline}</span>
-              </div>
+        <section className={styles.summarySection}>
+          <div className={styles.summaryHeader}>
+            <h2>AI summary</h2>
+            <div className={styles.tabRow}>
+              {TABS.map((tab) => (
+                <button
+                  key={tab}
+                  className={tab === activeTab ? styles.tabActive : styles.tabButton}
+                  onClick={() => setActiveTab(tab)}
+                  type="button"
+                >
+                  {tab}
+                </button>
+              ))}
             </div>
-            <div className={styles.heroPanel}>
-              <h3>Quick match</h3>
-              <p>Strong fit for 3.1+ CGPA with 2 years experience in development-related roles.</p>
-              <button className={styles.secondaryButton}>See AI match score</button>
-            </div>
-          </section>
-
-          <section className={styles.summarySection}>
-            <div className={styles.summaryHeader}>
-              <h2>AI summary</h2>
-              <div className={styles.tabRow}>
-                {TABS.map((tab) => (
-                  <button
-                    key={tab}
-                    className={tab === activeTab ? styles.tabActive : styles.tabButton}
-                    onClick={() => setActiveTab(tab)}
-                    type="button"
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className={styles.summaryBody}>
-              <p>{summaryText}</p>
+          </div>
+          <div className={styles.summaryBody}>
+            <p style={{ whiteSpace: "pre-line" }}>{tabContent[activeTab]}</p>
+            {scholarship.tags && (
               <div className={styles.tagRow}>
-                {MOCK_DETAIL.tags.map((tag) => (
-                  <span key={tag}>{tag}</span>
-                ))}
+                {scholarship.tags.map((tag) => <span key={tag}>{tag}</span>)}
               </div>
-            </div>
-          </section>
+            )}
+          </div>
+        </section>
 
-          <section className={styles.columns}>
-            <div className={styles.panel}>
-              <div className={styles.panelHeader}>
-                <h2>Requirements checklist</h2>
-                <button className={styles.linkButton}>Download PDF</button>
-              </div>
-              <ul className={styles.requirementsList}>
-                {MOCK_DETAIL.requirements.map((item) => (
-                  <li key={item}>
+        <section className={styles.columns}>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Eligibility checklist</h2>
+            </div>
+            <ul className={styles.requirementsList}>
+              {(scholarship.eligibility_summary ?? "Details coming soon.")
+                .split(/[.•\n]/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((item, i) => (
+                  <li key={i}>
                     <span className={styles.checkDot} />
                     {item}
                   </li>
                 ))}
-              </ul>
-            </div>
+            </ul>
+          </div>
 
-            <div className={styles.panel}>
-              <div className={styles.panelHeader}>
-                <h2>Action plan</h2>
-                <button className={styles.linkButton}>Add to roadmap</button>
-              </div>
-              <div className={styles.actionList}>
-                <div>
-                  <h3>Week 1</h3>
-                  <p>Draft SOP, identify 2 recommenders, shortlist programs.</p>
-                </div>
-                <div>
-                  <h3>Week 2-3</h3>
-                  <p>Finalize CV, gather transcripts, book IELTS if needed.</p>
-                </div>
-                <div>
-                  <h3>Week 4</h3>
-                  <p>Submit applications and upload references.</p>
-                </div>
-              </div>
+          <div className={styles.panel}>
+            <div className={styles.panelHeader}>
+              <h2>Application tips</h2>
             </div>
-          </section>
-        </main>
-      </div>
-    </DemoGuard>
+            <div className={styles.actionList}>
+              {(scholarship.tips ?? "Tips coming soon.")
+                .split(/[•\n]/)
+                .map((s) => s.trim())
+                .filter(Boolean)
+                .map((tip, i) => (
+                  <div key={i}>
+                    <h3>Tip {i + 1}</h3>
+                    <p>{tip}</p>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
   );
 }

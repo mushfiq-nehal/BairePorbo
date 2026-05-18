@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
-import DemoGuard from "@/app/demo-guard";
-import DemoSignOutButton from "@/app/demo-signout-button";
+import AuthGuard from "@/components/auth/auth-guard";
+import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./chat.module.css";
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type Role = "user" | "assistant";
 
@@ -17,28 +19,12 @@ type ChatMessage = {
 };
 
 type Session = {
+  id: string;
   title: string;
-  updated: string;
-  preview: string;
+  updated_at: string;
 };
 
-const SESSIONS: Session[] = [
-  {
-    title: "Eligibility for 3.1 CGPA",
-    updated: "5m ago",
-    preview: "Asked about CGPA requirements for DAAD EPOS.",
-  },
-  {
-    title: "Shortlist for Data Science",
-    updated: "2h ago",
-    preview: "Requested Masters programs with full funding.",
-  },
-  {
-    title: "IELTS waiver options",
-    updated: "Yesterday",
-    preview: "Explored universities with waivers for BD students.",
-  },
-];
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const SUGGESTIONS = [
   "Show scholarships closing in 60 days",
@@ -47,41 +33,151 @@ const SUGGESTIONS = [
   "Create a 90-day prep plan",
 ];
 
-const INITIAL_MESSAGE: ChatMessage = {
+function formatTime(date: Date): string {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatRelative(isoDate: string): string {
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+/** Stable anonymous key persisted in localStorage */
+function getOrCreateAnonKey(): string {
+  const stored = localStorage.getItem("bp_anon_key");
+  if (stored) return stored;
+  const key =
+    typeof crypto?.randomUUID === "function"
+      ? crypto.randomUUID()
+      : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+          const randomValue =
+            typeof crypto?.getRandomValues === "function"
+              ? crypto.getRandomValues(new Uint8Array(1))[0]
+              : Math.floor(Math.random() * 256);
+          const value = char === "x" ? randomValue : (randomValue % 16) + 8;
+          return value.toString(16);
+        });
+  localStorage.setItem("bp_anon_key", key);
+  return key;
+}
+
+const WELCOME: ChatMessage = {
   role: "assistant",
   content:
     "Hi! I'm your BairePorbo Mentor — powered by Google Gemma via NVIDIA NIM. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
   time: formatTime(new Date()),
 };
 
-function formatTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
+// ── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
   const searchParams = useSearchParams();
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+
+  const [anonKey, setAnonKey] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const chatWindowRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Init: load anon key and sessions ──────────────────────────────────────
+
+  useEffect(() => {
+    const key = getOrCreateAnonKey();
+    setAnonKey(key);
+    loadSessions(key);
+  }, []);
 
   // Pre-fill from ?question= query param
   useEffect(() => {
     const question = searchParams.get("question");
-    if (question) {
-      setInput(question);
-    }
+    if (question) setInput(question);
   }, [searchParams]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom
   useEffect(() => {
     const el = chatWindowRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el) el.scrollTop = el.scrollHeight;
   }, [messages, isLoading]);
+
+  // ── Session management ────────────────────────────────────────────────────
+
+  const loadSessions = async (key: string) => {
+    try {
+      const res = await fetch("/api/chat/sessions", {
+        headers: { "x-anon-key": key },
+      });
+      if (!res.ok) return;
+      const data: { sessions: Session[] } = await res.json();
+      setSessions(data.sessions ?? []);
+    } catch {
+      // non-critical — sidebar just shows empty
+    }
+  };
+
+  const createSession = useCallback(
+    async (firstMessage: string): Promise<string | null> => {
+      if (!anonKey) return null;
+      try {
+        const res = await fetch("/api/chat/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ anonKey, title: firstMessage.slice(0, 60) }),
+        });
+        if (!res.ok) return null;
+        const data: { session: Session } = await res.json();
+        const session = data.session;
+        setSessions((prev) => [session, ...prev]);
+        setActiveSessionId(session.id);
+        return session.id;
+      } catch {
+        return null;
+      }
+    },
+    [anonKey]
+  );
+
+  const loadSessionHistory = async (session: Session) => {
+    setActiveSessionId(session.id);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/chat/sessions/${session.id}/messages`
+      );
+      if (!res.ok) return;
+      const data: {
+        messages: { role: string; content: string; created_at: string }[];
+      } = await res.json();
+
+      const loaded: ChatMessage[] = data.messages.map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.content,
+        time: formatTime(new Date(m.created_at)),
+      }));
+      setMessages(loaded.length > 0 ? loaded : [WELCOME]);
+    } catch {
+      setMessages([WELCOME]);
+    }
+  };
+
+  const startNewChat = () => {
+    setActiveSessionId(null);
+    setMessages([WELCOME]);
+    setInput("");
+    setError(null);
+    if (anonKey) loadSessions(anonKey);
+  };
+
+  // ── Send message ──────────────────────────────────────────────────────────
 
   const sendMessage = async (text: string) => {
     const trimmed = text.trim();
@@ -93,7 +189,6 @@ export default function ChatPage() {
       time: formatTime(new Date()),
     };
 
-    // Snapshot history before state update for the API call
     const history = [...messages, userMessage].map(({ role, content }) => ({
       role: role === "user" ? "user" : "assistant",
       content,
@@ -104,19 +199,29 @@ export default function ChatPage() {
     setIsLoading(true);
     setError(null);
 
-    // Add an empty assistant bubble immediately — we'll stream tokens into it
-    const assistantPlaceholder: ChatMessage = {
+    // Ensure we have a session in DB
+    let sessionId = activeSessionId;
+    if (!sessionId) {
+      sessionId = await createSession(trimmed);
+    }
+
+    // Empty assistant bubble — tokens stream into it
+    const placeholder: ChatMessage = {
       role: "assistant",
       content: "",
       time: formatTime(new Date()),
     };
-    setMessages((prev) => [...prev, assistantPlaceholder]);
+    setMessages((prev) => [...prev, placeholder]);
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({
+          messages: history,
+          sessionId,
+          userMessage: trimmed,
+        }),
       });
 
       if (!res.ok || !res.body) {
@@ -124,7 +229,6 @@ export default function ChatPage() {
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
 
-      // Read the SSE stream and append tokens to the last message
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -167,9 +271,11 @@ export default function ChatPage() {
           }
         }
       }
+
+      // Refresh session list so title/timestamp update
+      if (anonKey) loadSessions(anonKey);
     } catch (err) {
       setError(String(err));
-      // Remove the empty placeholder bubble on error
       setMessages((prev) => {
         const updated = [...prev];
         if (updated[updated.length - 1]?.content === "") updated.pop();
@@ -192,9 +298,14 @@ export default function ChatPage() {
     }
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  const { signOut } = useAuth();
+
   return (
-    <DemoGuard>
+    <AuthGuard>
       <div className={styles.page}>
+        {/* ── Sidebar ── */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
             <div className={styles.brand}>
@@ -207,7 +318,7 @@ export default function ChatPage() {
             <button
               className={styles.primaryButton}
               type="button"
-              onClick={() => setMessages([INITIAL_MESSAGE])}
+              onClick={startNewChat}
             >
               New chat
             </button>
@@ -215,17 +326,30 @@ export default function ChatPage() {
 
           <div className={styles.sidebarNav}>
             <PrimaryNav className={styles.navVertical} />
-            <DemoSignOutButton className={styles.ghostButton} />
+            <button className={styles.ghostButton} type="button" onClick={signOut}>
+              Sign out
+            </button>
           </div>
 
           <div className={styles.sessionList}>
-            {SESSIONS.map((session) => (
-              <button key={session.title} className={styles.sessionCard}>
+            {sessions.length === 0 && (
+              <p className={styles.sessionEmpty}>No past conversations yet.</p>
+            )}
+            {sessions.map((session) => (
+              <button
+                key={session.id}
+                className={`${styles.sessionCard} ${
+                  activeSessionId === session.id ? styles.sessionCardActive : ""
+                }`}
+                onClick={() => loadSessionHistory(session)}
+                type="button"
+              >
                 <div className={styles.sessionTop}>
                   <span>{session.title}</span>
-                  <span className={styles.sessionTime}>{session.updated}</span>
+                  <span className={styles.sessionTime}>
+                    {formatRelative(session.updated_at)}
+                  </span>
                 </div>
-                <p>{session.preview}</p>
               </button>
             ))}
           </div>
@@ -235,6 +359,7 @@ export default function ChatPage() {
           </div>
         </aside>
 
+        {/* ── Main ── */}
         <main className={styles.main}>
           <header className={styles.header}>
             <div>
@@ -294,9 +419,7 @@ export default function ChatPage() {
             )}
 
             {error && (
-              <div className={styles.errorBanner}>
-                ⚠️ {error}
-              </div>
+              <div className={styles.errorBanner}>⚠️ {error}</div>
             )}
           </section>
 
@@ -345,6 +468,6 @@ export default function ChatPage() {
           </form>
         </main>
       </div>
-    </DemoGuard>
+    </AuthGuard>
   );
 }

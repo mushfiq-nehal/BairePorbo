@@ -1,5 +1,7 @@
-import DemoGuard from "@/app/demo-guard";
-import DemoSignOutButton from "@/app/demo-signout-button";
+"use client";
+
+import AuthGuard from "@/components/auth/auth-guard";
+import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./profile.module.css";
 
@@ -50,8 +52,9 @@ const CHECKLIST: ChecklistItem[] = [
 ];
 
 export default function ProfilePage() {
+  const { signOut } = useAuth();
   return (
-    <DemoGuard>
+    <AuthGuard>
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.brand}>
@@ -63,7 +66,7 @@ export default function ProfilePage() {
           </div>
           <PrimaryNav className={styles.nav} />
           <div className={styles.headerActions}>
-            <DemoSignOutButton className={styles.ghostButton} />
+            <button className={styles.ghostButton} onClick={signOut}>Sign out</button>
             <button className={styles.ghostButton}>Export profile</button>
             <button className={styles.primaryButton}>Update roadmap</button>
           </div>
@@ -193,6 +196,6 @@ export default function ProfilePage() {
         </section>
         </main>
       </div>
-    </DemoGuard>
+    </AuthGuard>
   );
 }

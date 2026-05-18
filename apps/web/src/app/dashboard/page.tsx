@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import DemoGuard from "@/app/demo-guard";
-import DemoSignOutButton from "@/app/demo-signout-button";
+import AuthGuard from "@/components/auth/auth-guard";
+import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./dashboard.module.css";
 
@@ -56,8 +58,9 @@ const BOOKMARKS = [
 ];
 
 export default function DashboardPage() {
+  const { user, signOut } = useAuth();
   return (
-    <DemoGuard>
+    <AuthGuard>
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.brand}>
@@ -72,15 +75,15 @@ export default function DashboardPage() {
             <Link className={styles.linkButton} href="/">
               Back home
             </Link>
-            <DemoSignOutButton className={styles.linkButton} />
-            <button className={styles.primaryButton}>New scholarship search</button>
+            <button className={styles.linkButton} onClick={signOut}>Sign out</button>
+            <Link className={styles.primaryButton} href="/scholarships">Browse scholarships</Link>
           </div>
         </header>
 
         <main className={styles.main}>
           <section id="overview" className={styles.hero}>
             <div>
-              <p className={styles.kicker}>Welcome, Demo Student</p>
+              <p className={styles.kicker}>Welcome, {user?.email}</p>
               <h1>Your scholarship mission control</h1>
               <p className={styles.subtitle}>
                 Track deadlines, get AI explanations, and move from eligibility to application with
@@ -200,6 +203,6 @@ export default function DashboardPage() {
         </section>
         </main>
       </div>
-    </DemoGuard>
+    </AuthGuard>
   );
 }

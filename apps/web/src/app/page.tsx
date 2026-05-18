@@ -1,82 +1,38 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { useDemoAuth } from "@/lib/demo-auth";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./page.module.css";
 
-type DemoProfile = {
-  label: string;
-  email: string;
-  role: "Student" | "Mentor" | "Admin";
-};
-
-const DEMO_PROFILES: DemoProfile[] = [
-  { label: "Demo Student", email: "tania.student@baireporbo.app", role: "Student" },
-  { label: "Demo Mentor", email: "arif.mentor@baireporbo.app", role: "Mentor" },
-  { label: "Demo Admin", email: "admin@baireporbo.app", role: "Admin" },
-];
-
 export default function Home() {
-  const { user, signIn } = useDemoAuth();
+  const { user, role, loading, signOut } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<DemoProfile["role"] | null>(null);
-  const [label, setLabel] = useState("Demo Student");
-  const [status, setStatus] = useState("");
-
-  const statusTone = useMemo(() => {
-    if (!status) return "";
-    return status.includes("Welcome") ? styles.statusSuccess : styles.statusNeutral;
-  }, [status]);
-
-  const handleProfile = (profile: DemoProfile) => {
-    setEmail(profile.email);
-    setPassword("demo-login");
-    setRole(profile.role);
-    setLabel(profile.label);
-    setStatus(`Demo loaded for ${profile.role}.`);
-  };
-
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!email || !password) {
-      setStatus("Add an email and password to enter the demo.");
-      return;
-    }
-    const nextRole = role ?? "Student";
-    signIn({ email, role: nextRole, label });
-    setStatus(`Welcome back! You are signed in as ${nextRole}.`);
-    const redirect = searchParams.get("redirect");
-    router.push(redirect ?? "/dashboard");
-  };
-
-  useEffect(() => {
-    if (user && !status) {
-      setStatus(`Welcome back! You are signed in as ${user.role}.`);
-      return;
-    }
-    if (searchParams.get("demo") === "required") {
-      setStatus("Please sign in to access the demo experience.");
-    }
-  }, [searchParams, status, user]);
 
   return (
     <div className={styles.page}>
+      {/* ── Nav ── */}
       <header className={styles.nav}>
         <div className={styles.brand}>
           <span className={styles.brandMark} />
           <span>BairePorbo</span>
         </div>
         <PrimaryNav className={styles.navLinks} />
-        <button className={styles.navButton}>Join waitlist</button>
+        {!loading && (
+          user ? (
+            <button className={styles.navButton} onClick={signOut}>Sign out</button>
+          ) : (
+            <button className={styles.navButton} onClick={() => router.push("/auth/signup")}>
+              Get started
+            </button>
+          )
+        )}
       </header>
 
+      {/* ── Main ── */}
       <main className={styles.main}>
+        {/* Hero */}
         <section className={styles.hero}>
           <div className={styles.heroText}>
             <p className={styles.kicker}>AI scholarship compass for South Asia</p>
@@ -86,12 +42,17 @@ export default function Home() {
               AI, localized advice, and a curated scholarship map.
             </p>
             <div className={styles.heroActions}>
-              <Link className={styles.primaryButton} href="/chat">
-                Start demo
-              </Link>
-              <Link className={styles.ghostButton} href="/scholarships">
-                Browse scholarships
-              </Link>
+              {user ? (
+                <>
+                  <Link className={styles.primaryButton} href="/chat">Open AI Mentor</Link>
+                  <Link className={styles.ghostButton} href="/scholarships">Browse scholarships</Link>
+                </>
+              ) : (
+                <>
+                  <Link className={styles.primaryButton} href="/auth/signup">Start for free</Link>
+                  <Link className={styles.ghostButton} href="/scholarships">Browse scholarships</Link>
+                </>
+              )}
             </div>
             <div className={styles.stats}>
               <div>
@@ -109,70 +70,61 @@ export default function Home() {
             </div>
           </div>
 
+          {/* Auth card — same position/style as the old demo card */}
           <div className={styles.heroCard}>
             <div className={styles.cardHeader}>
               <div>
-                <h2>Demo login</h2>
-                <p>Use a prefilled profile to explore the experience.</p>
+                <h2>{user ? "Welcome back!" : "Join BairePorbo"}</h2>
+                <p>
+                  {user
+                    ? `Signed in as ${user.email}`
+                    : "Free for students. AI-powered scholarship guidance."}
+                </p>
               </div>
-              <span className={styles.badge}>Dev only</span>
+              {role === "admin" && <span className={styles.badge}>Admin</span>}
+              {!user && <span className={styles.badge}>Free</span>}
             </div>
-
-            <div className={styles.demoButtons}>
-              {DEMO_PROFILES.map((profile) => (
-                <button
-                  key={profile.label}
-                  className={styles.demoButton}
-                  onClick={() => handleProfile(profile)}
-                >
-                  {profile.label}
-                </button>
-              ))}
-            </div>
-
-            <form className={styles.loginForm} onSubmit={handleSubmit}>
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder="your.email@domain.com"
-                  autoComplete="email"
-                />
-              </label>
-              <label>
-                Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="demo-login"
-                  autoComplete="current-password"
-                />
-              </label>
-              <button className={styles.primaryButton} type="submit">
-                Enter demo workspace
-              </button>
-            </form>
-
-            {status ? (
-              <div className={`${styles.status} ${statusTone}`}>{status}</div>
-            ) : null}
 
             {user ? (
-              <Link className={styles.dashboardLink} href="/dashboard">
-                Open demo dashboard
-              </Link>
-            ) : null}
+              /* Logged-in quick links */
+              <div className={styles.loginForm}>
+                <Link className={styles.primaryButton} href="/chat" style={{ textAlign: "center" }}>
+                  💬 AI Mentor Chat
+                </Link>
+                <Link className={styles.primaryButton} href="/scholarships"
+                  style={{ textAlign: "center", background: "var(--ink-900)" }}>
+                  🎓 Browse Scholarships
+                </Link>
+                {role === "admin" && (
+                  <Link className={styles.dashboardLink} href="/admin">
+                    ⚙️ Admin Panel
+                  </Link>
+                )}
+              </div>
+            ) : (
+              /* Logged-out auth buttons — styled like the old demo buttons */
+              <div className={styles.loginForm}>
+                <Link className={styles.primaryButton} href="/auth/signup" style={{ textAlign: "center" }}>
+                  Create free account
+                </Link>
+                <Link href="/auth/login" className={styles.dashboardLink}>
+                  Sign in to existing account
+                </Link>
+              </div>
+            )}
 
             <div className={styles.cardFooter}>
-              <span className={styles.cardNote}>No real authentication. Local demo only.</span>
-              <span className={styles.cardRole}>{role ? `${role} view` : "Choose a role"}</span>
+              <span className={styles.cardNote}>
+                {user ? "Your scholarship journey continues." : "No credit card required. Always free for students."}
+              </span>
+              {user && (
+                <span className={styles.cardRole}>{role === "admin" ? "Admin" : "Student"}</span>
+              )}
             </div>
           </div>
         </section>
 
+        {/* Features */}
         <section id="features" className={styles.features}>
           <div className={styles.sectionHeading}>
             <p className={styles.kicker}>Designed for clarity</p>
@@ -198,6 +150,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Workflow */}
         <section id="workflow" className={styles.workflow}>
           <div className={styles.sectionHeading}>
             <p className={styles.kicker}>How it works</p>
@@ -222,6 +175,7 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Testimonials */}
         <section id="stories" className={styles.testimonials}>
           <div className={styles.sectionHeading}>
             <p className={styles.kicker}>Student stories</p>
@@ -229,21 +183,22 @@ export default function Home() {
           </div>
           <div className={styles.quoteGrid}>
             <blockquote>
-              “The AI summary finally made eligibility clear. I stopped wasting time.”
+              &ldquo;The AI summary finally made eligibility clear. I stopped wasting time.&rdquo;
               <span>— Nusrat, MSc applicant</span>
             </blockquote>
             <blockquote>
-              “The timeline told me exactly what to do each month.”
+              &ldquo;The timeline told me exactly what to do each month.&rdquo;
               <span>— Reza, IELTS prep</span>
             </blockquote>
             <blockquote>
-              “It felt like a counselor who actually knows South Asian context.”
+              &ldquo;It felt like a counselor who actually knows South Asian context.&rdquo;
               <span>— Meera, PhD applicant</span>
             </blockquote>
           </div>
         </section>
       </main>
 
+      {/* Footer */}
       <footer className={styles.footer}>
         <div>
           <strong>BairePorbo.app</strong>
@@ -253,6 +208,9 @@ export default function Home() {
           <a href="#features">Features</a>
           <a href="#workflow">Workflow</a>
           <a href="#stories">Stories</a>
+          <Link href={user ? "/chat" : "/auth/login"}>
+            {user ? "AI Mentor" : "Sign in"}
+          </Link>
         </div>
       </footer>
     </div>

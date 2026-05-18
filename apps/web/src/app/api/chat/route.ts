@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const MODEL = "google/gemma-4-31b-it";
@@ -21,7 +23,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { messages?: { role: string; content: string }[] };
+  let body: {
+    messages?: { role: string; content: string }[];
+    sessionId?: string;
+    userMessage?: string;
+  };
   try {
     body = await req.json();
   } catch {
@@ -36,13 +42,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const sessionId = body.sessionId ?? null;
+  const cookieStore = await cookies();
+  const supabase = createClient(cookieStore);
+
+  // Persist the user message to DB (fire-and-forget, don't block the stream)
+  if (sessionId && body.userMessage) {
+    supabase
+      .from("chat_messages")
+      .insert({ session_id: sessionId, role: "user", content: body.userMessage })
+      .then(({ error }) => {
+        if (error) console.error("[chat] failed to save user message:", error.message);
+      });
+  }
+
   const nimPayload = {
     model: MODEL,
     messages: [{ role: "system", content: SYSTEM_PROMPT }, ...userMessages],
     max_tokens: 1024,
     temperature: 0.7,
     top_p: 0.95,
-    stream: true, // 👈 stream tokens as they're generated
+    stream: true,
   };
 
   let nimRes: Response;
@@ -71,11 +91,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Forward the raw SSE stream from NIM to the browser.
-  // We re-emit only the `data:` lines that contain delta tokens so the client
-  // can parse them without dealing with NVIDIA-specific keep-alive chunks.
   const encoder = new TextEncoder();
   const nimStream = nimRes.body!;
+  // Accumulate full response so we can persist it after the stream ends
+  let fullAssistantContent = "";
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -90,7 +109,6 @@ export async function POST(req: NextRequest) {
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split("\n");
-          // Keep the last (potentially incomplete) line in the buffer
           buffer = lines.pop() ?? "";
 
           for (const line of lines) {
@@ -108,7 +126,7 @@ export async function POST(req: NextRequest) {
 
             const token = parsed?.choices?.[0]?.delta?.content;
             if (token) {
-              // Emit as a simple SSE event the browser can consume
+              fullAssistantContent += token;
               controller.enqueue(
                 encoder.encode(`data: ${JSON.stringify({ token })}\n\n`),
               );
@@ -116,7 +134,32 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Signal end-of-stream
+        // Stream finished — persist the full assistant response
+        if (sessionId && fullAssistantContent) {
+          supabase
+            .from("chat_messages")
+            .insert({
+              session_id: sessionId,
+              role: "assistant",
+              content: fullAssistantContent,
+            })
+            .then(({ error }) => {
+              if (error)
+                console.error("[chat] failed to save assistant message:", error.message);
+            });
+
+          // Auto-update session title from first user message if title is still default
+          if (body.userMessage) {
+            const title = body.userMessage.slice(0, 60).trim();
+            supabase
+              .from("chat_sessions")
+              .update({ title })
+              .eq("id", sessionId)
+              .eq("title", "New conversation")
+              .then(() => {});
+          }
+        }
+
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
         controller.enqueue(
