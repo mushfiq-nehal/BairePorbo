@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-
-const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const MODEL = "google/gemma-4-31b-it";
+import { checkRateLimit, fetchNimWithFallback, generateEmbedding, getClientIp, logRequest } from "@/lib/nim";
 
 const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangladeshi and South Asian students pursuing higher education and scholarships abroad. You have deep knowledge of:
 - International scholarships (DAAD, Erasmus Mundus, Commonwealth, Chevening, Fulbright, etc.)
@@ -15,6 +13,15 @@ const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangl
 Be concise, practical, and encouraging. Always cite specific scholarships or programs when relevant.`;
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIp(req);
+  const rate = await checkRateLimit(`chat:${ip}`, { limit: 30, windowMs: 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please retry shortly." },
+      { status: 429, headers: { "Retry-After": Math.ceil(rate.resetMs / 1000).toString() } }
+    );
+  }
+
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) {
     return NextResponse.json(
@@ -56,9 +63,32 @@ export async function POST(req: NextRequest) {
       });
   }
 
+  let contextBlock = "";
+  try {
+    const lastUserMessage = [...userMessages].reverse().find((m) => m.role === "user");
+    if (lastUserMessage?.content) {
+      const embedding = await generateEmbedding(lastUserMessage.content, apiKey, "query");
+      const service = createServiceClient();
+      const db = service ?? supabase;
+      const { data } = await db.rpc("match_scholarship_docs", {
+        query_embedding: embedding,
+        match_threshold: 0.7,
+        match_count: 5,
+      });
+      const matches = (data ?? []) as { content: string; similarity: number }[];
+      if (matches.length) {
+        const formatted = matches
+          .map((match, index) => `Source ${index + 1}: ${match.content}`)
+          .join("\n\n");
+        contextBlock = `\n\nRelevant scholarship context:\n${formatted}`;
+      }
+    }
+  } catch (err) {
+    logRequest("rag.context.error", { ip, error: String(err) });
+  }
+
   const nimPayload = {
-    model: MODEL,
-    messages: [{ role: "system", content: SYSTEM_PROMPT }, ...userMessages],
+    messages: [{ role: "system", content: SYSTEM_PROMPT + contextBlock }, ...userMessages],
     max_tokens: 1024,
     temperature: 0.7,
     top_p: 0.95,
@@ -66,28 +96,18 @@ export async function POST(req: NextRequest) {
   };
 
   let nimRes: Response;
+  let nimModel = "";
   try {
-    nimRes = await fetch(NIM_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-      },
-      body: JSON.stringify(nimPayload),
+    const result = await fetchNimWithFallback(nimPayload, {
+      apiKey,
+      accept: "text/event-stream",
     });
+    nimRes = result.response;
+    nimModel = result.model;
   } catch (err) {
     return NextResponse.json(
-      { error: `Network error reaching NVIDIA NIM: ${String(err)}` },
+      { error: String(err) },
       { status: 502 },
-    );
-  }
-
-  if (!nimRes.ok) {
-    const text = await nimRes.text();
-    return NextResponse.json(
-      { error: `NVIDIA NIM error (${nimRes.status}): ${text}` },
-      { status: nimRes.status },
     );
   }
 
@@ -95,6 +115,7 @@ export async function POST(req: NextRequest) {
   const nimStream = nimRes.body!;
   // Accumulate full response so we can persist it after the stream ends
   let fullAssistantContent = "";
+  logRequest("chat.stream.start", { ip, model: nimModel });
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -168,6 +189,7 @@ export async function POST(req: NextRequest) {
           ),
         );
       } finally {
+        logRequest("chat.stream.end", { ip, model: nimModel });
         controller.close();
       }
     },

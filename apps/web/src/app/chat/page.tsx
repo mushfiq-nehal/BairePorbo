@@ -73,6 +73,11 @@ const WELCOME: ChatMessage = {
   time: formatTime(new Date()),
 };
 
+const DEFAULT_MODEL_LABEL =
+  process.env.NEXT_PUBLIC_NIM_MODEL_LABEL ??
+  process.env.NEXT_PUBLIC_NIM_MODEL ??
+  "google/gemma-4-31b-it";
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function ChatPage() {
@@ -85,6 +90,7 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modelLabel, setModelLabel] = useState(DEFAULT_MODEL_LABEL);
 
   const chatWindowRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -95,6 +101,17 @@ export default function ChatPage() {
     const key = getOrCreateAnonKey();
     setAnonKey(key);
     loadSessions(key);
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/meta")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { chatModelLabel?: string } | null) => {
+        if (data?.chatModelLabel) {
+          setModelLabel(data.chatModelLabel);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   // Pre-fill from ?question= query param
@@ -379,7 +396,7 @@ export default function ChatPage() {
           <section className={styles.contextBar}>
             <div>
               <span className={styles.contextLabel}>AI model</span>
-              <p>Google Gemma 4 31B · NVIDIA NIM</p>
+              <p>{modelLabel} · NVIDIA NIM</p>
             </div>
             <div>
               <span className={styles.contextLabel}>Status</span>

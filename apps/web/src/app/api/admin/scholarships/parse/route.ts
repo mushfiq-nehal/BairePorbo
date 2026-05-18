@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { checkRateLimit, fetchNimWithFallback, getClientIp, logRequest } from "@/lib/nim";
 
 async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   const supabase = createClient(cookieStore);
@@ -11,9 +12,6 @@ async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   if (profile?.role !== "admin") return null;
   return { supabase, user };
 }
-
-const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const MODEL = "google/gemma-4-31b-it";
 
 const PARSE_SYSTEM = `You are a scholarship data extraction specialist.
 
@@ -45,6 +43,15 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin(cookieStore);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const ip = getClientIp(req);
+  const rate = await checkRateLimit(`admin:${auth.user.id}:parse`, { limit: 10, windowMs: 10 * 60_000 });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Please retry shortly." },
+      { status: 429, headers: { "Retry-After": Math.ceil(rate.resetMs / 1000).toString() } }
+    );
+  }
+
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "NIM API key not configured" }, { status: 500 });
 
@@ -57,16 +64,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "raw_description is required" }, { status: 400 });
   }
 
-  let nimRes: Response;
+  let nimData: Record<string, unknown>;
+  let nimModel = "";
   try {
-    nimRes = await fetch(NIM_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
+    const result = await fetchNimWithFallback(
+      {
         messages: [
           { role: "system", content: PARSE_SYSTEM },
           { role: "user", content: `Parse this scholarship text:\n\n${body.raw_description}` },
@@ -74,18 +76,16 @@ export async function POST(req: NextRequest) {
         max_tokens: 512,
         temperature: 0.2,
         stream: false,
-      }),
-    });
+      },
+      { apiKey, accept: "application/json" }
+    );
+    nimModel = result.model;
+    nimData = (await result.response.json()) as Record<string, unknown>;
   } catch (err) {
-    return NextResponse.json({ error: `NIM network error: ${String(err)}` }, { status: 502 });
+    return NextResponse.json({ error: String(err) }, { status: 502 });
   }
 
-  if (!nimRes.ok) {
-    const text = await nimRes.text();
-    return NextResponse.json({ error: `NIM error: ${text}` }, { status: nimRes.status });
-  }
-
-  const nimData = await nimRes.json();
+  logRequest("admin.parse.complete", { ip, model: nimModel });
   const raw = nimData?.choices?.[0]?.message?.content ?? "";
 
   let parsed: Record<string, unknown>;

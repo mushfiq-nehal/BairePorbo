@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
+import ScholarshipAiPanel from "@/components/scholarship-ai-panel/scholarship-ai-panel";
 import styles from "./detail.module.css";
 
 type SummaryTab = "Overview" | "Eligibility" | "Competitiveness" | "Tips";
@@ -186,6 +187,22 @@ export default function ScholarshipDetailPage() {
             )}
           </div>
         </section>
+
+        <ScholarshipAiPanel
+          scholarshipTitle={scholarship.title}
+          contextText={[
+            `Title: ${scholarship.title}`,
+            `Country: ${scholarship.country}`,
+            `Degree level: ${scholarship.degree_level}`,
+            `Funding: ${scholarship.funding_type}`,
+            `Deadline: ${scholarship.deadline ?? "Open"}`,
+            `Tags: ${scholarship.tags?.join(", ") ?? "None"}`,
+            "",
+            `AI Summary: ${scholarship.ai_summary ?? "None"}`,
+            `Eligibility: ${scholarship.eligibility_summary ?? "None"}`,
+            `Tips: ${scholarship.tips ?? "None"}`
+          ].join("\n")}
+        />
 
         <section className={styles.columns}>
           <div className={styles.panel}>

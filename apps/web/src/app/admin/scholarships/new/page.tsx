@@ -125,17 +125,40 @@ export default function NewScholarshipPage() {
     if (!scholarshipId) return;
     setError(null); setLoading(true);
     try {
+      const safeJson = async (res: Response) => {
+        try {
+          return await res.json();
+        } catch {
+          return null;
+        }
+      };
       if (thumbnailFile) {
         const fd = new FormData(); fd.append("file", thumbnailFile);
         const upRes = await fetch(`/api/admin/scholarships/${scholarshipId}/thumbnail`, { method: "POST", body: fd });
-        if (!upRes.ok) { const d = await upRes.json(); throw new Error(d.error ?? "Upload failed"); }
+        if (!upRes.ok) {
+          const d = await safeJson(upRes);
+          throw new Error(d?.error ?? "Upload failed");
+        }
       }
+      if (!asDraft) {
+        const ingestRes = await fetch(`/api/admin/scholarships/${scholarshipId}/ingest`, {
+          method: "POST",
+        });
+        if (!ingestRes.ok) {
+          const d = await safeJson(ingestRes);
+          throw new Error(d?.error ?? "RAG ingest failed");
+        }
+      }
+
       const pubRes = await fetch(`/api/admin/scholarships/${scholarshipId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: asDraft ? "draft" : "published" }),
       });
-      if (!pubRes.ok) { const d = await pubRes.json(); throw new Error(d.error ?? "Publish failed"); }
+      if (!pubRes.ok) {
+        const d = await safeJson(pubRes);
+        throw new Error(d?.error ?? "Publish failed");
+      }
       router.push("/admin/scholarships");
     } catch (err) { setError(String(err)); }
     finally { setLoading(false); }

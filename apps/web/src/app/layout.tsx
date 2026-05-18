@@ -30,12 +30,6 @@ export default function RootLayout({
       <body>
         <Providers>
           {children}
-          <Link
-            className="aiFaqButton"
-            href="/chat?question=What%20scholarships%20match%20a%20CGPA%203.1%20for%20Masters%3F"
-          >
-            AI Mentor
-          </Link>
         </Providers>
       </body>
     </html>
