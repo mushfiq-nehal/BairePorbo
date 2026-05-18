@@ -52,10 +52,32 @@ export async function POST(req: NextRequest) {
   const sessionId = body.sessionId ?? null;
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  const db = createServiceClient();
+  const anonKey = req.headers.get("x-anon-key");
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // If a session ID is provided, verify ownership first
+  if (sessionId) {
+    const { data: session } = await db
+      .from("chat_sessions")
+      .select("user_id, anon_key")
+      .eq("id", sessionId)
+      .single();
+      
+    if (!session) {
+      return NextResponse.json({ error: "Session not found." }, { status: 404 });
+    }
+    
+    if (session.user_id) {
+      if (!user || user.id !== session.user_id) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    } else {
+      if (session.anon_key !== anonKey) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+  }
 
   // Persist the user message to DB (fire-and-forget, don't block the stream)
   if (sessionId && body.userMessage) {
-    supabase
+    db
       .from("chat_messages")
       .insert({ session_id: sessionId, role: "user", content: body.userMessage })
       .then(({ error }) => {
@@ -157,7 +179,7 @@ export async function POST(req: NextRequest) {
 
         // Stream finished — persist the full assistant response
         if (sessionId && fullAssistantContent) {
-          supabase
+          db
             .from("chat_messages")
             .insert({
               session_id: sessionId,
@@ -172,7 +194,7 @@ export async function POST(req: NextRequest) {
           // Auto-update session title from first user message if title is still default
           if (body.userMessage) {
             const title = body.userMessage.slice(0, 60).trim();
-            supabase
+            db
               .from("chat_sessions")
               .update({ title })
               .eq("id", sessionId)

@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-// GET /api/chat/sessions — list sessions for an anon_key
+// GET /api/chat/sessions — list sessions
 export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  const db = createServiceClient();
   const anonKey = req.headers.get("x-anon-key");
 
-  if (!anonKey) {
-    return NextResponse.json({ error: "x-anon-key header required" }, { status: 400 });
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user && !anonKey) {
+    return NextResponse.json({ error: "Unauthorized: Missing auth or anon key" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
-    .from("chat_sessions")
-    .select("id, title, updated_at, created_at")
-    .eq("anon_key", anonKey)
+  let query = db.from("chat_sessions").select("id, title, updated_at, created_at");
+
+  if (user) {
+    query = query.eq("user_id", user.id);
+  } else {
+    // strict check: if not logged in, must match anon_key AND not be owned by a registered user
+    query = query.eq("anon_key", anonKey).is("user_id", null);
+  }
+
+  const { data, error } = await query
     .order("updated_at", { ascending: false })
     .limit(20);
 
@@ -30,6 +39,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
+  const db = createServiceClient();
 
   let body: { anonKey?: string; title?: string };
   try {
@@ -38,14 +48,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  if (!body.anonKey) {
-    return NextResponse.json({ error: "anonKey is required" }, { status: 400 });
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user && !body.anonKey) {
+    return NextResponse.json({ error: "Unauthorized: Missing auth or anon key" }, { status: 401 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("chat_sessions")
     .insert({
-      anon_key: body.anonKey,
+      user_id: user ? user.id : null,
+      anon_key: user ? null : body.anonKey,
       title: body.title ?? "New conversation",
     })
     .select("id, title, updated_at, created_at")

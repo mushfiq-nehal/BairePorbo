@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
@@ -7,58 +8,49 @@ import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./dashboard.module.css";
 
 type Scholarship = {
+  id: string;
   title: string;
   country: string;
   deadline: string;
-  funding: string;
-  match: string;
+  funding_type: string;
+  competitiveness: string;
+  thumbnail_url: string;
 };
 
 type Task = {
+  id: string;
   title: string;
-  due: string;
-  status: "Now" | "Soon" | "Planned";
+  due_date: string;
+  status: "Now" | "Soon" | "Planned" | "Done";
 };
 
-const SCHOLARSHIPS: Scholarship[] = [
-  {
-    title: "DAAD EPOS Scholarship",
-    country: "Germany",
-    deadline: "Jun 30",
-    funding: "Full",
-    match: "High fit",
-  },
-  {
-    title: "Erasmus Mundus: Data Futures",
-    country: "EU",
-    deadline: "Sep 12",
-    funding: "Full",
-    match: "Medium",
-  },
-  {
-    title: "MEXT Research Track",
-    country: "Japan",
-    deadline: "Oct 05",
-    funding: "Full",
-    match: "Stretch",
-  },
-];
-
-const TASKS: Task[] = [
-  { title: "Finalize SOP outline", due: "Today", status: "Now" },
-  { title: "Request 2nd recommendation", due: "Wed", status: "Soon" },
-  { title: "IELTS mock test", due: "Fri", status: "Soon" },
-  { title: "Translate transcript", due: "Next week", status: "Planned" },
-];
-
-const BOOKMARKS = [
-  "Global Korea Scholarship",
-  "Commonwealth Masters",
-  "Orange Tulip Scholarship",
-];
+type DashboardData = {
+  stats: {
+    readiness: number;
+    bookmarksCount: number;
+    tasksCount: number;
+  };
+  bookmarks: Scholarship[];
+  tasks: Task[];
+};
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then(res => res.json())
+      .then(json => {
+        setData(json);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
   return (
     <AuthGuard>
       <div className={styles.page}>
@@ -90,21 +82,21 @@ export default function DashboardPage() {
                 confidence.
               </p>
               <div className={styles.heroActions}>
-                <button className={styles.secondaryButton}>Update profile</button>
+                <Link href="/profile" className={styles.secondaryButton}>Update profile</Link>
                 <button className={styles.ghostButton}>Export roadmap</button>
               </div>
             </div>
             <div className={styles.heroPanel}>
-              <h3>Today's focus</h3>
-              <p>Finish SOP outline + shortlist 2 matches with full funding.</p>
+              <h3>Your Progress</h3>
+              <p>Keep your profile updated and tackle your upcoming tasks.</p>
               <div className={styles.focusRow}>
                 <div>
-                  <span className={styles.focusLabel}>Readiness</span>
-                  <span className={styles.focusValue}>68%</span>
+                  <span className={styles.focusLabel}>Profile Readiness</span>
+                  <span className={styles.focusValue}>{loading ? "..." : `${data?.stats.readiness ?? 0}%`}</span>
                 </div>
                 <div>
-                  <span className={styles.focusLabel}>Deadlines</span>
-                  <span className={styles.focusValue}>3 this month</span>
+                  <span className={styles.focusLabel}>Active Tasks</span>
+                  <span className={styles.focusValue}>{loading ? "..." : data?.stats.tasksCount ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -112,20 +104,20 @@ export default function DashboardPage() {
 
         <section className={styles.stats}>
           <div>
-            <span className={styles.statValue}>14</span>
-            <span className={styles.statLabel}>Scholarships matched</span>
+            <span className={styles.statValue}>{loading ? "-" : data?.stats.bookmarksCount ?? 0}</span>
+            <span className={styles.statLabel}>Scholarships Bookmarked</span>
           </div>
           <div>
-            <span className={styles.statValue}>6</span>
-            <span className={styles.statLabel}>Applications in progress</span>
+            <span className={styles.statValue}>{loading ? "-" : data?.stats.tasksCount ?? 0}</span>
+            <span className={styles.statLabel}>Tasks In Progress</span>
           </div>
           <div>
-            <span className={styles.statValue}>2</span>
-            <span className={styles.statLabel}>Mentor check-ins</span>
+            <span className={styles.statValue}>-</span>
+            <span className={styles.statLabel}>Mentor Check-ins</span>
           </div>
           <div>
-            <span className={styles.statValue}>5</span>
-            <span className={styles.statLabel}>Documents ready</span>
+            <span className={styles.statValue}>{loading ? "-" : `${data?.stats.readiness ?? 0}%`}</span>
+            <span className={styles.statLabel}>Profile Completeness</span>
           </div>
         </section>
 
@@ -137,20 +129,26 @@ export default function DashboardPage() {
                 <button className={styles.linkButton}>View all</button>
               </div>
               <div className={styles.scholarshipList}>
-                {SCHOLARSHIPS.map((scholarship) => (
-                  <div key={scholarship.title} className={styles.scholarshipCard}>
-                    <div>
-                      <h3>{scholarship.title}</h3>
-                      <p>
-                        {scholarship.country} - {scholarship.funding}
-                      </p>
-                    </div>
-                    <div className={styles.scholarshipMeta}>
-                      <span>Deadline: {scholarship.deadline}</span>
-                      <span className={styles.matchTag}>{scholarship.match}</span>
-                    </div>
-                  </div>
-                ))}
+                {loading ? (
+                  <p>Loading bookmarks...</p>
+                ) : data?.bookmarks && data.bookmarks.length > 0 ? (
+                  data.bookmarks.map((scholarship) => (
+                    <Link key={scholarship.id} href={`/scholarships/${scholarship.id}`} className={styles.scholarshipCard} style={{ textDecoration: "none", color: "inherit", display: "block", cursor: "pointer" }}>
+                      <div>
+                        <h3>{scholarship.title}</h3>
+                        <p>
+                          {scholarship.country} - {scholarship.funding_type}
+                        </p>
+                      </div>
+                      <div className={styles.scholarshipMeta}>
+                        {scholarship.deadline && <span>Deadline: {scholarship.deadline}</span>}
+                        {scholarship.competitiveness && <span className={styles.matchTag}>{scholarship.competitiveness}</span>}
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <p style={{ color: "var(--ink-500)", fontSize: "14px" }}>No scholarships bookmarked yet.</p>
+                )}
               </div>
             </div>
 
@@ -160,15 +158,21 @@ export default function DashboardPage() {
                 <button className={styles.linkButton}>Sync calendar</button>
               </div>
               <div className={styles.taskList}>
-                {TASKS.map((task) => (
-                  <div key={task.title} className={styles.taskRow}>
-                    <div>
-                      <h4>{task.title}</h4>
-                      <p>Due: {task.due}</p>
+                {loading ? (
+                  <p>Loading tasks...</p>
+                ) : data?.tasks && data.tasks.length > 0 ? (
+                  data.tasks.map((task) => (
+                    <div key={task.id} className={styles.taskRow}>
+                      <div>
+                        <h4>{task.title}</h4>
+                        <p>Due: {task.due_date}</p>
+                      </div>
+                      <span className={styles[`task${task.status}`]}>{task.status}</span>
                     </div>
-                    <span className={styles[`task${task.status}`]}>{task.status}</span>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p style={{ color: "var(--ink-500)", fontSize: "14px" }}>No upcoming tasks.</p>
+                )}
               </div>
             </div>
           </div>
@@ -184,11 +188,21 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.panel}>
-              <h2>Bookmarks</h2>
+              <h2>Saved Bookmarks</h2>
               <ul className={styles.bookmarkList}>
-                {BOOKMARKS.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
+                {loading ? (
+                  <li>Loading...</li>
+                ) : data?.bookmarks && data.bookmarks.length > 0 ? (
+                  data.bookmarks.slice(0, 5).map((item) => (
+                    <li key={item.id} style={{ marginBottom: "8px" }}>
+                      <Link href={`/scholarships/${item.id}`} style={{ textDecoration: "none", color: "var(--ink-700)" }}>
+                        {item.title}
+                      </Link>
+                    </li>
+                  ))
+                ) : (
+                  <li style={{ color: "var(--ink-500)" }}>Nothing saved yet.</li>
+                )}
               </ul>
             </div>
 
