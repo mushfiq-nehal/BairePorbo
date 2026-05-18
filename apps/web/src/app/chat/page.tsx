@@ -69,7 +69,7 @@ function getOrCreateAnonKey(): string {
 const WELCOME: ChatMessage = {
   role: "assistant",
   content:
-    "Hi! I'm your BairePorbo Mentor — powered by Google Gemma via NVIDIA NIM. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
+    "Hi! I'm your BairePorbo Mentor. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
   time: formatTime(new Date()),
 };
 
@@ -372,7 +372,7 @@ export default function ChatPage() {
           </div>
 
           <div className={styles.sidebarFooter}>
-            <span>Powered by Google Gemma · NVIDIA NIM</span>
+            <span>Powered by Google Gemma</span>
           </div>
         </aside>
 
@@ -396,7 +396,7 @@ export default function ChatPage() {
           <section className={styles.contextBar}>
             <div>
               <span className={styles.contextLabel}>AI model</span>
-              <p>{modelLabel} · NVIDIA NIM</p>
+              <p>{modelLabel}</p>
             </div>
             <div>
               <span className={styles.contextLabel}>Status</span>
