@@ -168,9 +168,9 @@ export default function ChatPage() {
     setActiveSessionId(session.id);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/chat/sessions/${session.id}/messages`
-      );
+      const res = await fetch(`/api/chat/sessions/${session.id}/messages`, {
+        headers: anonKey ? { "x-anon-key": anonKey } : undefined,
+      });
       if (!res.ok) return;
       const data: {
         messages: { role: string; content: string; created_at: string }[];
@@ -193,6 +193,28 @@ export default function ChatPage() {
     setInput("");
     setError(null);
     if (anonKey) loadSessions(anonKey);
+  };
+
+  const deleteSession = async (sessionId: string) => {
+    const confirmed = window.confirm("Delete this chat history?");
+    if (!confirmed) return;
+    try {
+      const res = await fetch(`/api/chat/sessions/${sessionId}`, {
+        method: "DELETE",
+        headers: anonKey ? { "x-anon-key": anonKey } : undefined,
+      });
+      if (!res.ok) return;
+
+      setSessions((prev) => prev.filter((session) => session.id !== sessionId));
+      if (activeSessionId === sessionId) {
+        setActiveSessionId(null);
+        setMessages([WELCOME]);
+        setInput("");
+        setError(null);
+      }
+    } catch {
+      // non-critical
+    }
   };
 
   // ── Send message ──────────────────────────────────────────────────────────
@@ -354,21 +376,41 @@ export default function ChatPage() {
               <p className={styles.sessionEmpty}>No past conversations yet.</p>
             )}
             {sessions.map((session) => (
-              <button
+              <div
                 key={session.id}
                 className={`${styles.sessionCard} ${
                   activeSessionId === session.id ? styles.sessionCardActive : ""
                 }`}
+                role="button"
+                tabIndex={0}
                 onClick={() => loadSessionHistory(session)}
-                type="button"
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    loadSessionHistory(session);
+                  }
+                }}
               >
                 <div className={styles.sessionTop}>
-                  <span>{session.title}</span>
-                  <span className={styles.sessionTime}>
-                    {formatRelative(session.updated_at)}
-                  </span>
+                  <span className={styles.sessionTitle}>{session.title}</span>
+                  <div className={styles.sessionMeta}>
+                    <span className={styles.sessionTime}>
+                      {formatRelative(session.updated_at)}
+                    </span>
+                    <button
+                      className={styles.sessionDelete}
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteSession(session.id);
+                      }}
+                      aria-label="Delete chat"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -395,15 +437,15 @@ export default function ChatPage() {
           </header>
 
           <section className={styles.contextBar}>
-            <div>
-              <span className={styles.contextLabel}>AI model</span>
-              <p>{modelLabel}</p>
+            <div className={styles.contextItem}>
+              <span className={styles.contextLabelInline}>AI model</span>
+              <span className={styles.contextValue}>{modelLabel}</span>
             </div>
-            <div>
-              <span className={styles.contextLabel}>Status</span>
-              <p className={isLoading ? styles.statusLoading : styles.statusReady}>
-                {isLoading ? "Thinking…" : "Ready"}
-              </p>
+            <div className={styles.contextItem}>
+              <span className={styles.contextLabelInline}>Status</span>
+              <span className={isLoading ? styles.statusLoading : styles.statusReady}>
+                {isLoading ? "Thinking..." : "Ready"}
+              </span>
             </div>
           </section>
 

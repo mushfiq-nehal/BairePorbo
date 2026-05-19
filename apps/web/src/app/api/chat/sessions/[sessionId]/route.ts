@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
-// GET /api/chat/sessions/[sessionId]/messages — load message history
-export async function GET(
+// DELETE /api/chat/sessions/[sessionId] — delete a session and its messages
+export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
-  const db = createServiceClient() ?? supabase;
+  const db = createServiceClient();
   const anonKey = req.headers.get("x-anon-key");
   const { sessionId } = await params;
 
@@ -19,7 +19,6 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Verify ownership
   const { data: session, error: sessionError } = await db
     .from("chat_sessions")
     .select("user_id, anon_key")
@@ -40,15 +39,23 @@ export async function GET(
     }
   }
 
-  const { data, error } = await db
+  const { error: messagesError } = await db
     .from("chat_messages")
-    .select("id, role, content, created_at")
-    .eq("session_id", sessionId)
-    .order("created_at", { ascending: true });
+    .delete()
+    .eq("session_id", sessionId);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (messagesError) {
+    return NextResponse.json({ error: messagesError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ messages: data });
+  const { error: sessionDeleteError } = await db
+    .from("chat_sessions")
+    .delete()
+    .eq("id", sessionId);
+
+  if (sessionDeleteError) {
+    return NextResponse.json({ error: sessionDeleteError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

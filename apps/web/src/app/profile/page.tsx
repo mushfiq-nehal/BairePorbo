@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
-import PrimaryNav from "@/components/layout/primary-nav";
+import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./profile.module.css";
 
 type RoadmapStep = {
@@ -149,21 +149,7 @@ export default function ProfilePage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.brand}>
-            <span className={styles.brandMark} />
-            <div>
-              <p className={styles.brandName}>BairePorbo</p>
-              <span className={styles.brandTag}>Profile and roadmap</span>
-            </div>
-          </div>
-          <PrimaryNav className={styles.nav} />
-          <div className={styles.headerActions}>
-            <button className={styles.ghostButton} onClick={signOut}>Sign out</button>
-            <button className={styles.ghostButton}>Export profile</button>
-            <button className={styles.primaryButton}>Update roadmap</button>
-          </div>
-        </header>
+        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
 
         <main className={styles.main}>
           <section className={styles.hero}>

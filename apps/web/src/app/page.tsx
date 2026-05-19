@@ -1,34 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import PrimaryNav from "@/components/layout/primary-nav";
+import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./page.module.css";
 
 export default function Home() {
   const { user, role, loading, signOut } = useAuth();
-  const router = useRouter();
+  const actions: NavAction[] = loading
+    ? []
+    : [
+        user
+          ? { label: "Sign out", onClick: signOut }
+          : { label: "Get started", href: "/auth/signup" },
+      ];
 
   return (
     <div className={styles.page}>
       {/* ── Nav ── */}
-      <header className={styles.nav}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} />
-          <span>BairePorbo</span>
-        </div>
-        <PrimaryNav className={styles.navLinks} />
-        {!loading && (
-          user ? (
-            <button className={styles.navButton} onClick={signOut}>Sign out</button>
-          ) : (
-            <button className={styles.navButton} onClick={() => router.push("/auth/signup")}>
-              Get started
-            </button>
-          )
-        )}
-      </header>
+      <AppNavbar actions={actions} />
 
       {/* ── Main ── */}
       <main className={styles.main}>

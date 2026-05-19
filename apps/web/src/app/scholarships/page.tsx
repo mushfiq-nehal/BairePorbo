@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
-import PrimaryNav from "@/components/layout/primary-nav";
+import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./scholarships.module.css";
 
 type Scholarship = {
@@ -156,25 +156,13 @@ export default function ScholarshipsPage() {
     }
   };
 
+  const actions: NavAction[] = user
+    ? [{ label: "Sign out", onClick: signOut }]
+    : [{ label: "Sign in", href: "/auth/login" }];
+
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} />
-          <div>
-            <p className={styles.brandName}>BairePorbo</p>
-            <span className={styles.brandTag}>Scholarship listings</span>
-          </div>
-        </div>
-        <PrimaryNav className={styles.nav} />
-        <div className={styles.headerActions}>
-          {user ? (
-            <button className={styles.ghostButton} onClick={signOut}>Sign out</button>
-          ) : (
-            <Link className={styles.ghostButton} href="/auth/login">Sign in</Link>
-          )}
-        </div>
-      </header>
+      <AppNavbar actions={actions} />
 
       <main className={styles.main}>
         <section className={styles.hero}>

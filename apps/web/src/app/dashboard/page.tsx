@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
-import PrimaryNav from "@/components/layout/primary-nav";
+import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./dashboard.module.css";
 
 type Scholarship = {
@@ -54,23 +54,7 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <header className={styles.header}>
-          <div className={styles.brand}>
-            <span className={styles.brandMark} />
-            <div>
-              <p className={styles.brandName}>BairePorbo</p>
-              <span className={styles.brandTag}>Demo dashboard</span>
-            </div>
-          </div>
-          <PrimaryNav className={styles.nav} />
-          <div className={styles.headerActions}>
-            <Link className={styles.linkButton} href="/">
-              Back home
-            </Link>
-            <button className={styles.linkButton} onClick={signOut}>Sign out</button>
-            <Link className={styles.primaryButton} href="/scholarships">Browse scholarships</Link>
-          </div>
-        </header>
+        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
 
         <main className={styles.main}>
           <section id="overview" className={styles.hero}>

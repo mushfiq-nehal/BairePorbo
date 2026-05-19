@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
-import PrimaryNav from "@/components/layout/primary-nav";
+import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import ScholarshipAiPanel from "@/components/scholarship-ai-panel/scholarship-ai-panel";
 import styles from "./detail.module.css";
 import ReactMarkdown from "react-markdown";
@@ -146,31 +146,13 @@ export default function ScholarshipDetailPage() {
     );
   }
 
+  const actions: NavAction[] = user
+    ? [{ label: "Sign out", onClick: signOut }]
+    : [{ label: "Sign in", href: "/auth/login" }];
+
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <div className={styles.brand}>
-          <span className={styles.brandMark} />
-          <div>
-            <p className={styles.brandName}>BairePorbo</p>
-            <span className={styles.brandTag}>Scholarship detail</span>
-          </div>
-        </div>
-        <PrimaryNav className={styles.nav} />
-        <div className={styles.headerActions}>
-          {user ? (
-            <button className={styles.ghostButton} onClick={signOut}>Sign out</button>
-          ) : (
-            <Link className={styles.ghostButton} href="/auth/login">Sign in</Link>
-          )}
-          <Link className={styles.ghostButton} href="/scholarships">Back to list</Link>
-          {scholarship.official_url && (
-            <a className={styles.primaryButton} href={scholarship.official_url} target="_blank" rel="noopener noreferrer">
-              Apply now ↗
-            </a>
-          )}
-        </div>
-      </header>
+      <AppNavbar actions={actions} />
 
       <main className={styles.main}>
         <section className={styles.hero}>
@@ -193,6 +175,19 @@ export default function ScholarshipDetailPage() {
             </div>
           </div>
           <div className={styles.heroPanel}>
+            <div className={styles.heroActions}>
+              <Link className={styles.ghostButton} href="/scholarships">Back to list</Link>
+              {scholarship.official_url && (
+                <a
+                  className={styles.primaryButton}
+                  href={scholarship.official_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Apply now ↗
+                </a>
+              )}
+            </div>
             <h3>Quick facts</h3>
             {scholarship.competitiveness && (
               <p>Competitiveness: <strong>{scholarship.competitiveness}</strong></p>
