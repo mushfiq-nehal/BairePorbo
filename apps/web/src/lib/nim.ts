@@ -188,23 +188,39 @@ export const generateEmbedding = async (
   apiKey: string,
   inputType: "query" | "passage" = "passage"
 ): Promise<number[]> => {
-  const response = await fetch(NIM_EMBED_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      model: getEmbeddingModel(),
-      input,
-      input_type: inputType,
-    }),
-  });
+  const request = async (payload: Record<string, unknown>) =>
+    fetch(NIM_EMBED_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
+  const basePayload = {
+    model: getEmbeddingModel(),
+    input,
+    input_type: inputType,
+  };
+
+  let response = await request(basePayload);
   if (!response.ok) {
     const text = await response.text();
-    throw new Error(`NIM embedding error (${response.status}): ${text}`);
+    const needsInputType = text.includes("input_type") && text.includes("required");
+    if (needsInputType) {
+      response = await request({
+        model: getEmbeddingModel(),
+        input: [{ text: input, input_type: inputType }],
+        input_type: inputType,
+      });
+    }
+
+    if (!response.ok) {
+      const retryText = await response.text();
+      throw new Error(`NIM embedding error (${response.status}): ${retryText}`);
+    }
   }
 
   const data = (await response.json()) as {

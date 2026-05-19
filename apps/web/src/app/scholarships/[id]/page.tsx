@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
 import ScholarshipAiPanel from "@/components/scholarship-ai-panel/scholarship-ai-panel";
 import styles from "./detail.module.css";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type SummaryTab = "Overview" | "Eligibility" | "Competitiveness" | "Tips";
 
@@ -219,7 +221,11 @@ export default function ScholarshipDetailPage() {
             </div>
           </div>
           <div className={styles.summaryBody}>
-            <p style={{ whiteSpace: "pre-line" }}>{tabContent[activeTab]}</p>
+            <div className={styles.markdownBody}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {tabContent[activeTab]}
+              </ReactMarkdown>
+            </div>
             {scholarship.tags && (
               <div className={styles.tagRow}>
                 {scholarship.tags.map((tag) => <span key={tag}>{tag}</span>)}

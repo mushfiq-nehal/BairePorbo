@@ -204,6 +204,44 @@
   font-size: 14px;
 }
 
+.markdownBody {
+  font-size: 14px;
+  color: var(--ink-700);
+  line-height: 1.65;
+}
+
+.markdownBody > * + * {
+  margin-top: 0.55em;
+}
+
+.markdownBody table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--sand-200);
+  border-radius: 8px;
+  overflow: hidden;
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.markdownBody thead {
+  background: rgba(15, 143, 141, 0.08);
+}
+
+.markdownBody th,
+.markdownBody td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--sand-200);
+  font-size: 12px;
+  color: var(--ink-900);
+}
+
+.markdownBody tr:last-child td {
+  border-bottom: none;
+}
+
 .tagRow {
   display: flex;
   flex-wrap: wrap;

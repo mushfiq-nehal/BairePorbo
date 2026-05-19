@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import styles from "./scholarship-ai-panel.module.css";
 
 type Message = { role: "system" | "user" | "assistant"; content: string };
@@ -176,7 +177,11 @@ export default function ScholarshipAiPanel({
                       className={msg.role === "user" ? styles.userMessage : styles.assistantMessage}
                     >
                       {msg.role === "assistant" ? (
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        <div className={styles.markdownBody}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
                       ) : (
                         msg.content
                       )}

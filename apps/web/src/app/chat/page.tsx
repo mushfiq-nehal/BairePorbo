@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
@@ -418,7 +419,9 @@ export default function ChatPage() {
               >
                 <div className={styles.messageBubble}>
                   <div className={styles.markdownBody}>
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {msg.content}
+                    </ReactMarkdown>
                   </div>
                   <span>{msg.time}</span>
                 </div>
