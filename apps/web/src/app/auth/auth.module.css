@@ -26,13 +26,10 @@
   margin-bottom: 28px;
 }
 
-.logoMark {
+.logoImage {
   width: 28px;
   height: 28px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--teal-500, #0f8f8d), var(--coral-400, #f07060));
-  box-shadow: 0 6px 16px rgba(15, 143, 141, 0.3);
-  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .logoText {

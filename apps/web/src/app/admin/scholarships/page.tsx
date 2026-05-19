@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useDialog } from "@/components/ui/dialog-provider";
 import styles from "../admin.module.css";
 
 type Scholarship = {
@@ -25,6 +26,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AdminScholarshipsPage() {
   const [items, setItems] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
+  const dialog = useDialog();
 
   const load = () => {
     setLoading(true);
@@ -46,7 +48,13 @@ export default function AdminScholarshipsPage() {
   };
 
   const archive = async (id: string) => {
-    if (!confirm("Archive this scholarship?")) return;
+    const confirmed = await dialog.confirm({
+      title: "Archive Scholarship",
+      description: "Are you sure you want to archive this scholarship? It will be hidden from students.",
+      isDestructive: true,
+      confirmText: "Archive",
+    });
+    if (!confirmed) return;
     await fetch(`/api/admin/scholarships/${id}`, { method: "DELETE" });
     load();
   };

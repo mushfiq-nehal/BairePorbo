@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
+import { useDialog } from "@/components/ui/dialog-provider";
 import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./profile.module.css";
 
@@ -43,6 +44,7 @@ type ScholarshipMatch = {
 
 export default function ProfilePage() {
   const { signOut } = useAuth();
+  const dialog = useDialog();
   
   const [profile, setProfile] = useState<ProfileData>({
     full_name: "",
@@ -121,13 +123,13 @@ export default function ProfilePage() {
         body: JSON.stringify(profile),
       });
       if (res.ok) {
-        alert("Profile saved successfully!");
+        await dialog.alert({ title: "Success", description: "Profile saved successfully!" });
       } else {
-        alert("Failed to save profile.");
+        await dialog.alert({ title: "Error", description: "Failed to save profile." });
       }
     } catch (err) {
       console.error(err);
-      alert("Error saving profile.");
+      await dialog.alert({ title: "Error", description: "Error saving profile." });
     }
     setIsSaving(false);
   };

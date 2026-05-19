@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
+import { useDialog } from "@/components/ui/dialog-provider";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./chat.module.css";
 
@@ -85,6 +86,7 @@ const DEFAULT_MODEL_LABEL =
 
 function ChatContent() {
   const searchParams = useSearchParams();
+  const dialog = useDialog();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -198,7 +200,12 @@ function ChatContent() {
   };
 
   const deleteSession = async (sessionId: string) => {
-    const confirmed = window.confirm("Delete this chat history?");
+    const confirmed = await dialog.confirm({
+      title: "Delete Chat",
+      description: "Are you sure you want to delete this chat history? This action cannot be undone.",
+      isDestructive: true,
+      confirmText: "Delete",
+    });
     if (!confirmed) return;
     try {
       const res = await fetch(`/api/chat/sessions/${sessionId}`, {

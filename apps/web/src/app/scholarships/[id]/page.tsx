@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useDialog } from "@/components/ui/dialog-provider";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import ScholarshipAiPanel from "@/components/scholarship-ai-panel/scholarship-ai-panel";
 import styles from "./detail.module.css";
@@ -43,6 +44,7 @@ const TABS: SummaryTab[] = ["Overview", "Eligibility", "Competitiveness", "Tips"
 export default function ScholarshipDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user, signOut } = useAuth();
+  const dialog = useDialog();
   const [scholarship, setScholarship] = useState<ScholarshipDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<SummaryTab>("Overview");
@@ -111,7 +113,7 @@ export default function ScholarshipDetailPage() {
 
   const handleBookmark = async () => {
     if (!user) {
-      alert("Please sign in to save scholarships.");
+      await dialog.alert({ title: "Sign in required", description: "Please sign in to save scholarships." });
       return;
     }
     if (!scholarship?.id) return;
@@ -126,16 +128,16 @@ export default function ScholarshipDetailPage() {
       if (res.ok) {
         setIsBookmarked(true);
         if (data.already) {
-          alert("Scholarship is already bookmarked!");
+          await dialog.alert({ title: "Already bookmarked", description: "This scholarship is already in your bookmarks!" });
         } else {
-          alert("Saved to bookmarks!");
+          await dialog.alert({ title: "Success", description: "Saved to bookmarks!" });
         }
       } else {
-        alert("Failed to bookmark.");
+        await dialog.alert({ title: "Error", description: "Failed to bookmark." });
       }
     } catch (err) {
       console.error(err);
-      alert("Error saving bookmark.");
+      await dialog.alert({ title: "Error", description: "Error saving bookmark." });
     }
     setIsBookmarking(false);
   };

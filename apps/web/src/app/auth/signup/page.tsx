@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "../auth.module.css";
@@ -52,7 +53,7 @@ export default function SignupPage() {
       <div className={styles.page}>
         <div className={styles.card}>
           <div className={styles.logo}>
-            <span className={styles.logoMark} />
+            <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
             <span className={styles.logoText}>BairePorbo</span>
           </div>
           <h1 className={styles.heading}>Check your email</h1>
@@ -71,7 +72,7 @@ export default function SignupPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <span className={styles.logoMark} />
+          <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
           <span className={styles.logoText}>BairePorbo</span>
         </div>
         <h1 className={styles.heading}>Create your account</h1>
