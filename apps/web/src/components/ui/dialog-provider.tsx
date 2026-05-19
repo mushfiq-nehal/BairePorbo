@@ -47,7 +47,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
       setOptions(opts);
       setIsConfirm(true);
       setIsOpen(true);
-      resolverRef.current = resolve;
+      resolverRef.current = resolve as (value: boolean | void) => void;
     });
   };
 
