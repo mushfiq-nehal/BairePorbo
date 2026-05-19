@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
 import PrimaryNav from "@/components/layout/primary-nav";
@@ -44,6 +45,7 @@ const toggleSelection = (value: string, current: string[]) =>
 
 export default function ScholarshipsPage() {
   const { user, signOut } = useAuth();
+  const router = useRouter();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +53,8 @@ export default function ScholarshipsPage() {
   const [selectedFunding, setSelectedFunding] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState("Best match");
+  const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
+  const [bookmarkingId, setBookmarkingId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -64,6 +68,20 @@ export default function ScholarshipsPage() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setBookmarkedIds([]);
+      return;
+    }
+    fetch("/api/bookmarks")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { bookmarks?: { scholarship_id: string }[] } | null) => {
+        const ids = data?.bookmarks?.map((b) => b.scholarship_id) ?? [];
+        setBookmarkedIds(ids);
+      })
+      .catch(() => setBookmarkedIds([]));
+  }, [user]);
 
   // Derive filter options from real data
   const countries = useMemo(() => [...new Set(scholarships.map((s) => s.country))].sort(), [scholarships]);
@@ -115,6 +133,29 @@ export default function ScholarshipsPage() {
     return (new Date(d).getTime() - Date.now()) < 60 * 24 * 60 * 60 * 1000; // 60 days
   };
 
+  const toggleBookmark = async (id: string) => {
+    if (!user) {
+      router.push("/auth/login");
+      return;
+    }
+    setBookmarkingId(id);
+    const isBookmarked = bookmarkedIds.includes(id);
+    try {
+      const res = await fetch("/api/bookmarks", {
+        method: isBookmarked ? "DELETE" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scholarship_id: id }),
+      });
+      if (res.ok) {
+        setBookmarkedIds((prev) =>
+          isBookmarked ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+      }
+    } finally {
+      setBookmarkingId(null);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -132,7 +173,6 @@ export default function ScholarshipsPage() {
           ) : (
             <Link className={styles.ghostButton} href="/auth/login">Sign in</Link>
           )}
-          <Link className={styles.primaryButton} href="/chat">AI match me</Link>
         </div>
       </header>
 
@@ -269,6 +309,16 @@ export default function ScholarshipsPage() {
                     <Link className={styles.primaryButton} href={`/scholarships/${s.id}`}>
                       View details
                     </Link>
+                    <button
+                      className={`${styles.secondaryButton} ${
+                        bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""
+                      }`}
+                      type="button"
+                      onClick={() => toggleBookmark(s.id)}
+                      disabled={bookmarkingId === s.id}
+                    >
+                      {bookmarkedIds.includes(s.id) ? "Bookmarked" : "Bookmark"}
+                    </button>
                   </div>
                 </article>
               ))}

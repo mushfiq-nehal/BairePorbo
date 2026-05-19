@@ -83,7 +83,6 @@ export default function DashboardPage() {
               </p>
               <div className={styles.heroActions}>
                 <Link href="/profile" className={styles.secondaryButton}>Update profile</Link>
-                <button className={styles.ghostButton}>Export roadmap</button>
               </div>
             </div>
             <div className={styles.heroPanel}>
@@ -112,10 +111,6 @@ export default function DashboardPage() {
             <span className={styles.statLabel}>Tasks In Progress</span>
           </div>
           <div>
-            <span className={styles.statValue}>-</span>
-            <span className={styles.statLabel}>Mentor Check-ins</span>
-          </div>
-          <div>
             <span className={styles.statValue}>{loading ? "-" : `${data?.stats.readiness ?? 0}%`}</span>
             <span className={styles.statLabel}>Profile Completeness</span>
           </div>
@@ -126,7 +121,6 @@ export default function DashboardPage() {
             <div id="shortlist" className={styles.panel}>
               <div className={styles.panelHeader}>
                 <h2>Shortlisted scholarships</h2>
-                <button className={styles.linkButton}>View all</button>
               </div>
               <div className={styles.scholarshipList}>
                 {loading ? (
@@ -155,7 +149,6 @@ export default function DashboardPage() {
             <div id="roadmap" className={styles.panel}>
               <div className={styles.panelHeader}>
                 <h2>Roadmap tasks</h2>
-                <button className={styles.linkButton}>Sync calendar</button>
               </div>
               <div className={styles.taskList}>
                 {loading ? (
@@ -179,15 +172,6 @@ export default function DashboardPage() {
 
           <aside className={styles.columnSide}>
             <div className={styles.panel}>
-              <h2>AI summary highlight</h2>
-              <p className={styles.summaryText}>
-                DAAD EPOS prefers candidates with 2+ years of experience. Your internship + project
-                work already meets 65% of the criteria.
-              </p>
-              <button className={styles.secondaryButton}>See full summary</button>
-            </div>
-
-            <div className={styles.panel}>
               <h2>Saved Bookmarks</h2>
               <ul className={styles.bookmarkList}>
                 {loading ? (
@@ -205,13 +189,14 @@ export default function DashboardPage() {
                 )}
               </ul>
             </div>
-
-            <div id="messages" className={styles.panel}>
-              <h2>Mentor note</h2>
+            <div className={styles.panel}>
+              <h2>Need guidance?</h2>
               <p className={styles.summaryText}>
-                Your CGPA and IELTS goal are strong. Focus on showcasing leadership impact in the SOP.
+                Ask the AI mentor about eligibility, timelines, and document strategy.
               </p>
-              <button className={styles.ghostButton}>Reply to mentor</button>
+              <Link className={styles.secondaryButton} href="/chat">
+                Open AI mentor
+              </Link>
             </div>
           </aside>
         </section>

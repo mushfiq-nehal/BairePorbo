@@ -15,8 +15,8 @@ export default function PrimaryNav({ className }: PrimaryNavProps) {
 
   const NAV_LINKS = [
     { label: "Home", href: "/" },
-    { label: "Dashboard", href: "/dashboard" },
     { label: "Scholarships", href: "/scholarships" },
+    { label: "Dashboard", href: "/dashboard" },
     { label: "AI Chat", href: "/chat" },
     ...(role === "admin" ? [{ label: "Admin", href: "/admin" }] : []),
   ];

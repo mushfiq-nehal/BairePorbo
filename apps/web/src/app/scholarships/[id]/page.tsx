@@ -47,6 +47,7 @@ export default function ScholarshipDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<SummaryTab>("Overview");
   const [isBookmarking, setIsBookmarking] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,6 +63,20 @@ export default function ScholarshipDetailPage() {
         setLoading(false);
       });
   }, [id]);
+
+  useEffect(() => {
+    if (!user || !scholarship?.id) {
+      setIsBookmarked(false);
+      return;
+    }
+    fetch("/api/bookmarks")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { bookmarks?: { scholarship_id: string }[] } | null) => {
+        const ids = data?.bookmarks?.map((b) => b.scholarship_id) ?? [];
+        setIsBookmarked(ids.includes(scholarship.id));
+      })
+      .catch(() => setIsBookmarked(false));
+  }, [user, scholarship?.id]);
 
   const tabContent: Record<SummaryTab, string> = {
     Overview: scholarship?.ai_summary ?? scholarship?.raw_description ?? "No summary available yet.",
@@ -82,15 +97,17 @@ export default function ScholarshipDetailPage() {
       alert("Please sign in to save scholarships.");
       return;
     }
+    if (!scholarship?.id) return;
     setIsBookmarking(true);
     try {
       const res = await fetch("/api/bookmarks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scholarship_id: scholarship?.id }),
+        body: JSON.stringify({ scholarship_id: scholarship.id }),
       });
       const data = await res.json();
       if (res.ok) {
+        setIsBookmarked(true);
         if (data.already) {
           alert("Scholarship is already bookmarked!");
         } else {
@@ -186,14 +203,24 @@ export default function ScholarshipDetailPage() {
               </div>
             )}
             <div style={{ display: "flex", gap: "10px", marginTop: 14 }}>
-              <button 
-                className={styles.secondaryButton} 
-                onClick={handleBookmark}
-                disabled={isBookmarking}
-                style={{ flex: 1, textAlign: "center" }}
-              >
-                {isBookmarking ? "Saving..." : "Save to Bookmarks"}
-              </button>
+              {isBookmarked ? (
+                <button
+                  className={styles.secondaryButton}
+                  disabled
+                  style={{ flex: 1, textAlign: "center", opacity: 0.7, cursor: "default" }}
+                >
+                  Bookmarked
+                </button>
+              ) : (
+                <button
+                  className={styles.secondaryButton}
+                  onClick={handleBookmark}
+                  disabled={isBookmarking}
+                  style={{ flex: 1, textAlign: "center" }}
+                >
+                  {isBookmarking ? "Saving..." : "Save to Bookmarks"}
+                </button>
+              )}
               {scholarship.official_url && (
                 <a className={styles.primaryButton} href={scholarship.official_url} target="_blank" rel="noopener noreferrer"
                   style={{ flex: 1, textAlign: "center" }}>
