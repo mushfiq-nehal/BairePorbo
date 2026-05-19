@@ -17,7 +17,7 @@ const bodyFont = Manrope({
 export const metadata: Metadata = {
   title: "BairePorbo — Scholarship guidance",
   description:
-    "AI-powered scholarship and higher study guidance for South Asian students.",
+    "AI-powered scholarship and higher study guidance for Bangladeshi students.",
 };
 
 export default function RootLayout({

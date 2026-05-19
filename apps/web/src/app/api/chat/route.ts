@@ -3,7 +3,7 @@ import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { checkRateLimit, fetchNimWithFallback, generateEmbedding, getClientIp, logRequest } from "@/lib/nim";
 
-const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangladeshi and South Asian students pursuing higher education and scholarships abroad. You have deep knowledge of:
+const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangladeshi students pursuing higher education and scholarships abroad. You have deep knowledge of:
 - International scholarships (DAAD, Erasmus Mundus, Commonwealth, Chevening, Fulbright, etc.)
 - University admission requirements and processes
 - CGPA/GPA requirements, English proficiency tests (IELTS, TOEFL, Duolingo)

@@ -91,15 +91,19 @@
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  gap: 48px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
+  gap: 40px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 .heroText {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 20px;
   animation: floatIn 0.8s ease forwards;
 }
@@ -123,13 +127,14 @@
 .lede {
   font-size: 18px;
   color: var(--ink-700);
-  max-width: 520px;
+  max-width: 600px;
 }
 
 .heroActions {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .primaryButton {
@@ -146,6 +151,23 @@
 
 .primaryButton:hover {
   background: var(--teal-700);
+  transform: translateY(-1px);
+}
+
+.secondaryButton {
+  background: var(--ink-900);
+  color: #ffffff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 12px 24px rgba(15, 34, 52, 0.15);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.secondaryButton:hover {
+  background: #111111;
   transform: translateY(-1px);
 }
 
@@ -183,135 +205,167 @@
   color: var(--ink-500);
 }
 
-.heroCard {
-  background: var(--card);
-  border-radius: 24px;
-  padding: 28px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: floatIn 1s ease forwards;
-}
-
-.cardHeader {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.cardHeader h2 {
-  font-family: var(--font-display), serif;
-  font-size: 24px;
-  margin-bottom: 6px;
-}
-
-.cardHeader p {
-  font-size: 13px;
-  color: var(--ink-500);
-}
-
-.badge {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: var(--sand-200);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-700);
-}
-
-.demoButtons {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.demoButton {
-  border: 1px solid var(--sand-200);
-  border-radius: 12px;
-  padding: 10px 12px;
-  background: #ffffff;
-  font-size: 12px;
-  cursor: pointer;
-  transition: border 0.2s ease, transform 0.2s ease;
-}
-
-.demoButton:hover {
-  border-color: var(--teal-500);
-  transform: translateY(-1px);
-}
-
-.loginForm {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.loginForm label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--ink-500);
-}
-
-.loginForm input {
-  border: 1px solid var(--sand-200);
-  border-radius: 12px;
-  padding: 10px 12px;
+.heroAlternative {
+  margin-top: 10px;
   font-size: 14px;
+  color: var(--ink-500);
 }
 
-.status {
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 12px;
+.heroAlternative a {
+  color: var(--teal-700);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.heroAlternative a:hover {
+  color: var(--teal-500);
+  text-decoration: underline;
+}
+
+.searchContainer {
+  width: 100%;
+  max-width: 640px;
+  position: relative;
+  animation: floatIn 1s ease forwards;
+  z-index: 10;
+}
+
+.searchForm {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 8px 8px 8px 24px;
+  box-shadow: 0 16px 32px rgba(15, 143, 141, 0.15);
+  border: 1px solid var(--sand-200);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.searchForm:focus-within {
+  box-shadow: 0 16px 40px rgba(15, 143, 141, 0.25);
+  border-color: var(--teal-500);
+}
+
+.searchIcon {
+  font-size: 18px;
+  color: var(--ink-500);
+  margin-right: 12px;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--ink-900);
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-500);
+}
+
+.searchButton {
+  background: var(--teal-500);
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.searchButton:hover {
+  background: var(--teal-700);
+}
+
+.suggestionsDropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--sand-200);
+  overflow: hidden;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  text-decoration: none;
+  color: var(--ink-900);
+  border-bottom: 1px solid var(--sand-100);
+  transition: background 0.2s ease;
+}
+
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
   background: var(--sand-100);
 }
 
-.statusSuccess {
-  background: rgba(15, 143, 141, 0.12);
-  color: var(--teal-700);
+.suggestionIcon {
+  font-size: 18px;
 }
 
-.statusNeutral {
-  color: var(--ink-700);
+.suggestionTextWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.dashboardLink {
-  display: inline-flex;
+.suggestionText {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.suggestionType {
+  font-size: 11px;
+  color: var(--ink-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.quickTags {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: var(--ink-900);
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  transition: transform 0.2s ease, background 0.2s ease;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 13px;
 }
 
-.dashboardLink:hover {
-  background: #101010;
-  transform: translateY(-1px);
-}
-
-.cardFooter {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+.quickTags span {
   color: var(--ink-500);
 }
 
-.cardNote {
-  max-width: 60%;
+.quickTags a {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--sand-200);
+  color: var(--ink-700);
+  text-decoration: none;
+  transition: all 0.2s ease;
 }
 
-.cardRole {
+.quickTags a:hover {
+  background: #ffffff;
+  border-color: var(--teal-500);
   color: var(--teal-700);
-  font-weight: 600;
 }
 
 .sectionHeading {

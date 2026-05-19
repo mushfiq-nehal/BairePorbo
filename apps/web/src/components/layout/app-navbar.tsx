@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./app-navbar.module.css";
 
@@ -17,10 +18,10 @@ type AppNavbarProps = {
 export default function AppNavbar({ actions = [] }: AppNavbarProps) {
   return (
     <header className={styles.nav}>
-      <div className={styles.brand}>
-        <span className={styles.brandMark} />
+      <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
+        <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.brandLogo} />
         <span>BairePorbo</span>
-      </div>
+      </Link>
       <PrimaryNav className={styles.navLinks} />
       <div className={styles.actions}>
         {actions.map((action) =>

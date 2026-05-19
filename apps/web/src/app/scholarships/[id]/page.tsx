@@ -48,6 +48,7 @@ export default function ScholarshipDetailPage() {
   const [activeTab, setActiveTab] = useState<SummaryTab>("Overview");
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -77,6 +78,22 @@ export default function ScholarshipDetailPage() {
       })
       .catch(() => setIsBookmarked(false));
   }, [user, scholarship?.id]);
+
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        setProfile(data);
+      });
+  }, [user]);
 
   const tabContent: Record<SummaryTab, string> = {
     Overview: scholarship?.ai_summary ?? scholarship?.raw_description ?? "No summary available yet.",
@@ -268,7 +285,20 @@ export default function ScholarshipDetailPage() {
             "",
             `AI Summary: ${scholarship.ai_summary ?? "None"}`,
             `Eligibility: ${scholarship.eligibility_summary ?? "None"}`,
-            `Tips: ${scholarship.tips ?? "None"}`
+            `Tips: ${scholarship.tips ?? "None"}`,
+            ...(profile ? [
+              "",
+              "---",
+              "Student Profile Information:",
+              `BSc Major: ${profile.bsc_major ?? "Not provided"}`,
+              `University: ${profile.university ?? "Not provided"}`,
+              `Graduation Year: ${profile.graduation_year ?? "Not provided"}`,
+              `IELTS Score: ${profile.ielts_score ?? "Not provided"}`,
+              `GRE/GMAT Score: ${profile.gre_gmat_score ?? "Not provided"}`,
+              `Research Interests: ${profile.research_interests ?? "Not provided"}`,
+              `Published Papers: ${profile.published_papers ?? "Not provided"}`,
+              `Internships: ${profile.internships ?? "Not provided"}`
+            ] : [])
           ].join("\n")}
         />
 

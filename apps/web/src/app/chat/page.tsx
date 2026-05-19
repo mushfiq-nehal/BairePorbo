@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AuthGuard from "@/components/auth/auth-guard";
@@ -348,13 +350,13 @@ export default function ChatPage() {
         {/* ── Sidebar ── */}
         <aside className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
-            <div className={styles.brand}>
-              <span className={styles.brandMark} />
+            <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Image src="/logo.png" alt="BairePorbo Logo" width={30} height={30} className={styles.brandLogo} />
               <div>
                 <p className={styles.brandName}>BairePorbo</p>
                 <span className={styles.brandTag}>AI Mentor</span>
               </div>
-            </div>
+            </Link>
             <button
               className={styles.primaryButton}
               type="button"
@@ -415,7 +417,7 @@ export default function ChatPage() {
           </div>
 
           <div className={styles.sidebarFooter}>
-            <span>Powered by Google Gemma</span>
+            <span>Powered by {modelLabel}</span>
           </div>
         </aside>
 
@@ -423,7 +425,6 @@ export default function ChatPage() {
         <main className={styles.main}>
           <header className={styles.header}>
             <div>
-              <p className={styles.kicker}>RAG guidance</p>
               <h1>Scholarship mentor chat</h1>
             </div>
             <div className={styles.headerActions}>

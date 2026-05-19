@@ -23,7 +23,7 @@ Required JSON shape:
   "competitiveness": "High" | "Medium" | "Low",
   "tips": "3-5 concise bullet points (use • as bullet char) on how to apply successfully",
   "tags": ["tag1", "tag2", ...],  // 4-8 short tags (country, field, funding type, etc.)
-  "ai_summary": "1-2 paragraph engaging summary of the scholarship for South Asian students",
+  "ai_summary": "1-2 paragraph engaging summary of the scholarship for Bangladeshi students",
   "thumbnail_prompt": "A photorealistic image prompt for generating a thumbnail: describe the university architecture or landmark in the host country, time of day, mood, colors matching the scholarship prestige. Make it specific and vivid. Do not include text or people."
 }`;
 

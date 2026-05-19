@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
@@ -46,9 +46,10 @@ const toggleSelection = (value: string, current: string[]) =>
 export default function ScholarshipsPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedFunding, setSelectedFunding] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
@@ -168,7 +169,7 @@ export default function ScholarshipsPage() {
         <section className={styles.hero}>
           <div>
             <p className={styles.kicker}>Curated and explained</p>
-            <h1>Scholarships filtered for South Asian applicants</h1>
+            <h1>Scholarships filtered for Bangladeshi applicants</h1>
             <p className={styles.subtitle}>
               Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.
             </p>

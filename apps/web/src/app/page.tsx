@@ -1,12 +1,58 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/client";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./page.module.css";
 
 export default function Home() {
-  const { user, role, loading, signOut } = useAuth();
+  const { user, loading, signOut } = useAuth();
+  const router = useRouter();
+
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [stats, setStats] = useState({ scholarships: 0, countries: 0 });
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("scholarships")
+      .select("id, title, country")
+      .eq("status", "published")
+      .then(({ data }) => {
+        if (data) {
+          const uniqueCountries = [...new Set(data.map((d) => d.country))].filter(Boolean);
+          setStats({
+            scholarships: data.length,
+            countries: uniqueCountries.length,
+          });
+
+          const topCountries = uniqueCountries.slice(0, 3);
+          const topTitles = data.map((d) => d.title).filter(Boolean).slice(0, 3);
+          
+          const sugs = [
+            ...topCountries.map(c => ({ text: c, type: "Country", icon: "🌍" })),
+            ...topTitles.map(t => ({ text: t, type: "Scholarship", icon: "🎓" }))
+          ];
+          
+          setSuggestions(sugs.sort(() => 0.5 - Math.random()).slice(0, 5));
+        }
+      });
+  }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/scholarships?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/scholarships");
+    }
+  };
+
   const actions: NavAction[] = loading
     ? []
     : [
@@ -25,92 +71,73 @@ export default function Home() {
         {/* Hero */}
         <section className={styles.hero}>
           <div className={styles.heroText}>
-            <p className={styles.kicker}>AI scholarship compass for South Asia</p>
+            <p className={styles.kicker}>AI scholarship compass for Bangladesh</p>
             <h1>Find scholarships that fit your story, not just your grades.</h1>
             <p className={styles.lede}>
               BairePorbo guides students through higher-study decisions with explainable
               AI, localized advice, and a curated scholarship map.
             </p>
-            <div className={styles.heroActions}>
-              {user ? (
-                <>
-                  <Link className={styles.primaryButton} href="/chat">Open AI Mentor</Link>
-                  <Link className={styles.ghostButton} href="/scholarships">Browse scholarships</Link>
-                </>
-              ) : (
-                <>
-                  <Link className={styles.primaryButton} href="/auth/signup">Start for free</Link>
-                  <Link className={styles.ghostButton} href="/scholarships">Browse scholarships</Link>
-                </>
-              )}
-            </div>
-            <div className={styles.stats}>
-              <div>
-                <span className={styles.statValue}>120+</span>
-                <span className={styles.statLabel}>Scholarships tracked</span>
+          </div>
+
+          <div className={styles.searchContainer}>
+            <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
+              <svg className={styles.searchIcon} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input 
+                type="text" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search scholarships, countries, or fields..." 
+                className={styles.searchInput}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                autoComplete="off"
+              />
+              <button type="submit" className={styles.searchButton}>Search</button>
+            </form>
+            
+            {showSuggestions && suggestions.length > 0 && (
+              <div className={styles.suggestionsDropdown}>
+                {suggestions.map((s, i) => (
+                  <Link key={i} href={`/scholarships?q=${encodeURIComponent(s.text)}`} className={styles.suggestionItem}>
+                    <span className={styles.suggestionIcon}>{s.icon}</span>
+                    <div className={styles.suggestionTextWrapper}>
+                      <span className={styles.suggestionText}>{s.text}</span>
+                      <span className={styles.suggestionType}>{s.type}</span>
+                    </div>
+                  </Link>
+                ))}
               </div>
-              <div>
-                <span className={styles.statValue}>7</span>
-                <span className={styles.statLabel}>Countries covered</span>
-              </div>
-              <div>
-                <span className={styles.statValue}>24/7</span>
-                <span className={styles.statLabel}>Guidance support</span>
-              </div>
+            )}
+            
+            <div className={styles.quickTags}>
+              <span>Popular:</span>
+              <Link href="/scholarships?q=USA">USA</Link>
+              <Link href="/scholarships?q=Masters">Masters</Link>
+              <Link href="/scholarships?q=Full+funding">Full funding</Link>
+              <Link href="/scholarships?q=Data+Science">Data Science</Link>
             </div>
           </div>
 
-          {/* Auth card — same position/style as the old demo card */}
-          <div className={styles.heroCard}>
-            <div className={styles.cardHeader}>
-              <div>
-                <h2>{user ? "Welcome back!" : "Join BairePorbo"}</h2>
-                <p>
-                  {user
-                    ? `Signed in as ${user.email}`
-                    : "Free for students. AI-powered scholarship guidance."}
-                </p>
-              </div>
-              {role === "admin" && <span className={styles.badge}>Admin</span>}
-              {!user && <span className={styles.badge}>Free</span>}
+          <div className={styles.stats}>
+            <div>
+              <span className={styles.statValue}>{stats.scholarships > 0 ? stats.scholarships : "-"}</span>
+              <span className={styles.statLabel}>Scholarships tracked</span>
             </div>
-
-            {user ? (
-              /* Logged-in quick links */
-              <div className={styles.loginForm}>
-                <Link className={styles.primaryButton} href="/chat" style={{ textAlign: "center" }}>
-                  💬 AI Mentor Chat
-                </Link>
-                <Link className={styles.primaryButton} href="/scholarships"
-                  style={{ textAlign: "center", background: "var(--ink-900)" }}>
-                  🎓 Browse Scholarships
-                </Link>
-                {role === "admin" && (
-                  <Link className={styles.dashboardLink} href="/admin">
-                    ⚙️ Admin Panel
-                  </Link>
-                )}
-              </div>
-            ) : (
-              /* Logged-out auth buttons — styled like the old demo buttons */
-              <div className={styles.loginForm}>
-                <Link className={styles.primaryButton} href="/auth/signup" style={{ textAlign: "center" }}>
-                  Create free account
-                </Link>
-                <Link href="/auth/login" className={styles.dashboardLink}>
-                  Sign in to existing account
-                </Link>
-              </div>
-            )}
-
-            <div className={styles.cardFooter}>
-              <span className={styles.cardNote}>
-                {user ? "Your scholarship journey continues." : "No credit card required. Always free for students."}
-              </span>
-              {user && (
-                <span className={styles.cardRole}>{role === "admin" ? "Admin" : "Student"}</span>
-              )}
+            <div>
+              <span className={styles.statValue}>{stats.countries > 0 ? stats.countries : "-"}</span>
+              <span className={styles.statLabel}>Countries covered</span>
             </div>
+            <div>
+              <span className={styles.statValue}>24/7</span>
+              <span className={styles.statLabel}>Guidance support</span>
+            </div>
+          </div>
+          
+          <div className={styles.heroAlternative}>
+             <p>Not sure what to search? <Link href="/chat">Talk to our AI Mentor →</Link></p>
           </div>
         </section>
 
@@ -181,7 +208,7 @@ export default function Home() {
               <span>— Reza, IELTS prep</span>
             </blockquote>
             <blockquote>
-              &ldquo;It felt like a counselor who actually knows South Asian context.&rdquo;
+              &ldquo;It felt like a counselor who actually knows Bangladeshi context.&rdquo;
               <span>— Meera, PhD applicant</span>
             </blockquote>
           </div>

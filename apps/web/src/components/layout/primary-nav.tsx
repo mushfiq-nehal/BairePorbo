@@ -17,7 +17,7 @@ export default function PrimaryNav({ className }: PrimaryNavProps) {
     { label: "Home", href: "/" },
     { label: "Scholarships", href: "/scholarships" },
     { label: "Dashboard", href: "/dashboard" },
-    { label: "AI Chat", href: "/chat" },
+    { label: "AI Mentor", href: "/chat" },
     ...(role === "admin" ? [{ label: "Admin", href: "/admin" }] : []),
   ];
 
