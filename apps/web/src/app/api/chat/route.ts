@@ -41,6 +41,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
+  const MAX_MSG_LENGTH = 4000;
+  const MAX_HISTORY = 20;
+
   const userMessages = body.messages ?? [];
   if (!Array.isArray(userMessages) || userMessages.length === 0) {
     return NextResponse.json(
@@ -48,6 +51,16 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  if (userMessages.some((m) => typeof m.content === "string" && m.content.length > MAX_MSG_LENGTH)) {
+    return NextResponse.json(
+      { error: `Each message must be under ${MAX_MSG_LENGTH} characters.` },
+      { status: 400 },
+    );
+  }
+
+  // Only send the last N messages to the model to control token usage
+  const trimmedMessages = userMessages.slice(-MAX_HISTORY);
 
   const sessionId = body.sessionId ?? null;
   const cookieStore = await cookies();
@@ -87,11 +100,9 @@ export async function POST(req: NextRequest) {
 
   let contextBlock = "";
   try {
-    const lastUserMessage = [...userMessages].reverse().find((m) => m.role === "user");
+    const lastUserMessage = [...trimmedMessages].reverse().find((m) => m.role === "user");
     if (lastUserMessage?.content) {
       const embedding = await generateEmbedding(lastUserMessage.content, apiKey, "query");
-      const service = createServiceClient();
-      const db = service ?? supabase;
       const { data } = await db.rpc("match_scholarship_docs", {
         query_embedding: embedding,
         match_threshold: 0.7,
@@ -110,7 +121,7 @@ export async function POST(req: NextRequest) {
   }
 
   const nimPayload = {
-    messages: [{ role: "system", content: SYSTEM_PROMPT + contextBlock }, ...userMessages],
+    messages: [{ role: "system", content: SYSTEM_PROMPT + contextBlock }, ...trimmedMessages],
     max_tokens: 1024,
     temperature: 0.7,
     top_p: 0.95,

@@ -73,7 +73,7 @@ Raw Description:
 ${scholarship.raw_description ?? "No description provided"}
 `.trim();
 
-  let nimData: Record<string, unknown>;
+  let nimData: { choices?: { message?: { content?: string } }[] };
   let nimModel = "";
   try {
     const result = await fetchNimWithFallback(

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -43,7 +43,7 @@ const FUNDING_PRIORITY: Record<string, number> = {
 const toggleSelection = (value: string, current: string[]) =>
   current.includes(value) ? current.filter((i) => i !== value) : [...current, value];
 
-export default function ScholarshipsPage() {
+function ScholarshipsContent() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -321,5 +321,13 @@ export default function ScholarshipsPage() {
         </section>
       </main>
     </div>
+  );
+}
+
+export default function ScholarshipsPage() {
+  return (
+    <Suspense>
+      <ScholarshipsContent />
+    </Suspense>
   );
 }

@@ -31,7 +31,9 @@ export const createClient = (cookieStore: Awaited<ReturnType<typeof cookies>>) =
 };
 
 export const createServiceClient = () => {
-  if (!supabaseServiceKey) return null;
+  if (!supabaseServiceKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured.");
+  }
   return createSupabaseClient(supabaseUrl!, supabaseServiceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

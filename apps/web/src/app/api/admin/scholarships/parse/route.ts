@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "raw_description is required" }, { status: 400 });
   }
 
-  let nimData: Record<string, unknown>;
+  let nimData: { choices?: { message?: { content?: string } }[] };
   let nimModel = "";
   try {
     const result = await fetchNimWithFallback(

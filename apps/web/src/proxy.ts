@@ -2,7 +2,11 @@ import { type NextRequest } from "next/server";
 import { createClient } from "@/utils/supabase/middleware";
 
 export async function proxy(request: NextRequest) {
-  const { supabaseResponse } = createClient(request);
+  const { supabase, supabaseResponse } = createClient(request);
+
+  // Refresh the auth session so cookies stay valid
+  await supabase.auth.getUser();
+
   return supabaseResponse;
 }
 

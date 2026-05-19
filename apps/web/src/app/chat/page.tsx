@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -83,7 +83,7 @@ const DEFAULT_MODEL_LABEL =
 
 // ── Component ────────────────────────────────────────────────────────────────
 
-export default function ChatPage() {
+function ChatContent() {
   const searchParams = useSearchParams();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
@@ -532,5 +532,13 @@ export default function ChatPage() {
         </main>
       </div>
     </AuthGuard>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense>
+      <ChatContent />
+    </Suspense>
   );
 }
