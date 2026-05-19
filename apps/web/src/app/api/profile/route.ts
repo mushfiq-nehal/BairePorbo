@@ -40,7 +40,23 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { full_name, cgpa, work_experience, target_degree, preferred_countries, goals_notes } = body;
+  const {
+    full_name,
+    cgpa,
+    work_experience,
+    target_degree,
+    preferred_countries,
+    goals_notes,
+    bsc_major,
+    university,
+    graduation_year,
+    research_interests,
+    published_papers,
+    ielts_score,
+    gre_gmat_score,
+    internships,
+    portfolio_url,
+  } = body;
 
   const updates = {
     full_name,
@@ -49,6 +65,15 @@ export async function PUT(req: NextRequest) {
     target_degree: target_degree ? target_degree.toLowerCase() : null,
     preferred_countries,
     goals_notes,
+    bsc_major,
+    university,
+    graduation_year: graduation_year ? parseInt(graduation_year, 10) : null,
+    research_interests,
+    published_papers,
+    ielts_score,
+    gre_gmat_score,
+    internships,
+    portfolio_url,
   };
 
   const { data, error } = await supabase

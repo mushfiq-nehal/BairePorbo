@@ -40,7 +40,16 @@ export async function GET(req: NextRequest) {
     profile.preferred_countries ? `My preferred countries are: ${profile.preferred_countries}.` : "",
     profile.cgpa ? `My CGPA is ${profile.cgpa}.` : "",
     profile.work_experience ? `I have ${profile.work_experience} of work experience.` : "",
-    profile.goals_notes ? `My goals and notes: ${profile.goals_notes}` : ""
+    profile.goals_notes ? `My goals and notes: ${profile.goals_notes}` : "",
+    profile.bsc_major ? `My BSc major/department is ${profile.bsc_major}.` : "",
+    profile.university ? `I studied at ${profile.university}.` : "",
+    profile.graduation_year ? `I graduated in ${profile.graduation_year}.` : "",
+    profile.research_interests ? `My research interests include ${profile.research_interests}.` : "",
+    profile.published_papers ? `Published papers: ${profile.published_papers}.` : "",
+    profile.ielts_score ? `IELTS/TOEFL score: ${profile.ielts_score}.` : "",
+    profile.gre_gmat_score ? `GRE/GMAT score: ${profile.gre_gmat_score}.` : "",
+    profile.internships ? `Internships/work roles: ${profile.internships}.` : "",
+    profile.portfolio_url ? `Portfolio or profile URL: ${profile.portfolio_url}.` : "",
   ].filter(Boolean).join(" ");
 
   try {

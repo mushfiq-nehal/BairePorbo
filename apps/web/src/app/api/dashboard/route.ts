@@ -21,7 +21,22 @@ export async function GET(req: NextRequest) {
   let readiness = 0;
   if (profile) {
     let filled = 0;
-    const fields = ["cgpa", "work_experience", "target_degree", "preferred_countries", "goals_notes"];
+    const fields = [
+      "cgpa",
+      "work_experience",
+      "target_degree",
+      "preferred_countries",
+      "goals_notes",
+      "bsc_major",
+      "university",
+      "graduation_year",
+      "research_interests",
+      "published_papers",
+      "ielts_score",
+      "gre_gmat_score",
+      "internships",
+      "portfolio_url",
+    ];
     fields.forEach(f => {
       if (profile[f]) filled++;
     });

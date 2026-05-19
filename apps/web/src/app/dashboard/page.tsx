@@ -39,6 +39,13 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const daysRemaining = (deadline: string | null) => {
+    if (!deadline) return null;
+    const end = new Date(deadline);
+    const diffMs = end.getTime() - Date.now();
+    return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  };
+
   useEffect(() => {
     fetch("/api/dashboard")
       .then(res => res.json())
@@ -104,7 +111,7 @@ export default function DashboardPage() {
           <div className={styles.columnMain}>
             <div id="shortlist" className={styles.panel}>
               <div className={styles.panelHeader}>
-                <h2>Shortlisted scholarships</h2>
+                <h2>Bookmarked scholarships</h2>
               </div>
               <div className={styles.scholarshipList}>
                 {loading ? (
@@ -156,23 +163,46 @@ export default function DashboardPage() {
 
           <aside className={styles.columnSide}>
             <div className={styles.panel}>
-              <h2>Saved Bookmarks</h2>
-              <ul className={styles.bookmarkList}>
+              <div className={styles.panelHeader}>
+                <h2>Scholarship calendar</h2>
+              </div>
+              <div className={styles.calendarList}>
                 {loading ? (
-                  <li>Loading...</li>
+                  <p style={{ color: "var(--ink-500)", fontSize: "13px" }}>Loading deadlines...</p>
                 ) : data?.bookmarks && data.bookmarks.length > 0 ? (
-                  data.bookmarks.slice(0, 5).map((item) => (
-                    <li key={item.id} style={{ marginBottom: "8px" }}>
-                      <Link href={`/scholarships/${item.id}`} style={{ textDecoration: "none", color: "var(--ink-700)" }}>
-                        {item.title}
+                  data.bookmarks.map((item) => {
+                    const remaining = daysRemaining(item.deadline ?? null);
+                    const isUrgent = remaining !== null && remaining <= 14;
+                    return (
+                      <Link
+                        key={item.id}
+                        href={`/scholarships/${item.id}`}
+                        className={styles.calendarItem}
+                      >
+                        <div>
+                          <h3>{item.title}</h3>
+                          <span className={styles.calendarMeta}>{item.country}</span>
+                        </div>
+                        <span
+                          className={`${styles.daysBadge} ${isUrgent ? styles.daysUrgent : ""}`.trim()}
+                        >
+                          {remaining === null
+                            ? "Open"
+                            : remaining < 0
+                              ? "Closed"
+                              : `${remaining}d`}
+                        </span>
                       </Link>
-                    </li>
-                  ))
+                    );
+                  })
                 ) : (
-                  <li style={{ color: "var(--ink-500)" }}>Nothing saved yet.</li>
+                  <p style={{ color: "var(--ink-500)", fontSize: "13px" }}>
+                    No bookmarked scholarships yet.
+                  </p>
                 )}
-              </ul>
+              </div>
             </div>
+
             <div className={styles.panel}>
               <h2>Need guidance?</h2>
               <p className={styles.summaryText}>
