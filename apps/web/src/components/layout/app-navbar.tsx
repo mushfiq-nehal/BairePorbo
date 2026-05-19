@@ -9,6 +9,7 @@ export type NavAction = {
   label: string;
   href?: string;
   onClick?: () => void;
+  variant?: "primary" | "ghost";
 };
 
 type AppNavbarProps = {
@@ -24,22 +25,23 @@ export default function AppNavbar({ actions = [] }: AppNavbarProps) {
       </Link>
       <PrimaryNav className={styles.navLinks} />
       <div className={styles.actions}>
-        {actions.map((action) =>
-          action.href ? (
-            <Link key={action.label} className={styles.actionButton} href={action.href}>
+        {actions.map((action) => {
+          const className = action.variant === "ghost" ? styles.ghostButton : styles.actionButton;
+          return action.href ? (
+            <Link key={action.label} className={className} href={action.href}>
               {action.label}
             </Link>
           ) : (
             <button
               key={action.label}
               type="button"
-              className={styles.actionButton}
+              className={className}
               onClick={action.onClick}
             >
               {action.label}
             </button>
-          )
-        )}
+          );
+        })}
       </div>
     </header>
   );

@@ -58,8 +58,9 @@ export default function Home() {
     : [
         user
           ? { label: "Sign out", onClick: signOut }
-          : { label: "Get started", href: "/auth/signup" },
-      ];
+          : { label: "Sign in", href: "/auth/login", variant: "ghost" },
+        !user ? { label: "Get started", href: "/auth/signup" } : null,
+      ].filter(Boolean) as NavAction[];
 
   return (
     <div className={styles.page}>

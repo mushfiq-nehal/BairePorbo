@@ -52,3 +52,18 @@
   transform: translateY(-1px);
   background: #111111;
 }
+
+.ghostButton {
+  border: none;
+  background: transparent;
+  color: var(--ink-900);
+  padding: 10px 18px;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.ghostButton:hover {
+  opacity: 0.7;
+}

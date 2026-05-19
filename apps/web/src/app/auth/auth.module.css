@@ -142,3 +142,56 @@
 .switchLink a:hover {
   text-decoration: underline;
 }
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--ink-500, #6b7c8d);
+  font-size: 13px;
+  margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid var(--sand-200, #e8e3db);
+}
+
+.divider::before {
+  margin-right: 12px;
+}
+
+.divider::after {
+  margin-left: 12px;
+}
+
+.googleBtn {
+  background: #ffffff;
+  color: var(--ink-700, #2c3e50);
+  border: 1px solid var(--sand-200, #e8e3db);
+  border-radius: 12px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(15, 34, 52, 0.04);
+}
+
+.googleBtn:hover {
+  background: #fafafa;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 34, 52, 0.08);
+}
+
+.googleBtn svg {
+  width: 18px;
+  height: 18px;
+}

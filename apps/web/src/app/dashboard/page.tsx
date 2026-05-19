@@ -50,7 +50,9 @@ export default function DashboardPage() {
     fetch("/api/dashboard")
       .then(res => res.json())
       .then(json => {
-        setData(json);
+        if (!json.error) {
+          setData(json);
+        }
         setLoading(false);
       })
       .catch(err => {
@@ -82,11 +84,11 @@ export default function DashboardPage() {
               <div className={styles.focusRow}>
                 <div>
                   <span className={styles.focusLabel}>Profile Readiness</span>
-                  <span className={styles.focusValue}>{loading ? "..." : `${data?.stats.readiness ?? 0}%`}</span>
+                  <span className={styles.focusValue}>{loading ? "..." : `${data?.stats?.readiness ?? 0}%`}</span>
                 </div>
                 <div>
                   <span className={styles.focusLabel}>Active Tasks</span>
-                  <span className={styles.focusValue}>{loading ? "..." : data?.stats.tasksCount ?? 0}</span>
+                  <span className={styles.focusValue}>{loading ? "..." : data?.stats?.tasksCount ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -94,15 +96,15 @@ export default function DashboardPage() {
 
         <section className={styles.stats}>
           <div>
-            <span className={styles.statValue}>{loading ? "-" : data?.stats.bookmarksCount ?? 0}</span>
+            <span className={styles.statValue}>{loading ? "-" : data?.stats?.bookmarksCount ?? 0}</span>
             <span className={styles.statLabel}>Scholarships Bookmarked</span>
           </div>
           <div>
-            <span className={styles.statValue}>{loading ? "-" : data?.stats.tasksCount ?? 0}</span>
+            <span className={styles.statValue}>{loading ? "-" : data?.stats?.tasksCount ?? 0}</span>
             <span className={styles.statLabel}>Tasks In Progress</span>
           </div>
           <div>
-            <span className={styles.statValue}>{loading ? "-" : `${data?.stats.readiness ?? 0}%`}</span>
+            <span className={styles.statValue}>{loading ? "-" : `${data?.stats?.readiness ?? 0}%`}</span>
             <span className={styles.statLabel}>Profile Completeness</span>
           </div>
         </section>

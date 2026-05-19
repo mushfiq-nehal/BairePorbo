@@ -157,9 +157,12 @@ function ScholarshipsContent() {
     }
   };
 
-  const actions: NavAction[] = user
-    ? [{ label: "Sign out", onClick: signOut }]
-    : [{ label: "Sign in", href: "/auth/login" }];
+  const actions: NavAction[] = [
+    user
+      ? { label: "Sign out", onClick: signOut }
+      : { label: "Sign in", href: "/auth/login", variant: "ghost" },
+    !user ? { label: "Get started", href: "/auth/signup" } : null,
+  ].filter(Boolean) as NavAction[];
 
   return (
     <div className={styles.page}>
