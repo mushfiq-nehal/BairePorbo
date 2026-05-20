@@ -12,6 +12,26 @@ async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   return { supabase, user };
 }
 
+// GET /api/admin/scholarships/[id] — fetch single scholarship
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const cookieStore = await cookies();
+  const auth = await requireAdmin(cookieStore);
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const { data, error } = await auth.supabase
+    .from("scholarships")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ scholarship: data });
+}
+
 // PATCH /api/admin/scholarships/[id] — update fields or status
 export async function PATCH(
   req: NextRequest,

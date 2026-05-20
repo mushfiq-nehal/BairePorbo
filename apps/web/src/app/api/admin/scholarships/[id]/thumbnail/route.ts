@@ -42,9 +42,11 @@ export async function POST(
 
   if (uploadErr) return NextResponse.json({ error: uploadErr.message }, { status: 500 });
 
-  const { data: { publicUrl } } = auth.supabase.storage
+  const { data } = auth.supabase.storage
     .from("scholarship-thumbnails")
     .getPublicUrl(path);
+
+  const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
 
   // Save thumbnail URL to scholarship record
   const { error: updateErr } = await auth.supabase
