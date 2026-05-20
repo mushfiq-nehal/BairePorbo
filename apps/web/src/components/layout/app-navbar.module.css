@@ -1,6 +1,6 @@
 .nav {
   position: relative;
-  z-index: 1;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -82,9 +82,9 @@
 .mobileBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 34, 52, 0.35);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(15, 34, 52, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   border: none;
   z-index: 90;
 }
@@ -94,6 +94,9 @@
   top: 72px;
   left: 16px;
   right: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #ffffff;
   border-radius: 20px;
   border: 1px solid var(--sand-200);
