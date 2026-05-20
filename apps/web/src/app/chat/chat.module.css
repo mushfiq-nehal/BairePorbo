@@ -661,6 +661,22 @@
   .contextBar {
     grid-template-columns: 1fr;
   }
+
+  .suggestionGrid {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .suggestionGrid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .suggestionChip {
+    flex-shrink: 0;
+  }
 }
 
 @media (max-width: 640px) {
