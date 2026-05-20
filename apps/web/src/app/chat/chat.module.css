@@ -575,3 +575,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 640px) {
+  .sidebar {
+    padding: 18px 16px;
+  }
+
+  .main {
+    padding: 24px 5vw 28px;
+  }
+}

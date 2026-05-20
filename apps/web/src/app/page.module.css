@@ -516,6 +516,32 @@
   }
 }
 
+@media (max-width: 820px) {
+  .nav {
+    flex-wrap: wrap;
+  }
+
+  .navButton {
+    width: 100%;
+  }
+
+  .searchForm {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 18px;
+  }
+
+  .searchIcon {
+    margin-right: 0;
+  }
+
+  .searchButton {
+    width: 100%;
+  }
+}
+
 @media (max-width: 720px) {
   .page {
     padding: 24px 6vw 56px;
@@ -542,5 +568,9 @@
   .footer {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .footerLinks {
+    flex-wrap: wrap;
   }
 }

@@ -420,4 +420,17 @@
   .heroChips {
     justify-content: flex-start;
   }
+
+  .resultsHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cardTop {
+    flex-direction: column;
+  }
+
+  .deadline {
+    align-self: flex-start;
+  }
 }

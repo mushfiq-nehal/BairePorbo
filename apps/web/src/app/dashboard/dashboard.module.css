@@ -413,4 +413,19 @@
     flex-direction: column;
     gap: 12px;
   }
+
+  .scholarshipCard,
+  .calendarItem,
+  .taskRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .matchTag,
+  .daysBadge,
+  .taskNow,
+  .taskSoon,
+  .taskPlanned {
+    align-self: flex-start;
+  }
 }

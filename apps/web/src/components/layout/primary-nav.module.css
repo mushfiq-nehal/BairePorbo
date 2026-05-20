@@ -22,8 +22,24 @@
   color: var(--ink-900);
 }
 
+.vertical a {
+  width: 100%;
+}
+
 .active {
   background: rgba(15, 143, 141, 0.18);
   color: var(--teal-700);
   font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .nav {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .nav a {
+    width: 100%;
+    text-align: left;
+  }
 }

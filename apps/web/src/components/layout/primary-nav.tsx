@@ -7,9 +7,11 @@ import styles from "./primary-nav.module.css";
 
 type PrimaryNavProps = {
   className?: string;
+  orientation?: "horizontal" | "vertical";
+  onNavigate?: () => void;
 };
 
-export default function PrimaryNav({ className }: PrimaryNavProps) {
+export default function PrimaryNav({ className, orientation = "horizontal", onNavigate }: PrimaryNavProps) {
   const pathname = usePathname();
   const { role } = useAuth();
 
@@ -22,7 +24,9 @@ export default function PrimaryNav({ className }: PrimaryNavProps) {
   ];
 
   return (
-    <nav className={`${styles.nav} ${className ?? ""}`.trim()}>
+    <nav
+      className={`${styles.nav} ${orientation === "vertical" ? styles.vertical : ""} ${className ?? ""}`.trim()}
+    >
       {NAV_LINKS.map((link) => {
         const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
         return (
@@ -30,6 +34,7 @@ export default function PrimaryNav({ className }: PrimaryNavProps) {
             key={link.href}
             href={link.href}
             className={isActive ? styles.active : undefined}
+            onClick={onNavigate}
           >
             {link.label}
           </Link>

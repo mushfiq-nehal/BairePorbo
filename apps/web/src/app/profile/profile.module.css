@@ -433,4 +433,10 @@
     flex-direction: column;
     align-items: stretch;
   }
+
+  .checkRow,
+  .timelineTop {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

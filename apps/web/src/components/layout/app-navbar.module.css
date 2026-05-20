@@ -67,3 +67,82 @@
 .ghostButton:hover {
   opacity: 0.7;
 }
+
+.mobileToggle {
+  display: none;
+  border: 1px solid var(--sand-200);
+  background: #ffffff;
+  color: var(--ink-900);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mobileBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 34, 52, 0.35);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: none;
+  z-index: 90;
+}
+
+.mobilePanel {
+  position: fixed;
+  top: 72px;
+  left: 16px;
+  right: 16px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid var(--sand-200);
+  box-shadow: 0 18px 40px rgba(15, 34, 52, 0.16);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 100;
+}
+
+.mobilePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.mobileClose {
+  border: none;
+  background: transparent;
+  color: var(--ink-700);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mobileActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .nav {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .navLinks {
+    display: none;
+  }
+
+  .actions {
+    display: none;
+  }
+
+  .mobileToggle {
+    display: inline-flex;
+    margin-left: auto;
+  }
+}
