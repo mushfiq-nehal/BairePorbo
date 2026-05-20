@@ -25,7 +25,7 @@ Required JSON shape:
   "country": "Host country in English (e.g. Australia, Germany)",
   "degree_level": "one of: bachelors | masters | phd | postdoc | any",
   "funding_type": "one of: full | partial | tuition_only | stipend | other",
-  "deadline": "ISO date string YYYY-MM-DD or null if not found",
+  "deadline": "Deadline as text (e.g., '31 August 2026', 'Rolling', 'Late 2026') or null if not found",
   "official_url": "URL string or null",
   "raw_description_english": "Full translated description in English (keep all key details)"
 }
@@ -33,7 +33,6 @@ Required JSON shape:
 Rules:
 - degree_level: if text says Bachelor's or স্নাতক → "bachelors", Master's or স্নাতকোত্তর → "masters", PhD → "phd"
 - funding_type: 50% tuition waiver → "partial", full funding/সম্পূর্ণ → "full", tuition only → "tuition_only"
-- deadline: convert "31 August 2026" → "2026-08-31"
 - official_url: extract from apply links, 👉 markers, or লিংক sections
 - If a field cannot be determined, use null`;
 

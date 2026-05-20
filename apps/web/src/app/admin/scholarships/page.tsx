@@ -100,7 +100,7 @@ export default function AdminScholarshipsPage() {
               </span>
               <span>{s.country}</span>
               <span>{s.degree_level ?? "—"}</span>
-              <span>{s.deadline ? new Date(s.deadline).toLocaleDateString() : "—"}</span>
+              <span>{s.deadline || "—"}</span>
               <span>
                 <span className={`${styles.badge} ${styles[`badge_${s.status}`]}`}>
                   {STATUS_LABELS[s.status]}

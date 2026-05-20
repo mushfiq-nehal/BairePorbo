@@ -42,6 +42,7 @@ export default function DashboardPage() {
   const daysRemaining = (deadline: string | null) => {
     if (!deadline) return null;
     const end = new Date(deadline);
+    if (isNaN(end.getTime())) return null;
     const diffMs = end.getTime() - Date.now();
     return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
   };

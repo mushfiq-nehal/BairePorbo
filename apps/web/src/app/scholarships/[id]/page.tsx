@@ -108,7 +108,9 @@ export default function ScholarshipDetailPage() {
 
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open deadline";
-    return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 
   const handleBookmark = async () => {

@@ -104,9 +104,12 @@ function ScholarshipsContent() {
 
     if (sortBy === "Deadline") {
       result = [...result].sort((a, b) => {
-        if (!a.deadline) return 1;
-        if (!b.deadline) return -1;
-        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        const getTime = (d: string | null) => {
+          if (!d) return Infinity;
+          const t = new Date(d).getTime();
+          return isNaN(t) ? Infinity : t;
+        };
+        return getTime(a.deadline) - getTime(b.deadline);
       });
     }
     if (sortBy === "Funding") {
@@ -126,12 +129,16 @@ function ScholarshipsContent() {
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open";
     const date = new Date(d);
+    if (isNaN(date.getTime())) return d;
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const isClosingSoon = (d: string | null) => {
     if (!d) return false;
-    return (new Date(d).getTime() - Date.now()) < 60 * 24 * 60 * 60 * 1000; // 60 days
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return false;
+    const diff = date.getTime() - Date.now();
+    return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000; // 60 days
   };
 
   const toggleBookmark = async (id: string) => {

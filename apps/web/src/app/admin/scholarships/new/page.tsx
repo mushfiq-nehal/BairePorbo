@@ -252,7 +252,7 @@ export default function NewScholarshipPage() {
                 </div>
                 <div className={styles.field}>
                   <label>Deadline</label>
-                  <input type="date" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} />
+                  <input type="text" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} placeholder="e.g. Rolling, 31 Dec 2026" />
                 </div>
                 <div className={styles.field}>
                   <label>Official URL</label>
