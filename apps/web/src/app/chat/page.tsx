@@ -96,6 +96,7 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modelLabel, setModelLabel] = useState(DEFAULT_MODEL_LABEL);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const chatWindowRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -354,84 +355,121 @@ function ChatContent() {
   return (
     <AuthGuard>
       <div className={styles.page}>
+        {isSidebarOpen && (
+          <div 
+            className={styles.sidebarBackdrop} 
+            onClick={() => setIsSidebarOpen(false)} 
+            aria-hidden="true"
+          />
+        )}
         {/* ── Sidebar ── */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
           <div className={styles.sidebarHeader}>
-            <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
-              <Image src="/logo.png" alt="BairePorbo Logo" width={30} height={30} className={styles.brandLogo} />
-              <div>
-                <p className={styles.brandName}>BairePorbo</p>
-                <span className={styles.brandTag}>AI Mentor</span>
-              </div>
-            </Link>
+            <div className={styles.sidebarBrandRow}>
+              <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <Image src="/logo.png" alt="BairePorbo Logo" width={30} height={30} className={styles.brandLogo} />
+                <div>
+                  <p className={styles.brandName}>BairePorbo</p>
+                  <span className={styles.brandTag}>AI Mentor</span>
+                </div>
+              </Link>
+              <button
+                className={styles.mobileSidebarToggle}
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                type="button"
+              >
+                {isSidebarOpen ? "Close" : "Menu"}
+              </button>
+            </div>
             <button
               className={styles.primaryButton}
               type="button"
-              onClick={startNewChat}
+              onClick={() => {
+                startNewChat();
+                setIsSidebarOpen(false);
+              }}
             >
               New chat
             </button>
           </div>
 
-          <div className={styles.sidebarNav}>
-            <PrimaryNav className={styles.navVertical} />
-            <button className={styles.ghostButton} type="button" onClick={signOut}>
-              Sign out
-            </button>
-          </div>
+          <div className={`${styles.sidebarContent} ${isSidebarOpen ? styles.sidebarContentOpen : ""}`}>
+            <div className={styles.sidebarNav}>
+              <PrimaryNav className={styles.navVertical} />
+              <button className={styles.ghostButton} type="button" onClick={signOut}>
+                Sign out
+              </button>
+            </div>
 
-          <div className={styles.sessionList}>
-            {sessions.length === 0 && (
-              <p className={styles.sessionEmpty}>No past conversations yet.</p>
-            )}
-            {sessions.map((session) => (
-              <div
-                key={session.id}
-                className={`${styles.sessionCard} ${
-                  activeSessionId === session.id ? styles.sessionCardActive : ""
-                }`}
-                role="button"
-                tabIndex={0}
-                onClick={() => loadSessionHistory(session)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
+            <div className={styles.sessionList}>
+              {sessions.length === 0 && (
+                <p className={styles.sessionEmpty}>No past conversations yet.</p>
+              )}
+              {sessions.map((session) => (
+                <div
+                  key={session.id}
+                  className={`${styles.sessionCard} ${
+                    activeSessionId === session.id ? styles.sessionCardActive : ""
+                  }`}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
                     loadSessionHistory(session);
-                  }
-                }}
-              >
-                <div className={styles.sessionTop}>
-                  <span className={styles.sessionTitle}>{session.title}</span>
-                  <div className={styles.sessionMeta}>
-                    <span className={styles.sessionTime}>
-                      {formatRelative(session.updated_at)}
-                    </span>
-                    <button
-                      className={styles.sessionDelete}
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        deleteSession(session.id);
-                      }}
-                      aria-label="Delete chat"
-                    >
-                      Delete
-                    </button>
+                    setIsSidebarOpen(false);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      loadSessionHistory(session);
+                      setIsSidebarOpen(false);
+                    }
+                  }}
+                >
+                  <div className={styles.sessionTop}>
+                    <span className={styles.sessionTitle}>{session.title}</span>
+                    <div className={styles.sessionMeta}>
+                      <span className={styles.sessionTime}>
+                        {formatRelative(session.updated_at)}
+                      </span>
+                      <button
+                        className={styles.sessionDelete}
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          deleteSession(session.id);
+                        }}
+                        aria-label="Delete chat"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          <div className={styles.sidebarFooter}>
-            <span>Powered by {modelLabel}</span>
+            <div className={styles.sidebarFooter}>
+              <span>Powered by {modelLabel}</span>
+            </div>
           </div>
         </aside>
 
         {/* ── Main ── */}
         <main className={styles.main}>
           <header className={styles.header}>
-            <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                className={styles.mobileSidebarToggleMain} 
+                onClick={() => setIsSidebarOpen(true)}
+                aria-label="Open menu"
+                type="button"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="3" y1="12" x2="21" y2="12"></line>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+              </button>
               <h1>Scholarship mentor chat</h1>
             </div>
             <div className={styles.headerActions}>
