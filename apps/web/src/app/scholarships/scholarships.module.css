@@ -417,6 +417,10 @@
     align-items: stretch;
   }
 
+  .searchBox label {
+    flex: 1 1 auto;
+  }
+
   .heroChips {
     justify-content: flex-start;
   }
