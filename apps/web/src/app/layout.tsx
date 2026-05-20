@@ -14,10 +14,63 @@ const bodyFont = Manrope({
   subsets: ["latin"],
 });
 
+const BASE_URL = "https://baireporbo.app";
+
 export const metadata: Metadata = {
-  title: "BairePorbo — Scholarship guidance",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: "BairePorbo — AI Scholarship Guidance for Bangladeshi Students",
+    template: "%s | BairePorbo",
+  },
   description:
-    "AI-powered scholarship and higher study guidance for Bangladeshi students.",
+    "BairePorbo helps Bangladeshi students find international scholarships with AI-powered summaries, eligibility breakdowns, and personalised prep timelines. Discover Masters, PhD, and Bachelor scholarships across USA, UK, Europe, and more.",
+  keywords: [
+    "scholarship Bangladesh",
+    "study abroad Bangladesh",
+    "international scholarship",
+    "PhD scholarship Bangladesh",
+    "Masters scholarship",
+    "IELTS scholarship",
+    "AI scholarship guidance",
+    "higher study abroad",
+    "BairePorbo",
+  ],
+  authors: [{ name: "BairePorbo" }],
+  creator: "BairePorbo",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: BASE_URL,
+    siteName: "BairePorbo",
+    title: "BairePorbo — AI Scholarship Guidance for Bangladeshi Students",
+    description:
+      "Find international scholarships with AI summaries and personalised prep timelines. Built for students from Bangladesh.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "BairePorbo — AI Scholarship Guidance",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BairePorbo — AI Scholarship Guidance",
+    description:
+      "Find international scholarships with AI summaries and personalised prep timelines. Built for students from Bangladesh.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
 };
 
 export default function RootLayout({
