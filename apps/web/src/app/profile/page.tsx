@@ -211,11 +211,11 @@ export default function ProfilePage() {
             </div>
             <div className={styles.heroPanel}>
               <h3>Readiness snapshot</h3>
-              <p>Profile complete: 68% - Documents: 45% - Tests: 20%</p>
+              <p>Profile complete: {Math.round((Object.values(profile).filter(v => v !== "").length / Object.keys(profile).length) * 100)}% - Documents: {Math.round(((profile.portfolio_url ? 1 : 0) + (profile.published_papers ? 1 : 0)) / 2 * 100)}% - Tests: {Math.round(((profile.ielts_score ? 1 : 0) + (profile.gre_gmat_score ? 1 : 0)) / 2 * 100)}%</p>
               <div className={styles.heroChips}>
-                <span>Masters</span>
-                <span>STEM</span>
-                <span>Full funding</span>
+                <span>{profile.target_degree ? profile.target_degree.charAt(0).toUpperCase() + profile.target_degree.slice(1) : "Degree"}</span>
+                <span>{profile.bsc_major || "Major"}</span>
+                <span>{profile.preferred_countries || "Any Country"}</span>
               </div>
             </div>
           </section>

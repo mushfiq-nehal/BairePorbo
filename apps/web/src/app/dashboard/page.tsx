@@ -38,6 +38,9 @@ export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [matches, setMatches] = useState<Scholarship[]>([]);
+  const [isMatching, setIsMatching] = useState(false);
+  const [matchError, setMatchError] = useState("");
 
   const daysRemaining = (deadline: string | null) => {
     if (!deadline) return null;
@@ -61,6 +64,27 @@ export default function DashboardPage() {
         setLoading(false);
       });
   }, []);
+
+  const handleAiMatch = async () => {
+    setIsMatching(true);
+    setMatchError("");
+    setMatches([]);
+    
+    try {
+      const res = await fetch("/api/profile/match");
+      const data = await res.json();
+      
+      if (!res.ok) {
+        setMatchError(data.error || "Failed to find matches.");
+      } else {
+        setMatches(data.matches || []);
+      }
+    } catch (err) {
+      console.error(err);
+      setMatchError("Error connecting to AI Match.");
+    }
+    setIsMatching(false);
+  };
   return (
     <AuthGuard>
       <div className={styles.page}>
@@ -207,6 +231,79 @@ export default function DashboardPage() {
             </div>
 
             <div className={styles.panel}>
+              <div className={styles.panelHeader}>
+                <h2>AI Match</h2>
+              </div>
+              <p className={styles.summaryText}>
+                Find the best scholarships tailored to your exact profile constraints.
+              </p>
+              
+              {matches.length === 0 && !isMatching && (
+                <button 
+                  className={styles.secondaryButton} 
+                  onClick={handleAiMatch}
+                  style={{ width: "100%", marginTop: "12px" }}
+                >
+                  Find my matches
+                </button>
+              )}
+
+              {isMatching && (
+                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--ink-500)" }}>
+                  Analyzing your profile... ✨
+                </p>
+              )}
+
+              {matchError && (
+                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--coral-500)" }}>
+                  {matchError}
+                </p>
+              )}
+
+              {matches.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
+                  {matches.slice(0, 3).map(m => (
+                    <Link 
+                      key={m.id} 
+                      href={`/scholarships/${m.id}`}
+                      style={{ 
+                        display: "flex", 
+                        gap: "12px", 
+                        padding: "12px", 
+                        border: "1px solid var(--sand-200)", 
+                        borderRadius: "12px",
+                        textDecoration: "none",
+                        color: "inherit"
+                      }}
+                    >
+                      {m.thumbnail_url && (
+                        <img 
+                          src={m.thumbnail_url} 
+                          alt="" 
+                          style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover" }} 
+                        />
+                      )}
+                      <div>
+                        <h4 style={{ fontSize: "14px", margin: "0 0 4px" }}>{m.title}</h4>
+                        <p style={{ fontSize: "12px", color: "var(--ink-500)", margin: 0 }}>
+                          {m.country} • {m.funding_type}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                  
+                  <button 
+                    className={styles.ghostButton} 
+                    onClick={handleAiMatch}
+                    style={{ width: "100%", marginTop: "8px" }}
+                  >
+                    Refresh matches
+                  </button>
+                </div>
+              )}
+            </div>
+            
+            <div className={styles.panel} style={{ marginTop: "24px" }}>
               <h2>Need guidance?</h2>
               <p className={styles.summaryText}>
                 Ask the AI mentor about eligibility, timelines, and document strategy.

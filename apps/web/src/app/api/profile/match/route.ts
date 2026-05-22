@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { generateEmbedding } from "@/lib/nim";
 
 export async function GET(req: NextRequest) {
@@ -52,33 +52,46 @@ export async function GET(req: NextRequest) {
     profile.portfolio_url ? `Portfolio or profile URL: ${profile.portfolio_url}.` : "",
   ].filter(Boolean).join(" ");
 
+  // Use the service client for the vector RPC so that RLS on
+  // "ScholarshipDoc" (which only had an admin policy) doesn't block
+  // the query. Auth + profile fetches above still use the user session.
+  let service: ReturnType<typeof createServiceClient>;
+  try {
+    service = createServiceClient();
+  } catch {
+    return NextResponse.json({ error: "Server misconfiguration: service key missing" }, { status: 500 });
+  }
+
   try {
     const embedding = await generateEmbedding(queryStr, apiKey, "query");
 
-    // Match chunks via RPC
-    const { data: matches, error: rpcError } = await supabase.rpc("match_scholarship_docs", {
+    // Match chunks via RPC — run via service client to bypass RLS
+    const { data: matches, error: rpcError } = await service.rpc("match_scholarship_docs", {
       query_embedding: embedding,
-      match_threshold: 0.6,
-      match_count: 10, // get more chunks to ensure we find diverse scholarships
+      match_threshold: 0.5,
+      match_count: 15, // fetch more chunks to surface diverse scholarships
     });
 
     if (rpcError) throw rpcError;
 
-    const matchedDocs = (matches ?? []) as { id: string; scholarship_id: string; content: string; metadata: any; similarity: number }[];
-    
-    // Extract unique scholarship IDs
-    const scholarshipIds = Array.from(new Set(
-      matchedDocs
-        .map(doc => doc.scholarship_id)
-        .filter(Boolean)
-    ));
+    const matchedDocs = (matches ?? []) as { id: string; scholarship_id: string; content: string; metadata: unknown; similarity: number }[];
+
+    // Extract unique scholarship IDs preserving similarity order
+    const seen = new Set<string>();
+    const scholarshipIds: string[] = [];
+    for (const doc of matchedDocs) {
+      if (doc.scholarship_id && !seen.has(doc.scholarship_id)) {
+        seen.add(doc.scholarship_id);
+        scholarshipIds.push(doc.scholarship_id);
+      }
+    }
 
     if (scholarshipIds.length === 0) {
       return NextResponse.json({ matches: [] });
     }
 
-    // Fetch the actual scholarship details
-    const { data: scholarships, error: scholarshipsError } = await supabase
+    // Fetch full scholarship details (published only)
+    const { data: scholarships, error: scholarshipsError } = await service
       .from("scholarships")
       .select("id, title, country, degree_level, funding_type, deadline, tags, competitiveness, thumbnail_url")
       .in("id", scholarshipIds)
@@ -86,7 +99,12 @@ export async function GET(req: NextRequest) {
 
     if (scholarshipsError) throw scholarshipsError;
 
-    return NextResponse.json({ matches: scholarships });
+    // Re-sort to preserve similarity ranking order
+    const ordered = scholarshipIds
+      .map(sid => (scholarships ?? []).find(s => s.id === sid))
+      .filter(Boolean);
+
+    return NextResponse.json({ matches: ordered });
   } catch (err) {
     console.error("Match error:", err);
     return NextResponse.json({ error: "Failed to perform AI match" }, { status: 500 });

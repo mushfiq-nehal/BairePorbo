@@ -3,12 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import styles from "../auth.module.css";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -20,17 +18,22 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName } },
-    });
-    if (error) {
-      setError(error.message);
+    try {
+      const res = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, fullName }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Sign up failed. Please try again.");
+        setLoading(false);
+      } else {
+        setDone(true);
+      }
+    } catch {
+      setError("Network error. Please check your connection.");
       setLoading(false);
-    } else {
-      setDone(true);
     }
   };
 

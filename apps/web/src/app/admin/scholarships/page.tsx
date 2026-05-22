@@ -26,6 +26,9 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AdminScholarshipsPage() {
   const [items, setItems] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ingestingId, setIngestingId] = useState<string | null>(null);
+  const [ingestingAll, setIngestingAll] = useState(false);
+  const [ingestStatus, setIngestStatus] = useState<string | null>(null);
   const dialog = useDialog();
 
   const load = () => {
@@ -59,6 +62,38 @@ export default function AdminScholarshipsPage() {
     load();
   };
 
+  const ingest = async (id: string) => {
+    setIngestingId(id);
+    setIngestStatus(null);
+    const res = await fetch(`/api/admin/scholarships/${id}/ingest`, { method: "POST" });
+    const data = await res.json();
+    setIngestingId(null);
+    if (res.ok) {
+      setIngestStatus(`✅ Ingested "${items.find(s => s.id === id)?.title}" — ${data.chunks} chunks`);
+    } else {
+      setIngestStatus(`❌ Ingest failed: ${data.error}`);
+    }
+  };
+
+  const ingestAll = async () => {
+    const confirmed = await dialog.confirm({
+      title: "Ingest All Scholarships",
+      description: "This will generate embeddings for all published scholarships so AI Match works. It may take 1–3 minutes depending on how many scholarships you have. Continue?",
+      confirmText: "Yes, ingest all",
+    });
+    if (!confirmed) return;
+    setIngestingAll(true);
+    setIngestStatus(null);
+    const res = await fetch("/api/admin/scholarships/ingest-all", { method: "POST" });
+    const data = await res.json();
+    setIngestingAll(false);
+    if (res.ok) {
+      setIngestStatus(`✅ Batch complete — ${data.succeeded} succeeded, ${data.failed} failed`);
+    } else {
+      setIngestStatus(`❌ Batch ingest failed: ${data.error}`);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
@@ -66,10 +101,27 @@ export default function AdminScholarshipsPage() {
           <p className={styles.kicker}>Admin</p>
           <h1>Scholarships</h1>
         </div>
-        <Link href="/admin/scholarships/new" className={styles.primaryBtn}>
-          + Add scholarship
-        </Link>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <button
+            className={styles.actionBtn}
+            onClick={ingestAll}
+            disabled={ingestingAll}
+            title="Generate AI embeddings for all published scholarships (required for AI Match)"
+            style={{ background: "var(--teal-600, #0d9488)", color: "#fff", border: "none", cursor: ingestingAll ? "wait" : "pointer" }}
+          >
+            {ingestingAll ? "Ingesting…" : "⚡ Ingest All"}
+          </button>
+          <Link href="/admin/scholarships/new" className={styles.primaryBtn}>
+            + Add scholarship
+          </Link>
+        </div>
       </header>
+
+      {ingestStatus && (
+        <p style={{ margin: "0 0 16px", fontSize: "13px", padding: "10px 14px", background: "var(--sand-100, #f5f4f0)", borderRadius: "8px", border: "1px solid var(--sand-200, #e8e5dc)" }}>
+          {ingestStatus}
+        </p>
+      )}
 
       {loading ? (
         <p className={styles.sub}>Loading…</p>
@@ -110,6 +162,15 @@ export default function AdminScholarshipsPage() {
                 <Link href={`/admin/scholarships/${s.id}/edit`} className={styles.actionBtn}>
                   Edit
                 </Link>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => ingest(s.id)}
+                  disabled={ingestingId === s.id}
+                  title="Generate embeddings for AI Match"
+                  style={{ opacity: ingestingId === s.id ? 0.6 : 1 }}
+                >
+                  {ingestingId === s.id ? "Ingesting…" : "Ingest"}
+                </button>
                 {s.status !== "published" && (
                   <button
                     className={`${styles.actionBtn} ${styles.publishBtn}`}
