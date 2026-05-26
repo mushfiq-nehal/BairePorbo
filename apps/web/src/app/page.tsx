@@ -15,6 +15,7 @@ export default function Home() {
 
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [quickTags, setQuickTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ scholarships: 0, countries: 0 });
 
@@ -32,7 +33,7 @@ export default function Home() {
             countries: uniqueCountries.length,
           });
 
-          const topCountries = uniqueCountries.slice(0, 3);
+          const topCountries = uniqueCountries.slice(0, 4);
           const topTitles = data.map((d) => d.title).filter(Boolean).slice(0, 3);
           
           const sugs = [
@@ -41,17 +42,22 @@ export default function Home() {
           ];
           
           setSuggestions(sugs.sort(() => 0.5 - Math.random()).slice(0, 5));
+          setQuickTags(topCountries);
         }
       });
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/scholarships?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      router.push("/scholarships");
-    }
+    const term = searchQuery.trim();
+    const query = term ? `?q=${encodeURIComponent(term)}&focus=1` : "?focus=1";
+    router.push(`/scholarships${query}`);
+  };
+
+  const handleSearchFocus = () => {
+    const term = searchQuery.trim();
+    const query = term ? `?q=${encodeURIComponent(term)}&focus=1` : "?focus=1";
+    router.push(`/scholarships${query}`);
   };
 
   const actions: NavAction[] = loading
@@ -93,7 +99,7 @@ export default function Home() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search scholarships, countries, or fields..." 
                 className={styles.searchInput}
-                onFocus={() => setShowSuggestions(true)}
+                onFocus={handleSearchFocus}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 autoComplete="off"
               />
@@ -103,7 +109,7 @@ export default function Home() {
             {showSuggestions && suggestions.length > 0 && (
               <div className={styles.suggestionsDropdown}>
                 {suggestions.map((s, i) => (
-                  <Link key={i} href={`/scholarships?q=${encodeURIComponent(s.text)}`} className={styles.suggestionItem}>
+                  <Link key={i} href={`/scholarships?q=${encodeURIComponent(s.text)}&focus=1`} className={styles.suggestionItem}>
                     <span className={styles.suggestionIcon}>{s.icon}</span>
                     <div className={styles.suggestionTextWrapper}>
                       <span className={styles.suggestionText}>{s.text}</span>
@@ -114,13 +120,14 @@ export default function Home() {
               </div>
             )}
             
-            <div className={styles.quickTags}>
-              <span>Popular:</span>
-              <Link href="/scholarships?q=USA">USA</Link>
-              <Link href="/scholarships?q=Masters">Masters</Link>
-              <Link href="/scholarships?q=Full+funding">Full funding</Link>
-              <Link href="/scholarships?q=Data+Science">Data Science</Link>
-            </div>
+            {quickTags.length > 0 && (
+              <div className={styles.quickTags}>
+                <span>Popular:</span>
+                {quickTags.map((tag) => (
+                  <Link key={tag} href={`/scholarships?q=${encodeURIComponent(tag)}&focus=1`}>{tag}</Link>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className={styles.stats}>

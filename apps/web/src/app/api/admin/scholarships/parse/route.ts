@@ -3,16 +3,6 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { checkRateLimit, fetchNimWithFallback, getClientIp, logRequest } from "@/lib/nim";
 
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
-
 const PARSE_SYSTEM = `You are a scholarship data extraction specialist.
 
 Given raw text about a scholarship (which may be in Bengali, mixed Bengali-English, or any language), extract and translate the structured fields into English.
@@ -35,6 +25,17 @@ Rules:
 - funding_type: 50% tuition waiver → "partial", full funding/সম্পূর্ণ → "full", tuition only → "tuition_only"
 - official_url: extract from apply links, 👉 markers, or লিংক sections
 - If a field cannot be determined, use null`;
+
+async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") return null;
+  return { supabase, user };
+}
+
 
 // POST /api/admin/scholarships/parse — parse raw text into structured fields
 export async function POST(req: NextRequest) {

@@ -131,6 +131,7 @@ function ScholarshipsContent() {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedFunding, setSelectedFunding] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
@@ -150,6 +151,13 @@ function ScholarshipsContent() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    const shouldFocus = searchParams.get("focus") === "1";
+    if (shouldFocus) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!user) {
@@ -202,6 +210,16 @@ function ScholarshipsContent() {
     }
     return result;
   }, [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
+
+  const emptySuggestions = useMemo(() => {
+    const picks = new Set<string>();
+    for (const country of countries.slice(0, 2)) picks.add(country);
+    if (levelOptions.includes("Masters")) picks.add("Masters");
+    if (levelOptions.includes("PhD")) picks.add("PhD");
+    if (fundingOptions.includes("Full")) picks.add("Full funding");
+    if (fundingOptions.includes("Partial")) picks.add("Partial funding");
+    return Array.from(picks).slice(0, 4);
+  }, [countries, levelOptions, fundingOptions]);
 
   const clearFilters = () => {
     setSearchTerm(""); setSelectedCountries([]); setSelectedFunding([]); setSelectedLevels([]); setSortBy("Best match");
@@ -297,6 +315,7 @@ function ScholarshipsContent() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               aria-label="Search scholarships"
+              ref={searchInputRef}
             />
             {searchTerm && (
               <button
@@ -452,6 +471,21 @@ function ScholarshipsContent() {
           ) : (
             <div className={styles.emptyState}>
               <p>No scholarships match those filters yet.</p>
+              <p className={styles.emptyHint}>Scholarships you might like:</p>
+              {emptySuggestions.length > 0 && (
+                <div className={styles.emptySuggestions}>
+                  {emptySuggestions.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      className={styles.suggestionPill}
+                      onClick={() => setSearchTerm(s)}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
               <button className={styles.primaryButton} type="button" onClick={clearFilters}>Reset filters</button>
             </div>
           )}

@@ -3,16 +3,6 @@ import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { checkRateLimit, fetchNimWithFallback, getClientIp, logRequest } from "@/lib/nim";
 
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
-
 const ENRICH_SYSTEM = `You are a scholarship data specialist. Given raw scholarship information, you will return a structured JSON object with enriched, accurate details.
 
 IMPORTANT: respond with ONLY valid JSON, no markdown fences, no explanation.
@@ -26,6 +16,17 @@ Required JSON shape:
   "ai_summary": "1-2 paragraph engaging summary of the scholarship for Bangladeshi students",
   "thumbnail_prompt": "A photorealistic image prompt for generating a thumbnail: describe the university architecture or landmark in the host country, time of day, mood, colors matching the scholarship prestige. Make it specific and vivid. Do not include text or people."
 }`;
+
+async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const supabase = createClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data: profile } = await supabase
+    .from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") return null;
+  return { supabase, user };
+}
+
 
 // POST /api/admin/scholarships/[id]/enrich — AI enrichment
 export async function POST(
