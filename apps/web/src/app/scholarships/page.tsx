@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
@@ -43,6 +43,87 @@ const FUNDING_PRIORITY: Record<string, number> = {
 const toggleSelection = (value: string, current: string[]) =>
   current.includes(value) ? current.filter((i) => i !== value) : [...current, value];
 
+// ── Dropdown filter component ────────────────────────────────────────────────
+function DropdownFilter({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onChange: (val: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open]);
+
+  const displayLabel = selected.length > 0 ? `${label} (${selected.length})` : label;
+
+  return (
+    <div ref={ref} className={styles.dropdown}>
+      <button
+        type="button"
+        className={`${styles.dropdownTrigger} ${selected.length > 0 ? styles.dropdownTriggerActive : ""}`}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+      >
+        {displayLabel}
+        <svg className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`} width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className={styles.dropdownMenu} role="listbox" aria-multiselectable="true" aria-label={label}>
+          {options.map((opt) => {
+            const isSelected = selected.includes(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`${styles.dropdownOption} ${isSelected ? styles.dropdownOptionSelected : ""}`}
+                onClick={() => onChange(toggleSelection(opt, selected))}
+              >
+                <span className={styles.optionCheck}>
+                  {isSelected && (
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                      <path d="M1.5 5.5L4.5 8.5L9.5 2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </span>
+                {opt}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ────────────────────────────────────────────────────────────────
 function ScholarshipsContent() {
   const { user, signOut } = useAuth();
   const router = useRouter();
@@ -126,6 +207,8 @@ function ScholarshipsContent() {
     setSearchTerm(""); setSelectedCountries([]); setSelectedFunding([]); setSelectedLevels([]); setSortBy("Best match");
   };
 
+  const hasActiveFilters = searchTerm || selectedCountries.length || selectedFunding.length || selectedLevels.length || sortBy !== "Best match";
+
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open";
     const date = new Date(d);
@@ -138,7 +221,7 @@ function ScholarshipsContent() {
     const date = new Date(d);
     if (isNaN(date.getTime())) return false;
     const diff = date.getTime() - Date.now();
-    return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000; // 60 days
+    return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
   };
 
   const toggleBookmark = async (id: string) => {
@@ -199,83 +282,127 @@ function ScholarshipsContent() {
           </div>
         </section>
 
-        <section className={styles.filters}>
-          <div className={styles.searchBox}>
-            <label>
-              Search
-              <input
-                type="text"
-                placeholder="Try: data science, Germany, DAAD"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </label>
-          </div>
-
-          <div className={styles.filterGrid}>
-            {countries.length > 0 && (
-              <div>
-                <h4>Country</h4>
-                <div className={styles.filterGroup}>
-                  {countries.map((c) => (
-                    <label key={c} className={styles.filterItem}>
-                      <input type="checkbox" checked={selectedCountries.includes(c)}
-                        onChange={() => setSelectedCountries((cur) => toggleSelection(c, cur))} />
-                      <span>{c}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-            {fundingOptions.length > 0 && (
-              <div>
-                <h4>Funding</h4>
-                <div className={styles.filterGroup}>
-                  {fundingOptions.map((f) => (
-                    <label key={f} className={styles.filterItem}>
-                      <input type="checkbox" checked={selectedFunding.includes(f)}
-                        onChange={() => setSelectedFunding((cur) => toggleSelection(f, cur))} />
-                      <span>{f}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-            {levelOptions.length > 0 && (
-              <div>
-                <h4>Level</h4>
-                <div className={styles.filterGroup}>
-                  {levelOptions.map((l) => (
-                    <label key={l} className={styles.filterItem}>
-                      <input type="checkbox" checked={selectedLevels.includes(l)}
-                        onChange={() => setSelectedLevels((cur) => toggleSelection(l, cur))} />
-                      <span>{l}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+        {/* ── Compact filter bar ── */}
+        <section className={styles.filterBar}>
+          {/* Search */}
+          <div className={styles.searchWrap}>
+            <svg className={styles.searchIcon} width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search scholarships…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              aria-label="Search scholarships"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                className={styles.searchClear}
+                onClick={() => setSearchTerm("")}
+                aria-label="Clear search"
+              >
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                  <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
             )}
           </div>
 
-          <div className={styles.filterFooter}>
-            <span className={styles.resultsMeta}>{filtered.length} match{filtered.length !== 1 ? "es" : ""}</span>
-            <button className={styles.ghostButton} type="button" onClick={clearFilters}>Clear all</button>
+          {/* Divider */}
+          <div className={styles.barDivider} />
+
+          {/* Dropdown filters */}
+          {countries.length > 0 && (
+            <DropdownFilter
+              label="Country"
+              options={countries}
+              selected={selectedCountries}
+              onChange={setSelectedCountries}
+            />
+          )}
+          {fundingOptions.length > 0 && (
+            <DropdownFilter
+              label="Funding"
+              options={fundingOptions}
+              selected={selectedFunding}
+              onChange={setSelectedFunding}
+            />
+          )}
+          {levelOptions.length > 0 && (
+            <DropdownFilter
+              label="Level"
+              options={levelOptions}
+              selected={selectedLevels}
+              onChange={setSelectedLevels}
+            />
+          )}
+
+          {/* Divider */}
+          <div className={styles.barDivider} />
+
+          {/* Sort */}
+          <div className={styles.sortWrap}>
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true" style={{ color: "var(--ink-500)", flexShrink: 0 }}>
+              <path d="M1 3h11M3 6.5h7M5 10h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            <select
+              className={styles.sortSelect}
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort results"
+            >
+              <option>Best match</option>
+              <option>Deadline</option>
+              <option>Funding</option>
+            </select>
           </div>
+
+          {/* Clear */}
+          {hasActiveFilters && (
+            <button type="button" className={styles.clearBtn} onClick={clearFilters}>
+              Clear
+            </button>
+          )}
         </section>
+
+        {/* Active filter chips */}
+        {(selectedCountries.length > 0 || selectedFunding.length > 0 || selectedLevels.length > 0) && (
+          <div className={styles.activeChips}>
+            {selectedCountries.map((c) => (
+              <span key={c} className={styles.activeChip}>
+                {c}
+                <button type="button" onClick={() => setSelectedCountries((cur) => cur.filter((v) => v !== c))} aria-label={`Remove ${c}`} className={styles.chipRemove}>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                </button>
+              </span>
+            ))}
+            {selectedFunding.map((f) => (
+              <span key={f} className={styles.activeChip}>
+                {f}
+                <button type="button" onClick={() => setSelectedFunding((cur) => cur.filter((v) => v !== f))} aria-label={`Remove ${f}`} className={styles.chipRemove}>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                </button>
+              </span>
+            ))}
+            {selectedLevels.map((l) => (
+              <span key={l} className={styles.activeChip}>
+                {l}
+                <button type="button" onClick={() => setSelectedLevels((cur) => cur.filter((v) => v !== l))} aria-label={`Remove ${l}`} className={styles.chipRemove}>
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none" aria-hidden="true"><path d="M1 1L7 7M7 1L1 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" /></svg>
+                </button>
+              </span>
+            ))}
+            <span className={styles.matchCount}>{filtered.length} match{filtered.length !== 1 ? "es" : ""}</span>
+          </div>
+        )}
 
         <section className={styles.results}>
           <div className={styles.resultsHeader}>
-            <h2>Results</h2>
-            <div className={styles.sortRow}>
-              <label>
-                Sort by
-                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-                  <option>Best match</option>
-                  <option>Deadline</option>
-                  <option>Funding</option>
-                </select>
-              </label>
-            </div>
+            <h2>Results <span className={styles.resultsCount}>{filtered.length}</span></h2>
           </div>
 
           {loading ? (
