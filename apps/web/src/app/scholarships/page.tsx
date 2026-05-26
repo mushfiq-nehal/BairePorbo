@@ -138,6 +138,7 @@ function ScholarshipsContent() {
   const [sortBy, setSortBy] = useState("Best match");
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [bookmarkingId, setBookmarkingId] = useState<string | null>(null);
+  const [displayCount, setDisplayCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -242,6 +243,26 @@ function ScholarshipsContent() {
     return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
   };
 
+  const closingSoonCount = useMemo(
+    () => filtered.filter((s) => isClosingSoon(s.deadline)).length,
+    [filtered],
+  );
+
+  // Animated count-up for the snapshot number
+  useEffect(() => {
+    const target = filtered.length;
+    if (target === displayCount) return;
+    const step = Math.max(1, Math.ceil(Math.abs(target - displayCount) / 18));
+    const id = window.setInterval(() => {
+      setDisplayCount((cur) => {
+        if (cur === target) return cur;
+        if (cur < target) return Math.min(target, cur + step);
+        return Math.max(target, cur - step);
+      });
+    }, 24);
+    return () => window.clearInterval(id);
+  }, [filtered.length, displayCount]);
+
   const toggleBookmark = async (id: string) => {
     if (!user) {
       router.push("/auth/login");
@@ -286,12 +307,42 @@ function ScholarshipsContent() {
             </p>
           </div>
           <div className={styles.heroPanel}>
-            <h3>Search snapshot</h3>
-            <p>
-              {loading
-                ? "Loading scholarships…"
-                : `${scholarships.length} published scholarship${scholarships.length !== 1 ? "s" : ""}, ${filtered.length} matching your filters.`}
-            </p>
+            <div className={styles.snapshotHeader}>
+              <span className={styles.liveBadge}>
+                <span className={styles.liveDot} />
+                LIVE
+              </span>
+              <h3>Search snapshot</h3>
+            </div>
+
+            {loading ? (
+              <p className={styles.snapshotLine}>
+                <span className={styles.shimmerBar} aria-hidden="true" />
+                <span className={styles.srOnly}>Loading scholarships…</span>
+              </p>
+            ) : filtered.length === 0 ? (
+              <p className={styles.snapshotLine}>No live scholarships to apply yet.</p>
+            ) : (
+              <>
+                <div className={styles.snapshotCount} aria-live="polite">
+                  <span className={styles.countNumber}>{displayCount}</span>
+                  <span className={styles.countLabel}>
+                    <span>live scholarship{filtered.length !== 1 ? "s" : ""}</span>
+                    <em>ready to apply</em>
+                  </span>
+                </div>
+                <div className={styles.snapshotProgress} aria-hidden="true">
+                  <span className={styles.snapshotProgressFill} />
+                </div>
+                {closingSoonCount > 0 && (
+                  <p className={styles.urgencyLine}>
+                    <span className={styles.urgencyPulse} aria-hidden="true">⚡</span>
+                    {closingSoonCount} closing within 60 days — don&apos;t miss out
+                  </p>
+                )}
+              </>
+            )}
+
             {!loading && scholarships.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--ink-500)", marginTop: 8 }}>
                 No scholarships published yet. Check back soon!
