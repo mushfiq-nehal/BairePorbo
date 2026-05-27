@@ -5,11 +5,21 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const label =
+    process.env.OPENROUTER_MODEL_LABEL ??
+    process.env.OPENROUTER_MODEL ??
+    process.env.NEXT_PUBLIC_OPENROUTER_MODEL_LABEL ??
+    process.env.NEXT_PUBLIC_OPENROUTER_MODEL ??
     process.env.NIM_MODEL_LABEL ??
     process.env.NIM_MODEL ??
-    process.env.NEXT_PUBLIC_NIM_MODEL_LABEL ??
-    process.env.NEXT_PUBLIC_NIM_MODEL ??
-    "google/gemma-4-31b-it";
+    "deepseek/deepseek-v4-flash";
 
-  return NextResponse.json({ chatModelLabel: label });
+  const fallbackLabel =
+    process.env.OPENROUTER_FALLBACK_MODEL_LABEL ??
+    process.env.OPENROUTER_FALLBACK_MODEL ??
+    null;
+
+  return NextResponse.json({
+    chatModelLabel: label,
+    chatModelFallbackLabel: fallbackLabel,
+  });
 }

@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
+import { formatModelLabel } from "@/lib/model-label";
 import { useDialog } from "@/components/ui/dialog-provider";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./chat.module.css";
@@ -78,9 +79,11 @@ const WELCOME: ChatMessage = {
 };
 
 const DEFAULT_MODEL_LABEL =
+  process.env.NEXT_PUBLIC_OPENROUTER_MODEL_LABEL ??
+  process.env.NEXT_PUBLIC_OPENROUTER_MODEL ??
   process.env.NEXT_PUBLIC_NIM_MODEL_LABEL ??
   process.env.NEXT_PUBLIC_NIM_MODEL ??
-  "google/gemma-4-31b-it";
+  "deepseek/deepseek-v4-flash";
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -96,6 +99,14 @@ function ChatContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modelLabel, setModelLabel] = useState(DEFAULT_MODEL_LABEL);
+  const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [status, setStatus] = useState<"ready" | "thinking" | "streaming" | "error">("ready");
+  const [rateLimitInfo, setRateLimitInfo] = useState<{
+    message: string;
+    scope: "hourly" | "daily" | "global";
+    signinRequired: boolean;
+    resetIn: string;
+  } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const chatWindowRef = useRef<HTMLElement>(null);
@@ -197,6 +208,9 @@ function ChatContent() {
     setMessages([WELCOME]);
     setInput("");
     setError(null);
+    setRateLimitInfo(null);
+    setStatus("ready");
+    setActiveModel(null);
     if (anonKey) loadSessions(anonKey);
   };
 
@@ -247,7 +261,9 @@ function ChatContent() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setStatus("thinking");
     setError(null);
+    setRateLimitInfo(null);
 
     // Ensure we have a session in DB
     let sessionId = activeSessionId;
@@ -275,6 +291,33 @@ function ChatContent() {
       });
 
       if (!res.ok || !res.body) {
+        if (res.status === 429) {
+          const data: {
+            error?: string;
+            scope?: "hourly" | "daily" | "global";
+            signinRequired?: boolean;
+            resetIn?: string;
+          } = await res.json().catch(() => ({}));
+          setRateLimitInfo({
+            message: data.error ?? "Rate limit reached. Please retry shortly.",
+            scope: data.scope ?? "hourly",
+            signinRequired: !!data.signinRequired,
+            resetIn: data.resetIn ?? "shortly",
+          });
+          setStatus("error");
+          // Roll back the placeholder + the user bubble we just added,
+          // so the user can edit/retry without ghost messages.
+          setMessages((prev) => {
+            const updated = [...prev];
+            // remove placeholder if empty
+            if (updated[updated.length - 1]?.content === "") updated.pop();
+            // remove the user message we just appended
+            if (updated[updated.length - 1]?.role === "user") updated.pop();
+            return updated;
+          });
+          setInput(trimmed);
+          return;
+        }
         const data: { error?: string } = await res.json().catch(() => ({}));
         throw new Error(data.error ?? `HTTP ${res.status}`);
       }
@@ -297,7 +340,7 @@ function ChatContent() {
           if (!trimmedLine.startsWith("data:")) continue;
 
           const jsonStr = trimmedLine.slice(5).trim();
-          let parsed: { token?: string; error?: string };
+          let parsed: { token?: string; error?: string; model?: string };
           try {
             parsed = JSON.parse(jsonStr);
           } catch {
@@ -306,7 +349,12 @@ function ChatContent() {
 
           if (parsed.error) throw new Error(parsed.error);
 
+          if (parsed.model) {
+            setActiveModel(parsed.model);
+          }
+
           if (parsed.token) {
+            setStatus("streaming");
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -326,6 +374,7 @@ function ChatContent() {
       if (anonKey) loadSessions(anonKey);
     } catch (err) {
       setError(String(err));
+      setStatus("error");
       setMessages((prev) => {
         const updated = [...prev];
         if (updated[updated.length - 1]?.content === "") updated.pop();
@@ -333,6 +382,7 @@ function ChatContent() {
       });
     } finally {
       setIsLoading(false);
+      setStatus((prev) => (prev === "error" ? "error" : "ready"));
     }
   };
 
@@ -449,7 +499,7 @@ function ChatContent() {
             </div>
 
             <div className={styles.sidebarFooter}>
-              <span>Powered by {modelLabel}</span>
+              <span>Powered by {formatModelLabel(activeModel ?? modelLabel)}</span>
             </div>
           </div>
         </aside>
@@ -472,25 +522,45 @@ function ChatContent() {
               </button>
               <h1>Scholarship mentor chat</h1>
             </div>
-            <div className={styles.headerActions}>
-              <button className={styles.ghostButton} type="button">
-                Upload transcript
-              </button>
-              <button className={styles.secondaryButton} type="button">
-                Export chat
-              </button>
-            </div>
           </header>
 
           <section className={styles.contextBar}>
             <div className={styles.contextItem}>
               <span className={styles.contextLabelInline}>AI model</span>
-              <span className={styles.contextValue}>{modelLabel}</span>
+              <span
+                className={styles.contextValue}
+                title={activeModel ?? modelLabel}
+              >
+                {formatModelLabel(activeModel ?? modelLabel)}
+              </span>
+              {activeModel && activeModel !== modelLabel && (
+                <span className={styles.fallbackTag} title={`Primary "${formatModelLabel(modelLabel)}" was unavailable, using fallback`}>
+                  fallback
+                </span>
+              )}
             </div>
             <div className={styles.contextItem}>
               <span className={styles.contextLabelInline}>Status</span>
-              <span className={isLoading ? styles.statusLoading : styles.statusReady}>
-                {isLoading ? "Thinking..." : "Ready"}
+              <span
+                className={
+                  status === "thinking"
+                    ? styles.statusLoading
+                    : status === "streaming"
+                      ? styles.statusStreaming
+                      : status === "error"
+                        ? styles.statusError
+                        : styles.statusReady
+                }
+                aria-live="polite"
+              >
+                <span className={styles.statusDot} aria-hidden="true" />
+                {status === "thinking"
+                  ? "Thinking…"
+                  : status === "streaming"
+                    ? "Streaming"
+                    : status === "error"
+                      ? "Error"
+                      : "Ready"}
               </span>
             </div>
           </section>
@@ -526,27 +596,47 @@ function ChatContent() {
               </div>
             )}
 
+            {rateLimitInfo && (
+              <div className={styles.rateLimitBanner} role="alert">
+                <div className={styles.rateLimitIcon} aria-hidden="true">⏳</div>
+                <div className={styles.rateLimitBody}>
+                  <p className={styles.rateLimitTitle}>{rateLimitInfo.message}</p>
+                  {rateLimitInfo.signinRequired ? (
+                    <Link href="/auth/login" className={styles.rateLimitCta}>
+                      Sign in to continue →
+                    </Link>
+                  ) : (
+                    <p className={styles.rateLimitHint}>
+                      Try again in {rateLimitInfo.resetIn}.
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className={styles.errorBanner}>⚠️ {error}</div>
             )}
           </section>
 
-          <section className={styles.suggestions}>
-            <p className={styles.suggestionLabel}>Suggested prompts</p>
-            <div className={styles.suggestionGrid}>
-              {SUGGESTIONS.map((prompt) => (
-                <button
-                  key={prompt}
-                  className={styles.suggestionChip}
-                  onClick={() => sendMessage(prompt)}
-                  type="button"
-                  disabled={isLoading}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-          </section>
+          {messages.every((m) => m.role !== "user") && (
+            <section className={styles.suggestions}>
+              <p className={styles.suggestionLabel}>Suggested prompts</p>
+              <div className={styles.suggestionGrid}>
+                {SUGGESTIONS.map((prompt) => (
+                  <button
+                    key={prompt}
+                    className={styles.suggestionChip}
+                    onClick={() => sendMessage(prompt)}
+                    type="button"
+                    disabled={isLoading}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           <form className={styles.inputBar} onSubmit={handleSubmit}>
             <label className={styles.inputLabel}>
@@ -562,9 +652,6 @@ function ChatContent() {
               />
             </label>
             <div className={styles.inputActions}>
-              <button className={styles.ghostButton} type="button">
-                Attach doc
-              </button>
               <button
                 className={styles.primaryButton}
                 type="submit"
