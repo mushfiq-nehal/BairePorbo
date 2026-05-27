@@ -64,15 +64,33 @@ export async function GET() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  const bookmarks = (bookmarksRaw || [])
-    .map((b) => b.scholarships)
-    .filter((s): s is NonNullable<typeof s> => Boolean(s));
+  type BookmarkScholarship = {
+    id: string;
+    title: string;
+    country: string;
+    funding_type: string;
+    deadline: string | null;
+    thumbnail_url: string | null;
+    competitiveness: string | null;
+    degree_level: string | null;
+  };
+
+  // Supabase types nested selects as arrays even for one-to-one relations.
+  // Normalise to a single scholarship object per bookmark.
+  const bookmarks: BookmarkScholarship[] = (bookmarksRaw ?? [])
+    .map((b) => {
+      const rel = b.scholarships as unknown;
+      if (!rel) return null;
+      const obj = Array.isArray(rel) ? rel[0] : rel;
+      return (obj ?? null) as BookmarkScholarship | null;
+    })
+    .filter((s): s is BookmarkScholarship => s !== null);
 
   // Closing soon — bookmarks with a deadline in the next 30 days, sorted ascending
   const now = Date.now();
   const horizon = now + 30 * 24 * 60 * 60 * 1000;
   const bookmarksClosingSoon = bookmarks
-    .filter((s) => {
+    .filter((s): s is BookmarkScholarship & { deadline: string } => {
       if (!s.deadline) return false;
       const t = new Date(s.deadline).getTime();
       return !isNaN(t) && t > now && t < horizon;
