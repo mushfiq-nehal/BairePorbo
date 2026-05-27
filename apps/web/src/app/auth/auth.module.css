@@ -192,3 +192,22 @@
   width: 18px;
   height: 18px;
 }
+
+
+.consent {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-500);
+  text-align: center;
+}
+
+.consent a {
+  color: var(--teal-700);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.consent a:hover {
+  text-decoration: underline;
+}

@@ -1,9 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { generateEmbedding } from "@/lib/nim";
 
-export async function GET(req: NextRequest) {
+type DocMatch = {
+  id: string;
+  scholarship_id: string;
+  content: string;
+  similarity: number;
+};
+
+const MATCH_THRESHOLD = 0.4;
+const MATCH_COUNT_PER_QUERY = 12;
+
+export async function GET() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
 
@@ -27,82 +37,116 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Profile not found" }, { status: 404 });
   }
 
-  // Ensure minimum profile completeness to perform a match
   if (!profile.target_degree && !profile.preferred_countries && !profile.cgpa) {
-    return NextResponse.json({ 
-      error: "Profile is too sparse for matching. Please fill out degree, countries, or CGPA." 
-    }, { status: 400 });
+    return NextResponse.json(
+      {
+        error:
+          "Profile is too sparse for matching. Please fill out degree, countries, or CGPA.",
+      },
+      { status: 400 },
+    );
   }
 
-  // Build the matching query context
-  const queryStr = [
-    `I am looking for a ${profile.target_degree || "higher education"} scholarship.`,
-    profile.preferred_countries ? `My preferred countries are: ${profile.preferred_countries}.` : "",
-    profile.cgpa ? `My CGPA is ${profile.cgpa}.` : "",
-    profile.work_experience ? `I have ${profile.work_experience} of work experience.` : "",
-    profile.goals_notes ? `My goals and notes: ${profile.goals_notes}` : "",
-    profile.bsc_major ? `My BSc major/department is ${profile.bsc_major}.` : "",
-    profile.university ? `I studied at ${profile.university}.` : "",
-    profile.graduation_year ? `I graduated in ${profile.graduation_year}.` : "",
-    profile.research_interests ? `My research interests include ${profile.research_interests}.` : "",
-    profile.published_papers ? `Published papers: ${profile.published_papers}.` : "",
-    profile.ielts_score ? `IELTS/TOEFL score: ${profile.ielts_score}.` : "",
-    profile.gre_gmat_score ? `GRE/GMAT score: ${profile.gre_gmat_score}.` : "",
-    profile.internships ? `Internships/work roles: ${profile.internships}.` : "",
-    profile.portfolio_url ? `Portfolio or profile URL: ${profile.portfolio_url}.` : "",
-  ].filter(Boolean).join(" ");
-
-  // Use the service client for the vector RPC so that RLS on
-  // "ScholarshipDoc" (which only had an admin policy) doesn't block
-  // the query. Auth + profile fetches above still use the user session.
+  // Service client used for the vector RPC (bypasses RLS on ScholarshipDoc).
   let service: ReturnType<typeof createServiceClient>;
   try {
     service = createServiceClient();
   } catch {
-    return NextResponse.json({ error: "Server misconfiguration: service key missing" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server misconfiguration: service key missing" },
+      { status: 500 },
+    );
   }
 
+  // Split preferred_countries on comma. If the user provided multiple, we
+  // run one query per country so each country's embedding is focused and
+  // doesn't get diluted by averaging.
+  const countries = (profile.preferred_countries ?? "")
+    .split(",")
+    .map((c: string) => c.trim())
+    .filter(Boolean);
+
+  // Build a query string for a single country (or no country if none provided).
+  const buildQuery = (country: string | null): string =>
+    [
+      `I am looking for a ${profile.target_degree || "higher education"} scholarship.`,
+      country ? `My preferred country is: ${country}.` : "",
+      profile.cgpa ? `My CGPA is ${profile.cgpa}.` : "",
+      profile.work_experience ? `I have ${profile.work_experience} of work experience.` : "",
+      profile.goals_notes ? `My goals and notes: ${profile.goals_notes}` : "",
+      profile.bsc_major ? `My BSc major/department is ${profile.bsc_major}.` : "",
+      profile.university ? `I studied at ${profile.university}.` : "",
+      profile.graduation_year ? `I graduated in ${profile.graduation_year}.` : "",
+      profile.research_interests ? `My research interests include ${profile.research_interests}.` : "",
+      profile.published_papers ? `Published papers: ${profile.published_papers}.` : "",
+      profile.ielts_score ? `IELTS/TOEFL score: ${profile.ielts_score}.` : "",
+      profile.gre_gmat_score ? `GRE/GMAT score: ${profile.gre_gmat_score}.` : "",
+      profile.internships ? `Internships/work roles: ${profile.internships}.` : "",
+      profile.portfolio_url ? `Portfolio or profile URL: ${profile.portfolio_url}.` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+  // Decide how many queries to run.
+  const queries: string[] =
+    countries.length === 0
+      ? [buildQuery(null)]
+      : countries.map((c: string) => buildQuery(c));
+
   try {
-    const embedding = await generateEmbedding(queryStr, apiKey, "query");
+    // Embed all queries in parallel and run vector matches in parallel.
+    const allMatches: DocMatch[] = [];
+    await Promise.all(
+      queries.map(async (q) => {
+        const embedding = await generateEmbedding(q, apiKey, "query");
+        const { data: matches, error: rpcError } = await service.rpc(
+          "match_scholarship_docs",
+          {
+            query_embedding: embedding,
+            match_threshold: MATCH_THRESHOLD,
+            match_count: MATCH_COUNT_PER_QUERY,
+          },
+        );
+        if (rpcError) throw rpcError;
+        for (const row of (matches ?? []) as DocMatch[]) {
+          allMatches.push(row);
+        }
+      }),
+    );
 
-    // Match chunks via RPC — run via service client to bypass RLS
-    const { data: matches, error: rpcError } = await service.rpc("match_scholarship_docs", {
-      query_embedding: embedding,
-      match_threshold: 0.5,
-      match_count: 15, // fetch more chunks to surface diverse scholarships
-    });
-
-    if (rpcError) throw rpcError;
-
-    const matchedDocs = (matches ?? []) as { id: string; scholarship_id: string; content: string; metadata: unknown; similarity: number }[];
-
-    // Extract unique scholarship IDs preserving similarity order
-    const seen = new Set<string>();
-    const scholarshipIds: string[] = [];
-    for (const doc of matchedDocs) {
-      if (doc.scholarship_id && !seen.has(doc.scholarship_id)) {
-        seen.add(doc.scholarship_id);
-        scholarshipIds.push(doc.scholarship_id);
+    // Dedupe by scholarship_id, keeping the best similarity score across queries.
+    const bestById = new Map<string, DocMatch>();
+    for (const row of allMatches) {
+      if (!row.scholarship_id) continue;
+      const prev = bestById.get(row.scholarship_id);
+      if (!prev || row.similarity > prev.similarity) {
+        bestById.set(row.scholarship_id, row);
       }
     }
+
+    const ranked = [...bestById.values()].sort((a, b) => b.similarity - a.similarity);
+    const scholarshipIds = ranked.map((r) => r.scholarship_id);
 
     if (scholarshipIds.length === 0) {
       return NextResponse.json({ matches: [] });
     }
 
-    // Fetch full scholarship details (published only)
     const { data: scholarships, error: scholarshipsError } = await service
       .from("scholarships")
-      .select("id, title, country, degree_level, funding_type, deadline, tags, competitiveness, thumbnail_url")
+      .select(
+        "id, title, country, degree_level, funding_type, deadline, tags, competitiveness, thumbnail_url",
+      )
       .in("id", scholarshipIds)
       .eq("status", "published");
 
     if (scholarshipsError) throw scholarshipsError;
 
-    // Re-sort to preserve similarity ranking order
+    // Preserve the similarity-ranked order and drop any scholarships that
+    // were filtered out by the published-status check.
+    const published = scholarships ?? [];
     const ordered = scholarshipIds
-      .map(sid => (scholarships ?? []).find(s => s.id === sid))
-      .filter(Boolean);
+      .map((sid) => published.find((s) => s.id === sid))
+      .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
     return NextResponse.json({ matches: ordered });
   } catch (err) {

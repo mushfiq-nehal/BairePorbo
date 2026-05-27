@@ -132,6 +132,20 @@ export default function Home() {
               </button>
             </form>
 
+            <div className={styles.heroBrowseRow}>
+              <Link
+                href="/scholarships"
+                className={styles.browseAllCta}
+                aria-label="Browse all scholarships"
+              >
+                <span className={styles.browseAllLabel}>Browse all scholarships</span>
+                {stats.scholarships > 0 && (
+                  <span className={styles.browseAllCount}>{stats.scholarships}</span>
+                )}
+                <span aria-hidden="true" className={styles.browseAllArrow}>→</span>
+              </Link>
+            </div>
+
             {quickTags.length > 0 && (
               <div className={styles.quickTags}>
                 <span>Popular:</span>
@@ -200,23 +214,8 @@ export default function Home() {
         </section>
 
         {/* ── Mentor showcase ── */}
-        <section className={styles.mentorShowcase}>
-          <div className={styles.mentorCopy}>
-            <p className={styles.kicker}>The AI Mentor in action</p>
-            <h2>Real answers to the questions students actually ask.</h2>
-            <p className={styles.sectionSubtext}>
-              Not a generic chatbot. The mentor knows Bangladeshi context — your CGPA, IELTS
-              expectations, and what scholarships realistically open up.
-            </p>
-            <Link href="/chat" className={styles.mentorCta}>
-              Try the mentor →
-            </Link>
-          </div>
-
-          <MentorMock />
-        </section>
-
-        {/* ── Closing this week (live data) ── */}
+        {/* ── Closing this week (live data) — placed above the mentor showcase
+            so visitors see real scholarships before the marketing pitch ── */}
         <section className={styles.closingSection} aria-label="Scholarships closing soon">
           <div className={styles.closingHeader}>
             <div>
@@ -258,6 +257,23 @@ export default function Home() {
             </div>
           )}
         </section>
+
+        {/* ── Mentor showcase ── */}
+        <section className={styles.mentorShowcase}>
+          <div className={styles.mentorCopy}>
+            <p className={styles.kicker}>The AI Mentor in action</p>
+            <h2>Real answers to the questions students actually ask.</h2>
+            <p className={styles.sectionSubtext}>
+              Not a generic chatbot. The mentor knows Bangladeshi context — your CGPA, IELTS
+              expectations, and what scholarships realistically open up.
+            </p>
+            <Link href="/chat" className={styles.mentorCta}>
+              Try the mentor →
+            </Link>
+          </div>
+
+          <MentorMock />
+        </section>
       </main>
 
       {/* ── Footer ── */}
@@ -295,6 +311,11 @@ export default function Home() {
               <h4>Account</h4>
               <Link href="/auth/login">Sign in</Link>
               <Link href="/auth/signup">Create account</Link>
+            </div>
+            <div className={styles.footerCol}>
+              <h4>Legal</h4>
+              <Link href="/legal/privacy">Privacy policy</Link>
+              <Link href="/legal/terms">Terms of service</Link>
             </div>
             <div className={styles.footerCol}>
               <h4>Support</h4>

@@ -37,6 +37,15 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "BairePorbo" }],
   creator: "BairePorbo",
+  icons: {
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+    ],
+    shortcut: ["/logo.png"],
+    apple: [
+      { url: "/logo.png", sizes: "180x180", type: "image/png" },
+    ],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",

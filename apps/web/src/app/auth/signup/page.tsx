@@ -148,6 +148,12 @@ export default function SignupPage() {
           <button type="submit" className={styles.primaryBtn} disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </button>
+
+          <p className={styles.consent}>
+            By creating an account you agree to our{" "}
+            <Link href="/legal/terms">Terms of Service</Link> and{" "}
+            <Link href="/legal/privacy">Privacy Policy</Link>.
+          </p>
         </form>
 
         <p className={styles.switchLink}>
