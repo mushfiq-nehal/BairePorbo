@@ -184,6 +184,34 @@
   color: var(--ink-500);
 }
 
+/* Anonymous user sidebar block — replaces session list when not signed in */
+.anonSidebar {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(15, 143, 141, 0.08), rgba(240, 138, 104, 0.08));
+  border: 1px solid var(--sand-200);
+}
+
+.anonSidebarTitle {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--teal-700);
+  margin: 0 0 6px;
+}
+
+.anonSidebarBody {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-700);
+  margin: 0;
+}
+
+.anonSidebarBody strong {
+  color: var(--ink-900);
+}
+
 .main {
   display: flex;
   flex-direction: column;
@@ -666,7 +694,42 @@
 
 .inputActions {
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.anonQuotaChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-700);
+  background: rgba(15, 143, 141, 0.08);
+  border: 1px solid rgba(15, 143, 141, 0.2);
+  white-space: nowrap;
+}
+
+.anonQuotaChip a {
+  color: var(--teal-700);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.anonQuotaChip a:hover {
+  text-decoration: underline;
+}
+
+.anonQuotaChipLow {
+  color: #b14a2a;
+  background: rgba(240, 138, 104, 0.16);
+  border-color: rgba(240, 138, 104, 0.4);
+}
+
+.anonQuotaChipLow a {
+  color: #b14a2a;
 }
 
 .primaryButton {

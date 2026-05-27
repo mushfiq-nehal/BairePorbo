@@ -1,20 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./profile.module.css";
-
-type UserTask = {
-  id: string;
-  title: string;
-  due_date: string | null;
-  status: "Now" | "Soon" | "Planned" | "Done";
-};
-
 
 type ProfileData = {
   full_name: string;
@@ -34,50 +25,57 @@ type ProfileData = {
   portfolio_url: string;
 };
 
-type ScholarshipMatch = {
-  id: string;
-  title: string;
-  country: string;
-  funding_type: string;
-  thumbnail_url: string;
+const EMPTY_PROFILE: ProfileData = {
+  full_name: "",
+  cgpa: "",
+  work_experience: "",
+  target_degree: "masters",
+  preferred_countries: "",
+  goals_notes: "",
+  bsc_major: "",
+  university: "",
+  graduation_year: "",
+  research_interests: "",
+  published_papers: "",
+  ielts_score: "",
+  gre_gmat_score: "",
+  internships: "",
+  portfolio_url: "",
 };
+
+// Fields that count toward "completeness". target_degree is excluded because
+// it has a default value, so it never feels like a meaningful completion step.
+const SCORED_FIELDS: (keyof ProfileData)[] = [
+  "cgpa",
+  "preferred_countries",
+  "bsc_major",
+  "university",
+  "graduation_year",
+  "ielts_score",
+  "work_experience",
+  "research_interests",
+  "goals_notes",
+  "gre_gmat_score",
+  "internships",
+  "published_papers",
+  "portfolio_url",
+];
 
 export default function ProfilePage() {
   const { signOut } = useAuth();
   const dialog = useDialog();
-  
-  const [profile, setProfile] = useState<ProfileData>({
-    full_name: "",
-    cgpa: "",
-    work_experience: "",
-    target_degree: "masters",
-    preferred_countries: "",
-    goals_notes: "",
-    bsc_major: "",
-    university: "",
-    graduation_year: "",
-    research_interests: "",
-    published_papers: "",
-    ielts_score: "",
-    gre_gmat_score: "",
-    internships: "",
-    portfolio_url: "",
-  });
+
+  const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [initialProfile, setInitialProfile] = useState<ProfileData>(EMPTY_PROFILE);
+  const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [matches, setMatches] = useState<ScholarshipMatch[]>([]);
-  const [isMatching, setIsMatching] = useState(false);
-  const [matchError, setMatchError] = useState("");
-  const [tasks, setTasks] = useState<UserTask[]>([]);
-  const [tasksLoading, setTasksLoading] = useState(true);
-  const [isAddingTask, setIsAddingTask] = useState(false);
-  const [taskForm, setTaskForm] = useState({ title: "", due_date: "", status: "Planned" as UserTask["status"] });
 
   useEffect(() => {
     fetch("/api/profile")
-      .then(res => res.json())
-      .then(data => {
-        if (data.profile) {
-          setProfile({
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.profile) {
+          const next: ProfileData = {
             full_name: data.profile.full_name || "",
             cgpa: data.profile.cgpa ? data.profile.cgpa.toString() : "",
             work_experience: data.profile.work_experience || "",
@@ -86,32 +84,23 @@ export default function ProfilePage() {
             goals_notes: data.profile.goals_notes || "",
             bsc_major: data.profile.bsc_major || "",
             university: data.profile.university || "",
-            graduation_year: data.profile.graduation_year ? data.profile.graduation_year.toString() : "",
+            graduation_year: data.profile.graduation_year
+              ? data.profile.graduation_year.toString()
+              : "",
             research_interests: data.profile.research_interests || "",
             published_papers: data.profile.published_papers || "",
             ielts_score: data.profile.ielts_score || "",
             gre_gmat_score: data.profile.gre_gmat_score || "",
             internships: data.profile.internships || "",
             portfolio_url: data.profile.portfolio_url || "",
-          });
+          };
+          setProfile(next);
+          setInitialProfile(next);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
-
-  useEffect(() => {
-    fetch("/api/tasks")
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        setTasks(data?.tasks ?? []);
-        setTasksLoading(false);
-      })
-      .catch(() => {
-        setTasks([]);
-        setTasksLoading(false);
-      });
-  }, []);
-
 
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -123,7 +112,18 @@ export default function ProfilePage() {
         body: JSON.stringify(profile),
       });
       if (res.ok) {
-        await dialog.alert({ title: "Success", description: "Profile saved successfully!" });
+        setInitialProfile(profile);
+        // Dashboard caches AI matches in localStorage — invalidate so the next
+        // dashboard visit refreshes matches with the new profile data.
+        try {
+          localStorage.removeItem("bp_dashboard_matches");
+        } catch {
+          // ignore
+        }
+        await dialog.alert({
+          title: "Profile saved",
+          description: "Your profile is up to date. Open the dashboard to see fresh AI picks.",
+        });
       } else {
         await dialog.alert({ title: "Error", description: "Failed to save profile." });
       }
@@ -134,65 +134,16 @@ export default function ProfilePage() {
     setIsSaving(false);
   };
 
-  const handleAiMatch = async () => {
-    setIsMatching(true);
-    setMatchError("");
-    setMatches([]);
-    
-    try {
-      const res = await fetch("/api/profile/match");
-      const data = await res.json();
-      
-      if (!res.ok) {
-        setMatchError(data.error || "Failed to find matches.");
-      } else {
-        setMatches(data.matches || []);
-      }
-    } catch (err) {
-      console.error(err);
-      setMatchError("Error connecting to AI Match.");
-    }
-    setIsMatching(false);
-  };
+  const completedCount = useMemo(
+    () => SCORED_FIELDS.filter((k) => String(profile[k] ?? "").trim() !== "").length,
+    [profile],
+  );
+  const completion = Math.round((completedCount / SCORED_FIELDS.length) * 100);
 
-  const createTask = async () => {
-    if (!taskForm.title.trim()) return;
-    const res = await fetch("/api/tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: taskForm.title.trim(),
-        due_date: taskForm.due_date || null,
-        status: taskForm.status,
-      }),
-    });
-    if (!res.ok) return;
-    const data: { task: UserTask } = await res.json();
-    setTasks((prev) => [data.task, ...prev]);
-    setTaskForm({ title: "", due_date: "", status: "Planned" });
-    setIsAddingTask(false);
-  };
-
-  const updateTaskStatus = async (task: UserTask, status: UserTask["status"]) => {
-    const res = await fetch("/api/tasks", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: task.id, status }),
-    });
-    if (!res.ok) return;
-    const data: { task: UserTask } = await res.json();
-    setTasks((prev) => prev.map((item) => (item.id === task.id ? data.task : item)));
-  };
-
-  const deleteTask = async (taskId: string) => {
-    const res = await fetch("/api/tasks", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: taskId }),
-    });
-    if (!res.ok) return;
-    setTasks((prev) => prev.filter((item) => item.id !== taskId));
-  };
+  const isDirty = useMemo(
+    () => JSON.stringify(profile) !== JSON.stringify(initialProfile),
+    [profile, initialProfile],
+  );
 
   return (
     <AuthGuard>
@@ -200,340 +151,295 @@ export default function ProfilePage() {
         <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
 
         <main className={styles.main}>
+          {/* ── Hero ── */}
           <section className={styles.hero}>
             <div>
               <p className={styles.kicker}>Student profile</p>
-              <h1>Shape your roadmap with real constraints</h1>
+              <h1>Your details, your matches</h1>
               <p className={styles.subtitle}>
-                Keep your academic details, target countries, and budget aligned so the AI mentor
-                can suggest accurate scholarships.
+                The more we know about you, the more accurate our scholarship suggestions will be.
+                Nothing here is shared publicly.
               </p>
             </div>
-            <div className={styles.heroPanel}>
-              <h3>Readiness snapshot</h3>
-              <p>Profile complete: {Math.round((Object.values(profile).filter(v => v !== "").length / Object.keys(profile).length) * 100)}% - Documents: {Math.round(((profile.portfolio_url ? 1 : 0) + (profile.published_papers ? 1 : 0)) / 2 * 100)}% - Tests: {Math.round(((profile.ielts_score ? 1 : 0) + (profile.gre_gmat_score ? 1 : 0)) / 2 * 100)}%</p>
-              <div className={styles.heroChips}>
-                <span>{profile.target_degree ? profile.target_degree.charAt(0).toUpperCase() + profile.target_degree.slice(1) : "Degree"}</span>
-                <span>{profile.bsc_major || "Major"}</span>
-                <span>{profile.preferred_countries || "Any Country"}</span>
+
+            <div className={styles.completionCard} aria-live="polite">
+              <div className={styles.completionTop}>
+                <span className={styles.completionLabel}>Profile completeness</span>
+                <span className={styles.completionValue}>{completion}%</span>
               </div>
+              <div className={styles.progressTrack} aria-hidden="true">
+                <span
+                  className={styles.progressFill}
+                  style={{ width: `${Math.max(4, completion)}%` }}
+                />
+              </div>
+              <p className={styles.completionHint}>
+                {completion === 100
+                  ? "All fields filled. Your matches are as accurate as they get."
+                  : completion >= 60
+                    ? "Looking solid. A few more fields will sharpen your matches."
+                    : "Fill the essentials below to unlock useful AI matches."}
+              </p>
             </div>
           </section>
 
-        <section className={styles.columns}>
-          <div className={styles.columnMain}>
-            <div className={styles.panel}>
-              <div className={styles.panelHeader}>
-                <h2>Personal details</h2>
-                <button 
-                  className={styles.primaryButton} 
-                  onClick={handleSave} 
-                  disabled={isSaving}
-                  style={{ padding: "6px 16px", fontSize: "13px" }}
+          {/* ── Form ── */}
+          <form className={styles.form} onSubmit={handleSave}>
+            {loading ? (
+              <p className={styles.muted}>Loading your profile…</p>
+            ) : (
+              <>
+                <FieldGroup
+                  title="About you"
+                  description="The basics that go on every application."
                 >
-                  {isSaving ? "Saving..." : "Save"}
-                </button>
-              </div>
-              <form className={styles.formGrid} onSubmit={handleSave}>
-                <label>
-                  Full name
-                  <input 
-                    type="text" 
-                    value={profile.full_name} 
-                    onChange={e => setProfile({...profile, full_name: e.target.value})} 
+                  <Field
+                    label="Full name"
+                    value={profile.full_name}
+                    onChange={(v) => setProfile({ ...profile, full_name: v })}
+                    placeholder="As it appears on official documents"
                   />
-                </label>
-                <label>
-                  CGPA
-                  <input 
-                    type="text" 
-                    value={profile.cgpa} 
-                    onChange={e => setProfile({...profile, cgpa: e.target.value})} 
-                  />
-                </label>
-                <label>
-                  Work experience
-                  <input 
-                    type="text" 
-                    value={profile.work_experience} 
-                    onChange={e => setProfile({...profile, work_experience: e.target.value})} 
-                  />
-                </label>
-                <label>
-                  BSc major / department
-                  <input
-                    type="text"
-                    value={profile.bsc_major}
-                    onChange={e => setProfile({ ...profile, bsc_major: e.target.value })}
-                  />
-                </label>
-                <label>
-                  University / institution
-                  <input
-                    type="text"
+                  <Field
+                    label="University / institution"
                     value={profile.university}
-                    onChange={e => setProfile({ ...profile, university: e.target.value })}
+                    onChange={(v) => setProfile({ ...profile, university: v })}
+                    placeholder="e.g. BUET, BRAC, DU"
                   />
-                </label>
-                <label>
-                  Graduation year
-                  <input
+                  <Field
+                    label="BSc major / department"
+                    value={profile.bsc_major}
+                    onChange={(v) => setProfile({ ...profile, bsc_major: v })}
+                    placeholder="e.g. Computer Science"
+                  />
+                  <Field
+                    label="Graduation year"
                     type="number"
                     value={profile.graduation_year}
-                    onChange={e => setProfile({ ...profile, graduation_year: e.target.value })}
+                    onChange={(v) => setProfile({ ...profile, graduation_year: v })}
                     placeholder="e.g. 2024"
                   />
-                </label>
-                <label>
-                  Target degree
-                  <select 
-                    value={profile.target_degree} 
-                    onChange={e => setProfile({...profile, target_degree: e.target.value})}
-                  >
-                    <option value="bachelors">Bachelors</option>
-                    <option value="masters">Masters</option>
-                    <option value="phd">PhD</option>
-                    <option value="postdoc">Postdoc</option>
-                    <option value="any">Any</option>
-                  </select>
-                </label>
-                <label>
-                  Preferred countries
-                  <input 
-                    type="text" 
-                    placeholder="e.g. Germany, UK, Canada"
-                    value={profile.preferred_countries} 
-                    onChange={e => setProfile({...profile, preferred_countries: e.target.value})} 
+                  <Field
+                    label="CGPA"
+                    value={profile.cgpa}
+                    onChange={(v) => setProfile({ ...profile, cgpa: v })}
+                    placeholder="e.g. 3.65"
                   />
-                </label>
-                <label>
-                  IELTS / TOEFL score
-                  <input
-                    type="text"
-                    placeholder="e.g. IELTS 7.5"
-                    value={profile.ielts_score}
-                    onChange={e => setProfile({ ...profile, ielts_score: e.target.value })}
+                  <SelectField
+                    label="Target degree level"
+                    value={profile.target_degree}
+                    onChange={(v) => setProfile({ ...profile, target_degree: v })}
+                    options={[
+                      { value: "bachelors", label: "Bachelors" },
+                      { value: "masters", label: "Masters" },
+                      { value: "phd", label: "PhD" },
+                      { value: "postdoc", label: "Postdoc" },
+                      { value: "any", label: "Any" },
+                    ]}
                   />
-                </label>
-                <label>
-                  GRE / GMAT score
-                  <input
-                    type="text"
-                    placeholder="e.g. GRE 320"
-                    value={profile.gre_gmat_score}
-                    onChange={e => setProfile({ ...profile, gre_gmat_score: e.target.value })}
-                  />
-                </label>
-                <label>
-                  Portfolio / LinkedIn
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={profile.portfolio_url}
-                    onChange={e => setProfile({ ...profile, portfolio_url: e.target.value })}
-                  />
-                </label>
-                <label className={styles.fullRow}>
-                  Research interests / focus area
-                  <textarea
-                    rows={2}
-                    value={profile.research_interests}
-                    onChange={e => setProfile({ ...profile, research_interests: e.target.value })}
-                    placeholder="E.g. AI for healthcare, NLP"
-                  />
-                </label>
-                <label className={styles.fullRow}>
-                  Published papers (count + titles/links)
-                  <textarea
-                    rows={2}
-                    value={profile.published_papers}
-                    onChange={e => setProfile({ ...profile, published_papers: e.target.value })}
-                    placeholder="E.g. 2 papers: Title 1 (link), Title 2 (link)"
-                  />
-                </label>
-                <label className={styles.fullRow}>
-                  Internships / work roles
-                  <textarea
-                    rows={2}
-                    value={profile.internships}
-                    onChange={e => setProfile({ ...profile, internships: e.target.value })}
-                    placeholder="E.g. Software Intern at ..."
-                  />
-                </label>
-                <label className={styles.fullRow}>
-                  Goals and notes
-                  <textarea
-                    rows={3}
-                    placeholder="E.g. Looking for full funding in data science."
-                    value={profile.goals_notes}
-                    onChange={e => setProfile({...profile, goals_notes: e.target.value})}
-                  />
-                </label>
-              </form>
-            </div>
+                </FieldGroup>
 
-            <div className={styles.panel}>
-              <div className={styles.panelHeader}>
-                <h2>Weekly tasks</h2>
-                <button
-                  className={styles.linkButton}
-                  onClick={() => setIsAddingTask((prev) => !prev)}
+                <FieldGroup
+                  title="Goals"
+                  description="What you're aiming for."
                 >
-                  {isAddingTask ? "Cancel" : "Add task"}
-                </button>
-              </div>
+                  <Field
+                    label="Preferred countries"
+                    value={profile.preferred_countries}
+                    onChange={(v) => setProfile({ ...profile, preferred_countries: v })}
+                    placeholder="e.g. Germany, UK, Canada"
+                  />
+                  <TextareaField
+                    label="Research interests / focus area"
+                    value={profile.research_interests}
+                    onChange={(v) => setProfile({ ...profile, research_interests: v })}
+                    placeholder="e.g. AI for healthcare, NLP, climate modelling"
+                  />
+                  <TextareaField
+                    label="Goals & notes"
+                    value={profile.goals_notes}
+                    onChange={(v) => setProfile({ ...profile, goals_notes: v })}
+                    placeholder="e.g. Looking for full funding in data science, open to scholarships requiring 2-year return commitment."
+                    rows={3}
+                  />
+                </FieldGroup>
 
-              {isAddingTask && (
-                <div className={styles.taskForm}>
-                  <label>
-                    Task title
-                    <input
-                      type="text"
-                      value={taskForm.title}
-                      onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
-                      placeholder="e.g. Request recommendation letter"
-                    />
-                  </label>
-                  <label>
-                    Due date
-                    <input
-                      type="date"
-                      value={taskForm.due_date}
-                      onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
-                    />
-                  </label>
-                  <label>
-                    Status
-                    <select
-                      value={taskForm.status}
-                      onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value as UserTask["status"] })}
-                    >
-                      <option value="Now">Now</option>
-                      <option value="Soon">Soon</option>
-                      <option value="Planned">Planned</option>
-                      <option value="Done">Done</option>
-                    </select>
-                  </label>
-                  <button className={styles.primaryButton} type="button" onClick={createTask}>
-                    Save task
-                  </button>
-                </div>
-              )}
+                <FieldGroup
+                  title="Tests & scores"
+                  description="Add what you have. Empty fields won't be assumed."
+                >
+                  <Field
+                    label="IELTS / TOEFL score"
+                    value={profile.ielts_score}
+                    onChange={(v) => setProfile({ ...profile, ielts_score: v })}
+                    placeholder="e.g. IELTS 7.5 (or TOEFL 105)"
+                  />
+                  <Field
+                    label="GRE / GMAT score"
+                    value={profile.gre_gmat_score}
+                    onChange={(v) => setProfile({ ...profile, gre_gmat_score: v })}
+                    placeholder="e.g. GRE 320, GMAT 700"
+                  />
+                </FieldGroup>
 
-              <div className={styles.checklist}>
-                {tasksLoading ? (
-                  <p style={{ color: "var(--ink-500)", fontSize: "13px" }}>Loading tasks...</p>
-                ) : tasks.length === 0 ? (
-                  <p style={{ color: "var(--ink-500)", fontSize: "13px" }}>No tasks yet.</p>
-                ) : (
-                  tasks.map((task) => (
-                    <div key={task.id} className={styles.checkRow}>
-                      <div>
-                        <h4>{task.title}</h4>
-                        <p>{task.due_date ? `Due: ${task.due_date}` : "No due date"}</p>
-                      </div>
-                      <div className={styles.taskActions}>
-                        <select
-                          value={task.status}
-                          onChange={(e) => updateTaskStatus(task, e.target.value as UserTask["status"])}
-                        >
-                          <option value="Now">Now</option>
-                          <option value="Soon">Soon</option>
-                          <option value="Planned">Planned</option>
-                          <option value="Done">Done</option>
-                        </select>
-                        <button
-                          className={styles.taskDelete}
-                          type="button"
-                          onClick={() => deleteTask(task.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+                <FieldGroup
+                  title="Experience"
+                  description="Optional but improves matching for competitive scholarships."
+                >
+                  <Field
+                    label="Work experience"
+                    value={profile.work_experience}
+                    onChange={(v) => setProfile({ ...profile, work_experience: v })}
+                    placeholder="e.g. 2 years as a software engineer"
+                  />
+                  <TextareaField
+                    label="Internships / part-time roles"
+                    value={profile.internships}
+                    onChange={(v) => setProfile({ ...profile, internships: v })}
+                    placeholder="e.g. ML intern at XYZ Labs (Summer 2023)"
+                  />
+                  <TextareaField
+                    label="Published papers"
+                    value={profile.published_papers}
+                    onChange={(v) => setProfile({ ...profile, published_papers: v })}
+                    placeholder="e.g. 2 papers — Title 1 (link), Title 2 (link)"
+                  />
+                  <Field
+                    label="Portfolio / LinkedIn"
+                    type="url"
+                    value={profile.portfolio_url}
+                    onChange={(v) => setProfile({ ...profile, portfolio_url: v })}
+                    placeholder="https://linkedin.com/in/yourname"
+                  />
+                </FieldGroup>
+              </>
+            )}
+          </form>
+        </main>
+
+        {/* Sticky save bar appears whenever there are unsaved changes */}
+        {isDirty && !loading && (
+          <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
+            <p className={styles.saveBarHint}>You have unsaved changes.</p>
+            <div className={styles.saveBarActions}>
+              <button
+                type="button"
+                className={styles.ghostButton}
+                onClick={() => setProfile(initialProfile)}
+                disabled={isSaving}
+              >
+                Discard
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => handleSave()}
+                disabled={isSaving}
+              >
+                {isSaving ? "Saving…" : "Save changes"}
+              </button>
             </div>
           </div>
-
-          <aside className={styles.columnSide}>
-            <div className={styles.panel}>
-              <div className={styles.panelHeader}>
-                <h2>AI Match</h2>
-              </div>
-              <p className={styles.summaryText}>
-                Find the best scholarships tailored to your exact profile constraints.
-              </p>
-              
-              {matches.length === 0 && !isMatching && (
-                <button 
-                  className={styles.secondaryButton} 
-                  onClick={handleAiMatch}
-                  style={{ width: "100%", marginTop: "12px" }}
-                >
-                  Find my matches
-                </button>
-              )}
-
-              {isMatching && (
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--ink-500)" }}>
-                  Analyzing your profile... ✨
-                </p>
-              )}
-
-              {matchError && (
-                <p style={{ marginTop: "12px", fontSize: "14px", color: "var(--coral-500)" }}>
-                  {matchError}
-                </p>
-              )}
-
-              {matches.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "16px" }}>
-                  {matches.map(m => (
-                    <Link 
-                      key={m.id} 
-                      href={`/scholarships/${m.id}`}
-                      style={{ 
-                        display: "flex", 
-                        gap: "12px", 
-                        padding: "12px", 
-                        border: "1px solid var(--sand-200)", 
-                        borderRadius: "12px",
-                        textDecoration: "none",
-                        color: "inherit"
-                      }}
-                    >
-                      {m.thumbnail_url && (
-                        <img 
-                          src={m.thumbnail_url} 
-                          alt="" 
-                          style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover" }} 
-                        />
-                      )}
-                      <div>
-                        <h4 style={{ fontSize: "14px", margin: "0 0 4px" }}>{m.title}</h4>
-                        <p style={{ fontSize: "12px", color: "var(--ink-500)", margin: 0 }}>
-                          {m.country} • {m.funding_type}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                  
-                  <button 
-                    className={styles.ghostButton} 
-                    onClick={handleAiMatch}
-                    style={{ width: "100%", marginTop: "8px" }}
-                  >
-                    Refresh matches
-                  </button>
-                </div>
-              )}
-            </div>
-          </aside>
-        </section>
-        </main>
+        )}
       </div>
     </AuthGuard>
+  );
+}
+
+// ── Small field components ───────────────────────────────────────────────────
+
+function FieldGroup({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={styles.fieldset} aria-labelledby={`group-${title.replace(/\s+/g, "-").toLowerCase()}`}>
+      <header className={styles.legend}>
+        <h2 id={`group-${title.replace(/\s+/g, "-").toLowerCase()}`}>{title}</h2>
+        {description && <p className={styles.legendHint}>{description}</p>}
+      </header>
+      <div className={styles.fieldGrid}>{children}</div>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+}) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function TextareaField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 2,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <label className={`${styles.field} ${styles.fieldFull}`}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+    </label>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <label className={styles.field}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

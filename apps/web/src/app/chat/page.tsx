@@ -1,12 +1,11 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
 import { formatModelLabel } from "@/lib/model-label";
 import { useDialog } from "@/components/ui/dialog-provider";
@@ -71,10 +70,54 @@ function getOrCreateAnonKey(): string {
   return key;
 }
 
-const WELCOME: ChatMessage = {
+const ANON_DAILY_LIMIT = 3;
+
+/** UTC date string used for daily counter rollover. */
+function todayKey(): string {
+  const now = new Date();
+  return `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, "0")}${String(
+    now.getUTCDate(),
+  ).padStart(2, "0")}`;
+}
+
+/** Read the anonymous user's message count for the current UTC day. */
+function readAnonUsage(): number {
+  try {
+    const raw = localStorage.getItem("bp_anon_usage");
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw) as { day: string; count: number };
+    if (parsed.day !== todayKey()) return 0;
+    return parsed.count;
+  } catch {
+    return 0;
+  }
+}
+
+function bumpAnonUsage(): number {
+  const current = readAnonUsage();
+  const next = current + 1;
+  try {
+    localStorage.setItem(
+      "bp_anon_usage",
+      JSON.stringify({ day: todayKey(), count: next }),
+    );
+  } catch {
+    // ignore quota / private mode failures
+  }
+  return next;
+}
+
+const WELCOME_USER: ChatMessage = {
   role: "assistant",
   content:
     "Hi! I'm your BairePorbo Mentor. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
+  time: formatTime(new Date()),
+};
+
+const WELCOME_ANON: ChatMessage = {
+  role: "assistant",
+  content:
+    `Hi! I'm your BairePorbo Mentor. You have **${ANON_DAILY_LIMIT} free messages** today — no signup needed. Ask me anything about scholarships, eligibility, or applications.`,
   time: formatTime(new Date()),
 };
 
@@ -90,11 +133,12 @@ const DEFAULT_MODEL_LABEL =
 function ChatContent() {
   const searchParams = useSearchParams();
   const dialog = useDialog();
+  const { user, signOut } = useAuth();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME]);
+  const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_USER]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +152,11 @@ function ChatContent() {
     resetIn: string;
   } | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [anonUsage, setAnonUsage] = useState<number>(0);
+
+  const isAnon = !user;
+  const welcomeMessage = useMemo(() => (isAnon ? WELCOME_ANON : WELCOME_USER), [isAnon]);
+  const anonRemaining = Math.max(0, ANON_DAILY_LIMIT - anonUsage);
 
   const chatWindowRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -117,8 +166,20 @@ function ChatContent() {
   useEffect(() => {
     const key = getOrCreateAnonKey();
     setAnonKey(key);
-    loadSessions(key);
-  }, []);
+    setAnonUsage(readAnonUsage());
+    if (user) {
+      loadSessions(key);
+    }
+  }, [user]);
+
+  // Reset welcome message and clear sessions when auth state changes
+  useEffect(() => {
+    setMessages([isAnon ? WELCOME_ANON : WELCOME_USER]);
+    if (isAnon) {
+      setSessions([]);
+      setActiveSessionId(null);
+    }
+  }, [isAnon]);
 
   useEffect(() => {
     fetch("/api/meta")
@@ -136,6 +197,19 @@ function ChatContent() {
     const question = searchParams.get("question");
     if (question) setInput(question);
   }, [searchParams]);
+
+  // Open a specific session via ?session=<id> (used by the dashboard "Resume" link)
+  useEffect(() => {
+    const sessionIdParam = searchParams.get("session");
+    if (!sessionIdParam || !user) return;
+    // Build a minimal Session shape — loadSessionHistory only needs id.
+    loadSessionHistory({
+      id: sessionIdParam,
+      title: "",
+      updated_at: new Date().toISOString(),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -197,21 +271,21 @@ function ChatContent() {
         content: m.content,
         time: formatTime(new Date(m.created_at)),
       }));
-      setMessages(loaded.length > 0 ? loaded : [WELCOME]);
+      setMessages(loaded.length > 0 ? loaded : [welcomeMessage]);
     } catch {
-      setMessages([WELCOME]);
+      setMessages([welcomeMessage]);
     }
   };
 
   const startNewChat = () => {
     setActiveSessionId(null);
-    setMessages([WELCOME]);
+    setMessages([welcomeMessage]);
     setInput("");
     setError(null);
     setRateLimitInfo(null);
     setStatus("ready");
     setActiveModel(null);
-    if (anonKey) loadSessions(anonKey);
+    if (anonKey && !isAnon) loadSessions(anonKey);
   };
 
   const deleteSession = async (sessionId: string) => {
@@ -232,7 +306,7 @@ function ChatContent() {
       setSessions((prev) => prev.filter((session) => session.id !== sessionId));
       if (activeSessionId === sessionId) {
         setActiveSessionId(null);
-        setMessages([WELCOME]);
+        setMessages([welcomeMessage]);
         setInput("");
         setError(null);
       }
@@ -264,10 +338,15 @@ function ChatContent() {
     setStatus("thinking");
     setError(null);
     setRateLimitInfo(null);
+    if (isAnon) {
+      setAnonUsage(bumpAnonUsage());
+    }
 
-    // Ensure we have a session in DB
+    // Ensure we have a session in DB (only for signed-in users; anon
+    // chats stay client-side so we don't clutter the DB and so the user
+    // doesn't lose anything when they sign up).
     let sessionId = activeSessionId;
-    if (!sessionId) {
+    if (!sessionId && !isAnon) {
       sessionId = await createSession(trimmed);
     }
 
@@ -371,7 +450,7 @@ function ChatContent() {
       }
 
       // Refresh session list so title/timestamp update
-      if (anonKey) loadSessions(anonKey);
+      if (anonKey && !isAnon) loadSessions(anonKey);
     } catch (err) {
       setError(String(err));
       setStatus("error");
@@ -400,10 +479,7 @@ function ChatContent() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
-  const { signOut } = useAuth();
-
   return (
-    <AuthGuard>
       <div className={styles.page}>
         {isSidebarOpen && (
           <div 
@@ -446,57 +522,84 @@ function ChatContent() {
           <div className={`${styles.sidebarContent} ${isSidebarOpen ? styles.sidebarContentOpen : ""}`}>
             <div className={styles.sidebarNav}>
               <PrimaryNav className={styles.navVertical} />
-              <button className={styles.ghostButton} type="button" onClick={signOut}>
-                Sign out
-              </button>
+              {user ? (
+                <button className={styles.ghostButton} type="button" onClick={signOut}>
+                  Sign out
+                </button>
+              ) : (
+                <Link
+                  href="/auth/signup"
+                  className={styles.primaryButton}
+                  style={{ display: "block", textAlign: "center" }}
+                >
+                  Sign up free
+                </Link>
+              )}
             </div>
 
-            <div className={styles.sessionList}>
-              {sessions.length === 0 && (
-                <p className={styles.sessionEmpty}>No past conversations yet.</p>
-              )}
-              {sessions.map((session) => (
-                <div
-                  key={session.id}
-                  className={`${styles.sessionCard} ${
-                    activeSessionId === session.id ? styles.sessionCardActive : ""
-                  }`}
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
-                    loadSessionHistory(session);
-                    setIsSidebarOpen(false);
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
+            {!isAnon && (
+              <div className={styles.sessionList}>
+                {sessions.length === 0 && (
+                  <p className={styles.sessionEmpty}>No past conversations yet.</p>
+                )}
+                {sessions.map((session) => (
+                  <div
+                    key={session.id}
+                    className={`${styles.sessionCard} ${
+                      activeSessionId === session.id ? styles.sessionCardActive : ""
+                    }`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => {
                       loadSessionHistory(session);
                       setIsSidebarOpen(false);
-                    }
-                  }}
-                >
-                  <div className={styles.sessionTop}>
-                    <span className={styles.sessionTitle}>{session.title}</span>
-                    <div className={styles.sessionMeta}>
-                      <span className={styles.sessionTime}>
-                        {formatRelative(session.updated_at)}
-                      </span>
-                      <button
-                        className={styles.sessionDelete}
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          deleteSession(session.id);
-                        }}
-                        aria-label="Delete chat"
-                      >
-                        Delete
-                      </button>
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        loadSessionHistory(session);
+                        setIsSidebarOpen(false);
+                      }
+                    }}
+                  >
+                    <div className={styles.sessionTop}>
+                      <span className={styles.sessionTitle}>{session.title}</span>
+                      <div className={styles.sessionMeta}>
+                        <span className={styles.sessionTime}>
+                          {formatRelative(session.updated_at)}
+                        </span>
+                        <button
+                          className={styles.sessionDelete}
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            deleteSession(session.id);
+                          }}
+                          aria-label="Delete chat"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+
+            {isAnon && (
+              <div className={styles.anonSidebar}>
+                <p className={styles.anonSidebarTitle}>Free preview</p>
+                <p className={styles.anonSidebarBody}>
+                  You&apos;re trying BairePorbo without an account.{" "}
+                  <strong>{anonRemaining} of {ANON_DAILY_LIMIT}</strong> free
+                  messages left today.
+                </p>
+                <p className={styles.anonSidebarBody} style={{ marginTop: 8 }}>
+                  Sign up to get more messages, save conversations, and unlock
+                  scholarship matching.
+                </p>
+              </div>
+            )}
 
             <div className={styles.sidebarFooter}>
               <span>Powered by {formatModelLabel(activeModel ?? modelLabel)}</span>
@@ -652,6 +755,17 @@ function ChatContent() {
               />
             </label>
             <div className={styles.inputActions}>
+              {isAnon && anonRemaining > 0 && (
+                <span
+                  className={`${styles.anonQuotaChip} ${
+                    anonRemaining <= 1 ? styles.anonQuotaChipLow : ""
+                  }`}
+                  aria-live="polite"
+                >
+                  {anonRemaining} free message{anonRemaining !== 1 ? "s" : ""} left ·{" "}
+                  <Link href="/auth/signup">Sign up</Link>
+                </span>
+              )}
               <button
                 className={styles.primaryButton}
                 type="submit"
@@ -663,7 +777,6 @@ function ChatContent() {
           </form>
         </main>
       </div>
-    </AuthGuard>
   );
 }
 
