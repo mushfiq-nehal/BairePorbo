@@ -90,6 +90,7 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <AppNavbar actions={actions} />
+      <AndroidBanner />
 
       <main className={styles.main}>
         {/* ── Hero ── */}
@@ -346,6 +347,58 @@ export default function Home() {
           </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+// ── Android install banner ────────────────────────────────────────────────────
+function AndroidBanner() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    // Only show on Android browsers, and only if not already dismissed
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const dismissed = sessionStorage.getItem("bp_apk_banner_dismissed");
+    // Also hide if already running as a TWA / standalone PWA
+    const isStandalone =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as { standalone?: boolean }).standalone === true;
+    if (isAndroid && !dismissed && !isStandalone) {
+      setVisible(true);
+    }
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div className={styles.androidBanner} role="banner">
+      <div className={styles.androidBannerLeft}>
+        <img src="/logo.png" alt="" className={styles.androidBannerIcon} />
+        <div>
+          <p className={styles.androidBannerTitle}>Get the BairePorbo app</p>
+          <p className={styles.androidBannerSub}>Faster, app-like experience</p>
+        </div>
+      </div>
+      <div className={styles.androidBannerActions}>
+        <a
+          href="/BairePorbo.apk"
+          className={styles.androidBannerInstall}
+          download
+        >
+          Install
+        </a>
+        <button
+          type="button"
+          className={styles.androidBannerDismiss}
+          onClick={() => {
+            sessionStorage.setItem("bp_apk_banner_dismissed", "1");
+            setVisible(false);
+          }}
+          aria-label="Dismiss"
+        >
+          ✕
+        </button>
+      </div>
     </div>
   );
 }
