@@ -521,7 +521,11 @@ function ChatContent() {
 
           <div className={`${styles.sidebarContent} ${isSidebarOpen ? styles.sidebarContentOpen : ""}`}>
             <div className={styles.sidebarNav}>
-              <PrimaryNav className={styles.navVertical} />
+              {/* On mobile the bottom tab bar handles primary nav, so hide
+                  these links — keeps the chat history panel focused. */}
+              <div className={styles.sidebarNavLinks}>
+                <PrimaryNav className={styles.navVertical} />
+              </div>
               {user ? (
                 <button className={styles.ghostButton} type="button" onClick={signOut}>
                   Sign out

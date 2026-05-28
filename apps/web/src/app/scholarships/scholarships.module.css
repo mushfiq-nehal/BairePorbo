@@ -664,6 +664,7 @@
 }
 
 .card {
+  position: relative;
   background: rgba(255, 255, 255, 0.92);
   border-radius: 20px;
   padding: 18px;
@@ -678,6 +679,44 @@
 .card:hover {
   transform: translateY(-2px);
   box-shadow: 0 22px 44px rgba(15, 34, 52, 0.12);
+}
+
+/* Stretched link covers the whole card on mobile (whole-card tap target).
+   Hidden on desktop where the explicit "View details" button does the job. */
+.cardLink {
+  display: none;
+}
+
+/* Compact icon-only bookmark button — only shown on mobile in the card corner */
+.bookmarkIcon {
+  display: none;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--sand-200);
+  color: var(--ink-700);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 2px 8px rgba(15, 34, 52, 0.08);
+  transition: color 0.2s ease, transform 0.15s ease, background 0.2s ease;
+}
+
+.bookmarkIcon:active {
+  transform: scale(0.92);
+}
+
+.bookmarkIconActive {
+  color: var(--teal-700);
+  background: rgba(15, 143, 141, 0.12);
+  border-color: rgba(15, 143, 141, 0.25);
 }
 
 .cardTop {
@@ -859,18 +898,110 @@
   .filterBar {
     border-radius: 14px;
   }
-  .cardActions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .cardTop {
-    flex-direction: column;
-  }
-  .deadline {
-    align-self: flex-start;
-  }
   .resultsHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* ── Compact card for mobile ────────────────────────────────────────── */
+  .card {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+    /* Border-radius cleaner without extra padding around the image */
+    border-radius: 18px;
+  }
+
+  /* Whole card becomes a tap target — covers everything beneath */
+  .cardLink {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    -webkit-tap-highlight-color: rgba(15, 143, 141, 0.06);
+  }
+
+  /* Image fills full width, capped height — keeps aspirational visual */
+  .cardThumb {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 0;
+    margin-bottom: 0;
+  }
+
+  /* Bookmark icon — overlay on top-right of the thumbnail.
+     White-glass background so it stays readable on any image. */
+  .bookmarkIcon {
+    display: flex;
+    top: 10px;
+    right: 10px;
+    z-index: 3;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  /* Text content sits below the image with consistent inner padding */
+  .cardTop {
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px 0;
+  }
+
+  .cardLabel {
+    margin-bottom: 4px;
+  }
+
+  .card h3 {
+    font-size: 15px;
+    line-height: 1.3;
+    /* Cap title to 2 lines so cards stay equal-height */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .cardMeta {
+    margin-top: 0;
+    font-size: 12px;
+  }
+
+  .deadline {
+    align-self: flex-start;
+    min-width: 0;
+    font-size: 11.5px;
+    padding: 4px 9px;
+  }
+
+  /* Hide the chip-tag wall on mobile — too noisy, full tag list lives
+     on the detail page anyway */
+  .tagRow {
+    display: none;
+  }
+
+  /* Single full-width primary action; the bookmark icon overlay replaces
+     the secondary "Bookmark" button. */
+  .cardActions {
+    padding: 12px 16px 16px;
+    gap: 0;
+  }
+
+  .cardActions .secondaryButton {
+    display: none;
+  }
+
+  .cardActions .primaryButton {
+    width: 100%;
+    text-align: center;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    /* Sits above .cardLink so the explicit button still works as a tap target */
+    position: relative;
+    z-index: 2;
   }
 }

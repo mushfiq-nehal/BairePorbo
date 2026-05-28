@@ -295,16 +295,19 @@
 
 .requirementsList li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
+  line-height: 1.55;
 }
 
 .checkDot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: 50%;
   background: var(--teal-500);
-  display: inline-flex;
+  flex-shrink: 0;
+  /* Align with the first line of text */
+  margin-top: 7px;
 }
 
 .actionList {
@@ -367,13 +370,236 @@
   }
 }
 
+/* Mobile-only back link — hidden on desktop where the hero panel has it */
+.mobileBackLink {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .mobileBackLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--teal-700);
+    text-decoration: none;
+  }
+
+  .mobileBackLink:hover {
+    text-decoration: underline;
+  }
+}
+.metaInline,
+.deadlineInline {
+  display: none;
+}
+
+.mobileStickyBar {
+  display: none;
+}
+
+.heroImage {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 16px;
+  margin-bottom: 16px;
+}
+
 @media (max-width: 640px) {
   .page {
-    padding: 24px 5vw 50px;
+    /* 14px top, 50px base bottom + 64px sticky bar + 64px tab bar + safe-area */
+    padding: 14px 5vw calc(50px + 64px + 64px + env(safe-area-inset-bottom));
+  }
+
+  /* ── Hero compression ── */
+  .heroImage {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 14px;
+    margin-bottom: 14px;
+  }
+
+  /* Single column, top-aligned, no large default gap */
+  .hero {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  /* Drop the kicker — marketing fluff that costs space */
+  .hero .kicker {
+    display: none;
+  }
+
+  /* Smaller, tighter title */
+  .hero h1 {
+    font-size: 1.4rem;
+    line-height: 1.25;
+    letter-spacing: -0.3px;
+    margin: 0 0 6px;
+  }
+
+  /* Subtitle (just the country name) is redundant on mobile — country is
+     already in the inline meta line below */
+  .subtitle {
+    display: none;
+  }
+
+  /* Replace the chip-y metaRow with a compact inline line */
+  .metaRow {
+    display: none;
+  }
+
+  .metaInline {
+    display: block;
+    font-size: 13px;
+    color: var(--ink-700);
+    margin: 2px 0 0;
+  }
+
+  .deadlineInline {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(15, 143, 141, 0.1);
+    color: var(--teal-700);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* Hide the entire hero side panel on mobile — everything in it
+     (back link, apply button, save, official page, tags) is either
+     duplicated below or replaced by the sticky bottom action bar. */
+  .heroPanel {
+    display: none;
+  }
+
+  .summaryHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    /* Allow children to shrink below their intrinsic content width so the
+       tabRow inside can scroll horizontally instead of overflowing. */
+    min-width: 0;
+  }
+
+  /* ── Tab row: horizontal scroll instead of wrap ── */
+  .tabRow {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 4px 20px;
+    margin: 0 -20px;          /* break out of .summarySection's 20px padding */
+    width: calc(100% + 40px);  /* fill the broken-out width */
+    min-width: 0;
+  }
+
+  .tabRow::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabRow > button {
+    flex-shrink: 0;
+  }
+
+  /* Tips duplicates the dedicated "Application tips" card below — hide
+     it from the tab row on mobile to avoid confusing users who'd
+     otherwise need to discover both. */
+  .tabRow > button[data-tab="Tips"] {
+    display: none;
+  }
+
+  /* Hide redundant tag row in summary section — already noisy on mobile */
+  .summaryBody .tagRow {
+    display: none;
   }
 
   .heroActions {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  /* ── Sticky action bar ── */
+  .mobileStickyBar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    /* Stack just above the global mobile tab bar (64px) + safe-area */
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    z-index: 80;
+    padding: 10px 12px;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--sand-200);
+    box-shadow: 0 -8px 24px -8px rgba(15, 34, 52, 0.08);
+  }
+
+  .mobileStickyBookmark {
+    flex-shrink: 0;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
+    background: #ffffff;
+    border: 1px solid var(--sand-200);
+    color: var(--ink-700);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  }
+
+  .mobileStickyBookmark:active {
+    transform: scale(0.94);
+  }
+
+  .mobileStickyBookmark:disabled {
+    cursor: default;
+  }
+
+  .mobileStickyBookmarkActive {
+    background: rgba(15, 143, 141, 0.12);
+    border-color: rgba(15, 143, 141, 0.28);
+    color: var(--teal-700);
+  }
+
+  .mobileStickyApply {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 46px;
+    border: none;
+    border-radius: 14px;
+    background: var(--teal-500);
+    color: #ffffff;
+    font-size: 14.5px;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(15, 143, 141, 0.3);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+
+  .mobileStickyApply:active {
+    transform: scale(0.98);
+  }
+
+  .mobileStickyApply:hover {
+    background: var(--teal-700);
   }
 }

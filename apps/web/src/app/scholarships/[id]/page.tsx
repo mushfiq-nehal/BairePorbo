@@ -97,6 +97,22 @@ export default function ScholarshipDetailPage() {
       });
   }, [user]);
 
+  // On mobile the Tips tab is hidden (its content has a dedicated card below).
+  // If a user shrinks the viewport while on Tips, fall back to Overview so the
+  // body isn't pointing at an inaccessible tab.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mql = window.matchMedia("(max-width: 640px)");
+    const sync = () => {
+      if (mql.matches && activeTab === "Tips") {
+        setActiveTab("Overview");
+      }
+    };
+    sync();
+    mql.addEventListener("change", sync);
+    return () => mql.removeEventListener("change", sync);
+  }, [activeTab]);
+
   const tabContent: Record<SummaryTab, string> = {
     Overview: scholarship?.ai_summary ?? scholarship?.raw_description ?? "No summary available yet.",
     Eligibility: scholarship?.eligibility_summary ?? "Eligibility details not yet available.",
@@ -178,11 +194,16 @@ export default function ScholarshipDetailPage() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div>
+            {/* Mobile-only back link — the hero panel is hidden on mobile */}
+            <Link href="/scholarships" className={styles.mobileBackLink}>
+              ← Scholarships
+            </Link>
+
             {scholarship.thumbnail_url && (
               <img
                 src={scholarship.thumbnail_url}
-                alt={scholarship.title}
-                style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 16, marginBottom: 16 }}
+                alt=""
+                className={styles.heroImage}
               />
             )}
             <p className={styles.kicker}>Scholarship detail</p>
@@ -194,6 +215,14 @@ export default function ScholarshipDetailPage() {
               <span>{FUNDING_MAP[scholarship.funding_type] ?? scholarship.funding_type}</span>
               <span>Deadline: {formatDeadline(scholarship.deadline)}</span>
             </div>
+            {/* Mobile-only compact meta line */}
+            <p className={styles.metaInline} aria-hidden="true">
+              {scholarship.country} · {LEVEL_MAP[scholarship.degree_level] ?? scholarship.degree_level} ·{" "}
+              {FUNDING_MAP[scholarship.funding_type] ?? scholarship.funding_type}
+            </p>
+            <p className={styles.deadlineInline} aria-hidden="true">
+              Deadline {formatDeadline(scholarship.deadline)}
+            </p>
           </div>
           <div className={styles.heroPanel}>
             <div className={styles.heroActions}>
@@ -254,6 +283,7 @@ export default function ScholarshipDetailPage() {
               {TABS.map((tab) => (
                 <button
                   key={tab}
+                  data-tab={tab}
                   className={tab === activeTab ? styles.tabActive : styles.tabButton}
                   onClick={() => setActiveTab(tab)}
                   type="button"
@@ -356,6 +386,55 @@ export default function ScholarshipDetailPage() {
           </p>
         </div>
       </main>
+
+      {/* Mobile-only sticky action bar — Apply / Bookmark always reachable */}
+      <div className={styles.mobileStickyBar}>
+        <button
+          type="button"
+          className={`${styles.mobileStickyBookmark} ${
+            isBookmarked ? styles.mobileStickyBookmarkActive : ""
+          }`}
+          onClick={handleBookmark}
+          disabled={isBookmarking || isBookmarked}
+          aria-label={isBookmarked ? "Bookmarked" : "Save to bookmarks"}
+          aria-pressed={isBookmarked}
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill={isBookmarked ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
+        </button>
+
+        {scholarship.official_url ? (
+          <a
+            className={styles.mobileStickyApply}
+            href={scholarship.official_url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Apply now ↗
+          </a>
+        ) : (
+          <button
+            type="button"
+            className={styles.mobileStickyApply}
+            disabled
+            aria-disabled="true"
+            style={{ opacity: 0.6 }}
+          >
+            No official link yet
+          </button>
+        )}
+      </div>
     </div>
   );
 }
