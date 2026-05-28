@@ -875,10 +875,7 @@
 /* ── Android install banner ── */
 .androidBanner {
   display: none; /* shown only on Android via JS */
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 200;
   align-items: center;
   justify-content: space-between;
@@ -887,11 +884,19 @@
   background: #ffffff;
   border-bottom: 1px solid var(--sand-200);
   box-shadow: 0 4px 16px rgba(15, 34, 52, 0.1);
+  /* Escape the page's horizontal padding so banner spans full width */
+  margin: -28px -8vw 0;
 }
 
 /* JS sets display:flex when visible */
 .androidBanner[role="banner"] {
   display: flex;
+}
+
+@media (max-width: 720px) {
+  .androidBanner {
+    margin: -16px -5vw 0;
+  }
 }
 
 .androidBannerLeft {

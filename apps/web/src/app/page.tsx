@@ -89,8 +89,8 @@ export default function Home() {
   // ── Render ──
   return (
     <div className={styles.page}>
-      <AppNavbar actions={actions} />
       <AndroidBanner />
+      <AppNavbar actions={actions} />
 
       <main className={styles.main}>
         {/* ── Hero ── */}
