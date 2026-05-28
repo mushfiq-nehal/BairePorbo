@@ -1,0 +1,110 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAuth } from "@/lib/auth";
+import styles from "./mobile-tab-bar.module.css";
+
+type Tab = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  /** A path the tab also "owns" — e.g. /scholarships/[id] still highlights Scholarships. */
+  matchPrefix?: string;
+};
+
+const HomeIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M3 12 L12 3 L21 12" />
+    <path d="M5 10 V20 H10 V14 H14 V20 H19 V10" />
+  </svg>
+);
+
+const BookIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 4 H10 A4 4 0 0 1 14 8 V20 A3 3 0 0 0 11 17 H4 Z" />
+    <path d="M20 4 H14 A4 4 0 0 0 10 8" />
+    <path d="M20 4 V17 H13" />
+  </svg>
+);
+
+const MentorIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M21 12 A8 8 0 1 1 12.5 4 H13 A8 8 0 0 1 21 12 Z" />
+    <path d="M8 14 H16" />
+    <path d="M8 10 H13" />
+    <path d="M8 18 L5 21 V18" />
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="8" r="4" />
+    <path d="M4 21 C4 16.5 7.5 14 12 14 C16.5 14 20 16.5 20 21" />
+  </svg>
+);
+
+/**
+ * Bottom tab bar visible only on mobile (≤720px). Pinned to viewport bottom,
+ * accounts for iOS safe area, and highlights the current section.
+ *
+ * The bar is rendered globally from the root layout. Pages that have their
+ * own full-height layout (e.g. /chat) handle bottom padding themselves so
+ * their input doesn't sit underneath the tab bar.
+ */
+export default function MobileTabBar() {
+  const pathname = usePathname() ?? "/";
+  const { user } = useAuth();
+
+  // Hide the tab bar on auth flow pages — they're focused, modal-like
+  // experiences where extra navigation is a distraction.
+  if (
+    pathname.startsWith("/auth") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/legal")
+  ) {
+    return null;
+  }
+
+  const tabs: Tab[] = [
+    { href: "/", label: "Home", icon: <HomeIcon /> },
+    {
+      href: "/scholarships",
+      label: "Scholarships",
+      icon: <BookIcon />,
+      matchPrefix: "/scholarships",
+    },
+    { href: "/chat", label: "Mentor", icon: <MentorIcon />, matchPrefix: "/chat" },
+    {
+      // Logged-in users go to the dashboard. Anonymous users go to signup
+      // since the dashboard is gated.
+      href: user ? "/dashboard" : "/auth/signup",
+      label: user ? "Dashboard" : "Sign up",
+      icon: <UserIcon />,
+      matchPrefix: user ? "/dashboard" : undefined,
+    },
+  ];
+
+  const isActive = (tab: Tab) => {
+    if (tab.matchPrefix) {
+      return pathname === tab.matchPrefix || pathname.startsWith(`${tab.matchPrefix}/`);
+    }
+    return pathname === tab.href;
+  };
+
+  return (
+    <nav className={styles.tabBar} aria-label="Primary">
+      {tabs.map((tab) => (
+        <Link
+          key={tab.label}
+          href={tab.href}
+          className={`${styles.tab} ${isActive(tab) ? styles.tabActive : ""}`}
+          aria-current={isActive(tab) ? "page" : undefined}
+        >
+          {tab.icon}
+          <span className={styles.tabLabel}>{tab.label}</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}

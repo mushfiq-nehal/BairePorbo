@@ -144,6 +144,23 @@
     display: none;
   }
 
+  /* The mobile tab bar replaces the hamburger menu on small screens */
+  .mobileToggle {
+    display: none;
+  }
+}
+
+/* Show the hamburger on tablets where the tab bar isn't shown but desktop
+   nav is still hidden */
+@media (min-width: 721px) and (max-width: 980px) {
+  .navLinks {
+    display: none;
+  }
+
+  .actions {
+    display: none;
+  }
+
   .mobileToggle {
     display: inline-flex;
     margin-left: auto;

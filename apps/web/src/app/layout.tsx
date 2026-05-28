@@ -4,6 +4,7 @@ import { Fraunces, Manrope } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "./providers";
+import MobileTabBar from "@/components/layout/mobile-tab-bar";
 
 const displayFont = Fraunces({
   variable: "--font-display",
@@ -93,6 +94,7 @@ export default function RootLayout({
       <body>
         <Providers>
           {children}
+          <MobileTabBar />
         </Providers>
         <Analytics />
       </body>

@@ -103,30 +103,32 @@ export default function Home() {
             </p>
 
             <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
-              <svg
-                className={styles.searchIcon}
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by country, field, or scholarship name…"
-                className={styles.searchInput}
-                aria-label="Search scholarships"
-                autoComplete="off"
-              />
+              <div className={styles.searchInputWrap}>
+                <svg
+                  className={styles.searchIcon}
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by country, field, or scholarship name…"
+                  className={styles.searchInput}
+                  aria-label="Search scholarships"
+                  autoComplete="off"
+                />
+              </div>
               <button type="submit" className={styles.searchButton}>
                 Search
               </button>

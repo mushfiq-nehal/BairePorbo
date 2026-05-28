@@ -34,6 +34,14 @@
   margin: 12px 0 10px;
 }
 
+.heroTitleFull {
+  display: inline;
+}
+
+.heroTitleShort {
+  display: none;
+}
+
 .subtitle {
   color: var(--ink-700);
   max-width: 520px;
@@ -799,9 +807,54 @@
   }
 }
 
+/* Sticky filter bar on mobile so the search/filters are always reachable
+   while scrolling the catalog. */
+@media (max-width: 720px) {
+  .filterBar {
+    position: sticky;
+    top: 8px;
+    z-index: 30;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    box-shadow: 0 6px 18px -8px rgba(15, 34, 52, 0.12);
+  }
+
+  /* Mobile hero is heavily compressed — users came for scholarships,
+     not marketing copy. Keep just a short title; everything else hides. */
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .hero .kicker,
+  .hero .subtitle,
+  .heroPanel {
+    display: none;
+  }
+
+  .heroTitleFull {
+    display: none;
+  }
+
+  .heroTitleShort {
+    display: inline;
+  }
+
+  .hero h1 {
+    font-size: 1.4rem;
+    margin: 0;
+    line-height: 1.2;
+  }
+}
+
 @media (max-width: 640px) {
   .page {
-    padding: 24px 5vw 50px;
+    padding: 16px 5vw 50px;
+    gap: 16px;
+  }
+  .main {
+    gap: 14px;
   }
   .filterBar {
     border-radius: 14px;

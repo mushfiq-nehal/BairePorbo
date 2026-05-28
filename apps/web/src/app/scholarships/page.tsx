@@ -301,7 +301,10 @@ function ScholarshipsContent() {
         <section className={styles.hero}>
           <div>
             <p className={styles.kicker}>Curated and explained</p>
-            <h1>Scholarships filtered for Bangladeshi applicants</h1>
+            <h1 className={styles.heroTitle}>
+              <span className={styles.heroTitleFull}>Scholarships filtered for Bangladeshi applicants</span>
+              <span className={styles.heroTitleShort} aria-hidden="true">Scholarships</span>
+            </h1>
             <p className={styles.subtitle}>
               Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.
             </p>

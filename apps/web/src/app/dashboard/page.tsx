@@ -80,6 +80,10 @@ export default function DashboardPage() {
   const [matchesLoading, setMatchesLoading] = useState(false);
   const [matchError, setMatchError] = useState<string | null>(null);
 
+  // Mobile-only segmented tab — desktop ignores this.
+  type MobileTab = "today" | "bookmarks" | "profile";
+  const [mobileTab, setMobileTab] = useState<MobileTab>("today");
+
   // ── Load dashboard data ──
   useEffect(() => {
     fetch("/api/dashboard")
@@ -246,7 +250,19 @@ export default function DashboardPage() {
         <div className={styles.page}>
           <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
           <main className={styles.main}>
-            <div className={styles.skeleton}>Loading your dashboard…</div>
+            <div className={styles.skeletonHero}>
+              <div className={styles.skeletonLine} style={{ width: "60px", height: "12px" }} />
+              <div className={styles.skeletonLine} style={{ width: "200px", height: "36px" }} />
+            </div>
+            <div className={styles.skeletonCard} style={{ height: "110px" }} />
+            <div className={styles.row}>
+              <div className={styles.skeletonCard} style={{ height: "260px" }} />
+              <div className={styles.skeletonCard} style={{ height: "260px" }} />
+            </div>
+            <div className={styles.row}>
+              <div className={styles.skeletonCard} style={{ height: "130px" }} />
+              <div className={styles.skeletonCard} style={{ height: "130px" }} />
+            </div>
           </main>
         </div>
       </AuthGuard>
@@ -258,7 +274,7 @@ export default function DashboardPage() {
       <div className={styles.page}>
         <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
 
-        <main className={styles.main}>
+        <main className={styles.main} data-mobile-tab={mobileTab}>
           {/* ── Hero: greeting + next action ── */}
           <section className={styles.heroStrip}>
             <div className={styles.heroIntro}>
@@ -280,8 +296,36 @@ export default function DashboardPage() {
             )}
           </section>
 
+          {/* Mobile-only segmented control — desktop hides this and shows all sections */}
+          <nav
+            className={styles.mobileTabs}
+            role="tablist"
+            aria-label="Dashboard sections"
+          >
+            {(
+              [
+                { id: "today" as const, label: "Today" },
+                { id: "bookmarks" as const, label: "Bookmarks" },
+                { id: "profile" as const, label: "Profile" },
+              ]
+            ).map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={mobileTab === t.id}
+                className={`${styles.mobileTabsButton} ${
+                  mobileTab === t.id ? styles.mobileTabsButtonActive : ""
+                }`}
+                onClick={() => setMobileTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
+
           {/* ── AI picks + bookmarks closing soon ── */}
-          <section className={styles.row}>
+          <section className={styles.row} data-mobile-section="today">
             {/* AI Match */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
@@ -405,7 +449,7 @@ export default function DashboardPage() {
           </section>
 
           {/* ── Profile completeness + Resume chat ── */}
-          <section className={styles.row}>
+          <section className={styles.row} data-mobile-section="profile">
             {/* Profile completeness */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
@@ -483,7 +527,7 @@ export default function DashboardPage() {
 
           {/* ── All bookmarks (collapsed) ── */}
           {data.bookmarks.length > 0 && (
-            <section className={styles.panel}>
+            <section className={styles.panel} data-mobile-section="bookmarks">
               <div className={styles.panelHeader}>
                 <div>
                   <p className={styles.kickerLight}>Saved</p>

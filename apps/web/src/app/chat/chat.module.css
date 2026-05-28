@@ -252,6 +252,14 @@
   margin-top: 6px;
 }
 
+.titleFull {
+  display: inline;
+}
+
+.titleShort {
+  display: none;
+}
+
 .contextBar {
   display: flex;
   align-items: center;
@@ -882,11 +890,27 @@
   }
 
   .main {
-    padding: 20px 5vw 24px;
-    gap: 12px;
+    /* Reserve 64px + safe-area bottom for the global mobile tab bar */
+    padding: 14px 5vw calc(24px + 64px + env(safe-area-inset-bottom));
+    gap: 10px;
   }
-  
+
+  /* Compact header on mobile — full title is too long for one line */
+  .header {
+    margin-bottom: 0;
+  }
+
   .header h1 {
-    font-size: 1.8rem;
+    font-size: 1.25rem;
+    margin-top: 0;
+    line-height: 1.2;
+  }
+
+  .titleFull {
+    display: none;
+  }
+
+  .titleShort {
+    display: inline;
   }
 }

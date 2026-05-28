@@ -35,6 +35,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Reserve space at the bottom so the mobile tab bar doesn't cover content.
+   Pages with their own full-height layout (chat) override this to 0. */
+@media (max-width: 720px) {
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  /* The chat page is its own full-viewport layout and handles bottom
+     spacing internally — kill body padding-bottom on that route. */
+  body:has([data-fullscreen="true"]) {
+    padding-bottom: 0;
+  }
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

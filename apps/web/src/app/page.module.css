@@ -101,6 +101,11 @@
   transform: translateY(-1px);
 }
 
+/* On desktop, the inner wrap is invisible — just a flex passthrough */
+.searchInputWrap {
+  display: contents;
+}
+
 .searchIcon {
   color: var(--ink-500);
   margin-right: 10px;
@@ -897,20 +902,61 @@
 }
 
 @media (max-width: 820px) {
+  /* On mobile: input pill on top, full-width button below */
   .searchForm {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 12px 14px;
-    border-radius: 18px;
+    gap: 10px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .searchForm:focus-within {
+    box-shadow: none;
+    border-color: transparent;
+  }
+
+  /* Input gets its own pill */
+  .searchInputWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #ffffff;
+    border: 1.5px solid var(--sand-200);
+    border-radius: 999px;
+    padding: 12px 18px;
+    box-shadow: 0 4px 20px rgba(15, 143, 141, 0.1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .searchForm:focus-within .searchInputWrap {
+    border-color: var(--teal-500);
+    box-shadow: 0 6px 24px rgba(15, 143, 141, 0.18);
   }
 
   .searchIcon {
     margin-right: 0;
+    flex-shrink: 0;
+    color: var(--ink-500);
   }
 
+  .searchInput {
+    font-size: 16px; /* 16px prevents iOS zoom on focus */
+    padding: 0;
+    background: transparent;
+  }
+
+  /* Full-width teal button below the input */
   .searchButton {
     width: 100%;
+    padding: 14px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    box-shadow: 0 8px 24px rgba(15, 143, 141, 0.28);
   }
 
   .workflowRow {
@@ -926,7 +972,101 @@
 
 @media (max-width: 720px) {
   .page {
-    padding: 24px 6vw 56px;
+    padding: 16px 5vw 56px;
+    gap: 40px;
+  }
+
+  /* Hero text tighter on small screens */
+  .heroLeft h1 {
+    font-size: clamp(1.6rem, 6.5vw, 2.1rem);
+    letter-spacing: -0.4px;
+    line-height: 1.1;
+    margin: 4px 0 6px;
+  }
+
+  /* Mobile: drop the kicker — it's marketing fluff that costs vertical space
+     on a viewport that needs to fit the search above the fold. */
+  .heroLeft .kicker {
+    display: none;
+  }
+
+  /* Tighter description on mobile, capped to 2 lines */
+  .lede {
+    font-size: 14px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Hide the secondary "Talk to AI Mentor" link — the bottom tab bar
+     and Browse CTA already give them clear primary actions. */
+  .heroAlternative {
+    display: none;
+  }
+
+  /* Hide the in-hero product preview on small phones — it crowds and the
+     real product is one tap away via the Mentor tab. */
+  .previewWrap {
+    display: none;
+  }
+
+  /* Search: slightly smaller padding on very small phones */
+  .searchForm {
+    gap: 8px;
+  }
+
+  .searchInputWrap {
+    padding: 11px 16px;
+  }
+
+  .searchInput {
+    font-size: 16px;
+  }
+
+  .searchButton {
+    padding: 13px;
+    font-size: 14px;
+  }
+
+  /* Browse-all CTA: full width, clean alignment */
+  .heroBrowseRow {
+    width: 100%;
+  }
+
+  .browseAllCta {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px 14px 10px 16px;
+  }
+
+  .browseAllLabel {
+    font-size: 13px;
+    flex: 1;
+  }
+
+  .browseAllCount {
+    font-size: 11px;
+    padding: 2px 7px;
+  }
+
+  /* Popular tags: tighter so all 4 fit on two lines cleanly */
+  .quickTags {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .quickTags a {
+    font-size: 12px;
+    padding: 5px 10px;
+  }
+
+  /* Hide the 4th tag and beyond on mobile — keeps the row clean */
+  .quickTags a:nth-child(n+5) {
+    display: none;
   }
 
   .stats {

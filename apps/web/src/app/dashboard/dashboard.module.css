@@ -50,6 +50,68 @@
   font-size: 14px;
 }
 
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeletonHero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.skeletonLine {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 143, 141, 0.06) 0%,
+    rgba(15, 143, 141, 0.14) 40%,
+    rgba(15, 143, 141, 0.06) 80%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonCard {
+  border-radius: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(15, 143, 141, 0.05) 0%,
+    rgba(15, 143, 141, 0.11) 40%,
+    rgba(15, 143, 141, 0.05) 80%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border: 1px solid var(--sand-200);
+}
+
+/* ── Mobile segmented control ── */
+.mobileTabs {
+  display: none;
+}
+
+.mobileTabsButton {
+  background: transparent;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-500);
+  cursor: pointer;
+  flex: 1;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobileTabsButtonActive {
+  background: #ffffff;
+  color: var(--ink-900);
+  box-shadow: 0 2px 6px rgba(15, 34, 52, 0.06);
+}
+
 /* ── Hero ── */
 .heroStrip {
   display: grid;
@@ -370,9 +432,9 @@
   font-size: 12px;
   color: var(--ink-500);
   margin: 0;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .matchArrow {
@@ -640,7 +702,89 @@
     padding: 22px 6vw 56px;
   }
 
+  /* Show the mobile segmented control */
+  .mobileTabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(15, 143, 141, 0.08);
+    border-radius: 999px;
+    margin: -4px 0 4px;
+  }
+
+  /* Show only the section matching the active mobile tab */
+  .main[data-mobile-tab="today"] [data-mobile-section]:not([data-mobile-section="today"]) {
+    display: none;
+  }
+
+  .main[data-mobile-tab="bookmarks"] [data-mobile-section]:not([data-mobile-section="bookmarks"]) {
+    display: none;
+  }
+
+  .main[data-mobile-tab="profile"] [data-mobile-section]:not([data-mobile-section="profile"]) {
+    display: none;
+  }
+
+  /* Tighter panel padding on small screens */
   .panel {
-    padding: 18px 18px;
+    padding: 16px;
+  }
+
+  /* Match items: shrink thumbnail, allow text to breathe */
+  .matchThumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .matchItem {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .matchBody h4 {
+    font-size: 13px;
+    white-space: normal;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .matchBody p {
+    font-size: 11.5px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  /* Deadline items: stack content + badge on very small screens */
+  .deadlineItem {
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .deadlineItem > div {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .deadlineItem h4 {
+    font-size: 13px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .deadlineBadge {
+    align-self: flex-start;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* Bookmark grid: single column on small screens */
+  .bookmarkGrid {
+    grid-template-columns: 1fr;
   }
 }

@@ -19,6 +19,17 @@ const PROFILE_FIELDS: { key: string; label: string }[] = [
   { key: "portfolio_url", label: "Portfolio URL" },
 ];
 
+type BookmarkScholarship = {
+  id: string;
+  title: string;
+  country: string;
+  funding_type: string;
+  deadline: string | null;
+  thumbnail_url: string | null;
+  competitiveness: string | null;
+  degree_level: string | null;
+};
+
 export async function GET() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -28,13 +39,50 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Profile + readiness
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const now = Date.now();
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  // ── Run all independent queries in parallel ──────────────────────────────
+  const [
+    profileResult,
+    bookmarksResult,
+    lastSessionResult,
+    newCountResult,
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single(),
+
+    supabase
+      .from("user_bookmarks")
+      .select(`
+        created_at,
+        scholarship_id,
+        scholarships ( id, title, country, funding_type, deadline, thumbnail_url, competitiveness, degree_level )
+      `)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+
+    supabase
+      .from("chat_sessions")
+      .select("id, title, updated_at")
+      .eq("user_id", user.id)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+
+    supabase
+      .from("scholarships")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "published")
+      .gte("created_at", sevenDaysAgo),
+  ]);
+
+  const profile = profileResult.data;
+
+  // ── Profile readiness ────────────────────────────────────────────────────
   const filledKeys = new Set<string>();
   if (profile) {
     for (const field of PROFILE_FIELDS) {
@@ -45,7 +93,9 @@ export async function GET() {
     }
   }
   const readiness = Math.round((filledKeys.size / PROFILE_FIELDS.length) * 100);
-  const missingFields = PROFILE_FIELDS.filter((f) => !filledKeys.has(f.key)).map((f) => f.label);
+  const missingFields = PROFILE_FIELDS
+    .filter((f) => !filledKeys.has(f.key))
+    .map((f) => f.label);
 
   const fullName: string =
     profile?.full_name?.toString().trim() ||
@@ -53,31 +103,8 @@ export async function GET() {
     user.email?.split("@")[0] ||
     "there";
 
-  // Bookmarks with full scholarship details
-  const { data: bookmarksRaw } = await supabase
-    .from("user_bookmarks")
-    .select(`
-      created_at,
-      scholarship_id,
-      scholarships ( id, title, country, funding_type, deadline, thumbnail_url, competitiveness, degree_level )
-    `)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  type BookmarkScholarship = {
-    id: string;
-    title: string;
-    country: string;
-    funding_type: string;
-    deadline: string | null;
-    thumbnail_url: string | null;
-    competitiveness: string | null;
-    degree_level: string | null;
-  };
-
-  // Supabase types nested selects as arrays even for one-to-one relations.
-  // Normalise to a single scholarship object per bookmark.
-  const bookmarks: BookmarkScholarship[] = (bookmarksRaw ?? [])
+  // ── Bookmarks ────────────────────────────────────────────────────────────
+  const bookmarks: BookmarkScholarship[] = (bookmarksResult.data ?? [])
     .map((b) => {
       const rel = b.scholarships as unknown;
       if (!rel) return null;
@@ -86,8 +113,6 @@ export async function GET() {
     })
     .filter((s): s is BookmarkScholarship => s !== null);
 
-  // Closing soon — bookmarks with a deadline in the next 30 days, sorted ascending
-  const now = Date.now();
   const horizon = now + 30 * 24 * 60 * 60 * 1000;
   const bookmarksClosingSoon = bookmarks
     .filter((s): s is BookmarkScholarship & { deadline: string } => {
@@ -98,15 +123,8 @@ export async function GET() {
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 4);
 
-  // Most recent chat session (for "Resume" widget)
-  const { data: lastSessionRow } = await supabase
-    .from("chat_sessions")
-    .select("id, title, updated_at")
-    .eq("user_id", user.id)
-    .order("updated_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
+  // ── Last chat session + last message (sequential — depends on session id) ─
+  const lastSessionRow = lastSessionResult.data;
   let lastSession: {
     id: string;
     title: string;
@@ -129,27 +147,26 @@ export async function GET() {
     lastSession = { ...lastSessionRow, preview };
   }
 
-  // Count of scholarships added in the last 7 days (for engagement nudge)
-  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { count: newScholarshipsCount } = await supabase
-    .from("scholarships")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "published")
-    .gte("created_at", sevenDaysAgo);
-
-  return NextResponse.json({
-    user: {
-      name: fullName,
-      email: user.email,
-    },
+  const response = NextResponse.json({
+    user: { name: fullName, email: user.email },
     stats: {
       readiness,
       bookmarksCount: bookmarks.length,
       missingFields,
-      newScholarshipsCount: newScholarshipsCount ?? 0,
+      newScholarshipsCount: newCountResult.count ?? 0,
     },
     bookmarks,
     bookmarksClosingSoon,
     lastSession,
   });
+
+  // Allow Vercel's edge to serve a cached response for up to 60 seconds,
+  // then revalidate in the background. The user sees instant load on repeat
+  // visits; data is at most 60s stale — fine for a personal dashboard.
+  response.headers.set(
+    "Cache-Control",
+    "private, s-maxage=60, stale-while-revalidate=300",
+  );
+
+  return response;
 }

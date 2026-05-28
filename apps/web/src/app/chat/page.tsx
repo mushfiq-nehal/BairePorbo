@@ -480,7 +480,7 @@ function ChatContent() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-      <div className={styles.page}>
+      <div className={styles.page} data-fullscreen="true">
         {isSidebarOpen && (
           <div 
             className={styles.sidebarBackdrop} 
@@ -623,7 +623,10 @@ function ChatContent() {
                   <line x1="3" y1="18" x2="21" y2="18"></line>
                 </svg>
               </button>
-              <h1>Scholarship mentor chat</h1>
+              <h1>
+                <span className={styles.titleFull}>Scholarship mentor chat</span>
+                <span className={styles.titleShort} aria-hidden="true">Mentor</span>
+              </h1>
             </div>
           </header>
 
