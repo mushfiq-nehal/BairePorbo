@@ -178,7 +178,7 @@ export default function Home() {
                 </span>
                 <span className={styles.statLabel}>Countries covered</span>
               </div>
-              <div>
+              <div className={styles.statTertiary}>
                 <span className={styles.statValue}>24/7</span>
                 <span className={styles.statLabel}>AI guidance</span>
               </div>

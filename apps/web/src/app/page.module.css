@@ -973,7 +973,7 @@
 @media (max-width: 720px) {
   .page {
     padding: 16px 5vw 56px;
-    gap: 40px;
+    gap: 28px;
   }
 
   /* Hero text tighter on small screens */
@@ -995,8 +995,8 @@
     font-size: 14px;
     line-height: 1.5;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -1011,6 +1011,22 @@
      real product is one tap away via the Mentor tab. */
   .previewWrap {
     display: none;
+  }
+
+  /* Stats: 2-column with the third (24/7 fluff) hidden — even count fits cleanly */
+  .stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    padding-top: 14px;
+    margin-top: 14px;
+  }
+
+  .statTertiary {
+    display: none;
+  }
+
+  .statValue {
+    font-size: 18px;
   }
 
   /* Search: slightly smaller padding on very small phones */
@@ -1069,22 +1085,55 @@
     display: none;
   }
 
-  .stats {
-    grid-template-columns: 1fr 1fr;
+  /* Workflow: collapse to a single thin row, no wrapping arrows */
+  .workflowRow {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-size: 12.5px;
   }
 
+  .workflowItem {
+    gap: 6px;
+  }
+
+  .workflowItem strong + span {
+    display: none;  /* hide the descriptive text — keep just numbers + verbs */
+  }
+
+  .workflowDot {
+    width: 20px;
+    height: 20px;
+    font-size: 10.5px;
+  }
+
+  .workflowArrow {
+    transform: none;
+    font-size: 13px;
+  }
+
+  /* Closing soon: single-column stack of cards on mobile */
   .closingGrid {
     grid-template-columns: 1fr;
   }
 
+  /* Mobile section order: hero → closing-soon → workflow → mentor.
+     Real scholarships before workflow/marketing builds trust faster. */
+  .hero { order: 1; }
+  .closingSection { order: 2; }
+  .workflowRow { order: 3; }
+  .mentorShowcase { order: 4; }
+
+  /* Mentor showcase: drop the annotation pills (they overlap on mobile),
+     mock card stays as a single bubble preview */
   .mentorMockAnnotation {
-    position: static;
-    max-width: 100%;
-    margin-top: 8px;
+    display: none;
   }
 
-  .mentorMockAnnotation::before {
-    display: none;
+  .mentorMock {
+    padding: 18px;
   }
 
   .footerInner {
