@@ -21,7 +21,15 @@ type ParsedFields = {
   deadline: string;
   official_url: string;
   raw_description_english: string;
+  confidence_note?: string;
 };
+
+type ModelChoice = "deepseek" | "mistral" | "nim";
+const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
+  { value: "deepseek", label: "Deepseek V4 (best quality)" },
+  { value: "mistral", label: "Mistral AI (fast, cheap)" },
+  { value: "nim", label: "NVIDIA NIM" },
+];
 
 export default function NewScholarshipPage() {
   const router = useRouter();
@@ -31,6 +39,12 @@ export default function NewScholarshipPage() {
   const [rawInput, setRawInput] = useState("");
   const [parsing, setParsing] = useState(false);
   const [parsed, setParsed] = useState<ParsedFields | null>(null);
+  const [aiModel, setAiModel] = useState<ModelChoice>("deepseek");
+  const [scrapeEnabled, setScrapeEnabled] = useState(true);
+  const [parseMeta, setParseMeta] = useState<{
+    modelUsed?: string;
+    scrape?: { attempted: boolean; ok: boolean; url?: string; error?: string };
+  } | null>(null);
   const [form, setForm] = useState({
     title: "", country: "", degree_level: "masters", funding_type: "full",
     deadline: "", official_url: "", raw_description: "",
@@ -54,17 +68,18 @@ export default function NewScholarshipPage() {
   // ── Parse raw text with AI ────────────────────────────────────────────────
   const parseWithAI = async () => {
     if (!rawInput.trim()) { setError("Please paste some scholarship text first."); return; }
-    setError(null); setParsing(true);
+    setError(null); setParsing(true); setParseMeta(null);
     try {
       const res = await fetch("/api/admin/scholarships/parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw_description: rawInput }),
+        body: JSON.stringify({ raw_description: rawInput, model: aiModel, scrape: scrapeEnabled }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Parse failed");
       const p: ParsedFields = data.parsed;
       setParsed(p);
+      setParseMeta(data.meta ?? null);
       setForm({
         title: p.title ?? "",
         country: p.country ?? "",
@@ -101,7 +116,11 @@ export default function NewScholarshipPage() {
     if (!scholarshipId) return;
     setError(null); setEnriching(true);
     try {
-      const res = await fetch(`/api/admin/scholarships/${scholarshipId}/enrich`, { method: "POST" });
+      const res = await fetch(`/api/admin/scholarships/${scholarshipId}/enrich`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: aiModel }),
+      });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Enrichment failed");
       setEnriched(data.enriched);
@@ -191,7 +210,11 @@ export default function NewScholarshipPage() {
             <div className={styles.pasteLabelRow}>
               <div>
                 <label className={styles.pasteLabel}>Paste scholarship info</label>
-                <p className={styles.pasteHint}>Bengali, English, or mixed — AI will translate and extract all fields automatically.</p>
+                <p className={styles.pasteHint}>
+                  Paste as little as a name + country, or full details. If a link is
+                  included, the AI will fetch the page and fill the rest. It also draws
+                  on its knowledge of well-known scholarships.
+                </p>
               </div>
               <button
                 type="button"
@@ -200,17 +223,58 @@ export default function NewScholarshipPage() {
                 disabled={parsing || !rawInput.trim()}
               >
                 {parsing
-                  ? <><span className={styles.spinner} /> Parsing…</>
-                  : "🤖 Parse with AI"}
+                  ? <><span className={styles.spinner} /> Working…</>
+                  : "🤖 Parse + Scrape"}
               </button>
             </div>
+
+            {/* AI controls */}
+            <div className={styles.aiControls}>
+              <div className={styles.aiControlField}>
+                <label htmlFor="ai-model">AI model</label>
+                <select
+                  id="ai-model"
+                  value={aiModel}
+                  onChange={(e) => setAiModel(e.target.value as ModelChoice)}
+                >
+                  {MODEL_OPTIONS.map((m) => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+              <label className={styles.scrapeToggle}>
+                <input
+                  type="checkbox"
+                  checked={scrapeEnabled}
+                  onChange={(e) => setScrapeEnabled(e.target.checked)}
+                />
+                Fetch official link if present
+              </label>
+            </div>
+
             <textarea
-              rows={8}
+              rows={6}
               value={rawInput}
               onChange={(e) => setRawInput(e.target.value)}
-              placeholder={`Paste scholarship text here, for example:\n\n🎓 Bond University Transformer Scholarship 2026 in Australia 🇦🇺\n📍 বিশ্ববিদ্যালয়: Bond University\n🎯 ডিগ্রি স্তর: Bachelor's & Master's\n💰 স্কলারশিপ কাভারেজ: 50% Tuition Fee Waiver\n📅 শেষ তারিখ: 31 August 2026\n🔗 apply.bond.edu.au`}
+              placeholder={`Paste anything, for example:\n\nChevening Scholarship, UK\nFully funded. Tuition, monthly living allowance, return flight covered.\nOfficial link: https://chevening.org\n\n— or just —\n\nChevening Scholarship, UK`}
               className={styles.pasteArea}
             />
+
+            {/* Parse result meta */}
+            {parseMeta && (
+              <div className={styles.parseMeta}>
+                {parseMeta.scrape?.attempted && (
+                  <span className={parseMeta.scrape.ok ? styles.scrapeOk : styles.scrapeFail}>
+                    {parseMeta.scrape.ok
+                      ? `✓ Fetched ${parseMeta.scrape.url}`
+                      : `⚠ Couldn't fetch link (${parseMeta.scrape.error ?? "unknown"}) — used AI knowledge instead`}
+                  </span>
+                )}
+                {parsed?.confidence_note && (
+                  <span className={styles.confidenceNote}>ℹ {parsed.confidence_note}</span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Parsed / editable fields */}
@@ -280,7 +344,15 @@ export default function NewScholarshipPage() {
       {/* ── Step 2: AI Enrichment ── */}
       {step === 2 && (
         <div className={styles.formCard}>
-          <p className={styles.sub}>Click <strong>Enrich with AI</strong> to auto-fill eligibility, tips, tags, summary, and generate a thumbnail image prompt.</p>
+          <p className={styles.sub}>
+            Using <strong>{MODEL_OPTIONS.find((m) => m.value === aiModel)?.label}</strong>.
+            Click <strong>Enrich with AI</strong> to auto-fill eligibility, tips, tags,
+            summary, and generate a thumbnail image prompt.
+          </p>
+          <div className={styles.verifyWarning}>
+            ⚠ AI-generated content can be inaccurate. Review every field — especially
+            deadlines and eligibility — before publishing.
+          </div>
           {!enriched ? (
             <button className={styles.enrichBtn} onClick={enrich} disabled={enriching}>
               {enriching ? <><span className={styles.spinner} /> Enriching with AI…</> : "✨ Enrich with AI"}

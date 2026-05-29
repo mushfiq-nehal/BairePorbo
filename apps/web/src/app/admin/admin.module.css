@@ -324,6 +324,107 @@
 .parseBtn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 24px rgba(124, 58, 237, 0.35); }
 .parseBtn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── AI controls (model selector + scrape toggle) ── */
+.aiControls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  background: var(--sand-50, #faf9f7);
+  border: 1px solid var(--sand-200, #e8e3db);
+  border-radius: 12px;
+}
+
+.aiControlField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aiControlField label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-700, #3d3d3d);
+  white-space: nowrap;
+}
+
+.aiControlField select {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--sand-200, #e8e3db);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink-900, #0f2234);
+  cursor: pointer;
+  outline: none;
+}
+
+.aiControlField select:focus {
+  border-color: var(--teal-500, #0f8f8d);
+}
+
+.scrapeToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-700, #3d3d3d);
+  cursor: pointer;
+}
+
+.scrapeToggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--teal-500, #0f8f8d);
+  cursor: pointer;
+}
+
+/* ── Parse result meta (scrape status + confidence) ── */
+.parseMeta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.scrapeOk {
+  font-size: 12px;
+  color: var(--teal-700, #0a6d6b);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.scrapeFail {
+  font-size: 12px;
+  color: #b14a2a;
+  font-weight: 600;
+}
+
+.confidenceNote {
+  font-size: 12px;
+  color: var(--ink-500, #6b7c8d);
+  line-height: 1.5;
+  padding: 8px 10px;
+  background: rgba(15, 143, 141, 0.06);
+  border-radius: 8px;
+}
+
+/* ── Verify-before-publish warning ── */
+.verifyWarning {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #b14a2a;
+  background: rgba(240, 138, 104, 0.12);
+  border: 1px solid rgba(240, 138, 104, 0.35);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+}
+
 .parsedSection {
   display: flex;
   flex-direction: column;

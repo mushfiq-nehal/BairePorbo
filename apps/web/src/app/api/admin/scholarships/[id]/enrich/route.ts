@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { checkRateLimit, fetchNimWithFallback, getClientIp, logRequest } from "@/lib/nim";
+import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
+import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
+
+const VALID_MODELS: ModelChoice[] = ["nim", "deepseek", "mistral"];
 
 const ENRICH_SYSTEM = `You are a scholarship data specialist. Given raw scholarship information, you will return a structured JSON object with enriched, accurate details.
 
@@ -46,8 +49,14 @@ export async function POST(
     );
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "NIM API key not configured" }, { status: 500 });
+  // Optional model choice from request body
+  let model: ModelChoice = "deepseek";
+  try {
+    const body = await req.json();
+    if (VALID_MODELS.includes(body?.model)) model = body.model;
+  } catch {
+    // no body / invalid — keep default
+  }
 
   const { id } = await params;
 
@@ -74,30 +83,23 @@ Raw Description:
 ${scholarship.raw_description ?? "No description provided"}
 `.trim();
 
-  let nimData: { choices?: { message?: { content?: string } }[] };
-  let nimModel = "";
+  let raw: string;
+  let modelUsed = "";
   try {
-    const result = await fetchNimWithFallback(
-      {
-        messages: [
-          { role: "system", content: ENRICH_SYSTEM },
-          { role: "user", content: userPrompt },
-        ],
-        max_tokens: 1024,
-        temperature: 0.4,
-        top_p: 0.9,
-        stream: false,
-      },
-      { apiKey, accept: "application/json" }
-    );
-    nimModel = result.model;
-    nimData = (await result.response.json()) as Record<string, unknown>;
+    const result = await fetchCompletion({
+      model,
+      system: ENRICH_SYSTEM,
+      user: userPrompt,
+      maxTokens: 1024,
+      temperature: 0.4,
+    });
+    raw = result.content;
+    modelUsed = result.modelUsed;
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 502 });
   }
 
-  logRequest("admin.enrich.complete", { ip, model: nimModel });
-  const raw = nimData?.choices?.[0]?.message?.content ?? "";
+  logRequest("admin.enrich.complete", { ip, model: modelUsed });
 
   let enriched: Record<string, unknown>;
   try {

@@ -1,30 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
-import { checkRateLimit, fetchNimWithFallback, getClientIp, logRequest } from "@/lib/nim";
+import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
+import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
+import { scrapeUrl } from "@/lib/scrape";
 
-const PARSE_SYSTEM = `You are a scholarship data extraction specialist.
+const PARSE_SYSTEM = `You are a scholarship research and data-extraction specialist.
 
-Given raw text about a scholarship (which may be in Bengali, mixed Bengali-English, or any language), extract and translate the structured fields into English.
+You will be given some information about a scholarship. It may be very minimal
+(just a name and country) or more detailed. It may be in Bengali, English, or
+mixed. You may also be given the text content scraped from the scholarship's
+official web page.
 
-IMPORTANT: Respond with ONLY valid JSON, no markdown, no explanation.
+Your job: produce a complete, accurate structured record in English. Use the
+provided text first. For well-known scholarships (Chevening, Fulbright, DAAD,
+Erasmus Mundus, Commonwealth, etc.) you may also use your own knowledge to fill
+gaps.
+
+CRITICAL ACCURACY RULES:
+- NEVER invent a specific deadline date. If you are not certain of the exact
+  deadline from the provided text or solid knowledge, set "deadline" to null.
+- NEVER fabricate an official_url. Only use a URL that appears in the input or
+  the scraped text. If none is given, set it to null.
+- Prefer leaving a field null over guessing. An admin will review everything.
+- It is fine to write a general description from your knowledge for famous
+  scholarships, but do not state precise figures (exact stipend amounts, exact
+  dates) unless they appear in the source text.
+
+Respond with ONLY valid JSON, no markdown, no explanation.
 
 Required JSON shape:
 {
   "title": "Full scholarship name in English",
-  "country": "Host country in English (e.g. Australia, Germany)",
+  "country": "Host country in English",
   "degree_level": "one of: bachelors | masters | phd | postdoc | any",
   "funding_type": "one of: full | partial | tuition_only | stipend | other",
-  "deadline": "Deadline as text (e.g., '31 August 2026', 'Rolling', 'Late 2026') or null if not found",
+  "deadline": "Deadline as text (e.g., '31 August 2026', 'Rolling') or null",
   "official_url": "URL string or null",
-  "raw_description_english": "Full translated description in English (keep all key details)"
+  "raw_description_english": "A clear English description with all key details you are confident about",
+  "confidence_note": "1 short sentence: which fields you filled from knowledge vs source, and what the admin should double-check"
 }
 
-Rules:
-- degree_level: if text says Bachelor's or স্নাতক → "bachelors", Master's or স্নাতকোত্তর → "masters", PhD → "phd"
-- funding_type: 50% tuition waiver → "partial", full funding/সম্পূর্ণ → "full", tuition only → "tuition_only"
-- official_url: extract from apply links, 👉 markers, or লিংক sections
-- If a field cannot be determined, use null`;
+Field rules:
+- degree_level: Bachelor's/স্নাতক → "bachelors", Master's/স্নাতকোত্তর → "masters", PhD → "phd"
+- funding_type: full funding/সম্পূর্ণ → "full", partial/50% → "partial", tuition only → "tuition_only"`;
+
+const VALID_MODELS: ModelChoice[] = ["nim", "deepseek", "mistral"];
 
 async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   const supabase = createClient(cookieStore);
@@ -36,15 +57,19 @@ async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   return { supabase, user };
 }
 
+// Pull the first http(s) URL out of arbitrary text.
+const extractUrl = (text: string): string | null => {
+  const match = text.match(/https?:\/\/[^\s"'<>)）]+/i);
+  return match ? match[0].replace(/[.,;]+$/, "") : null;
+};
 
-// POST /api/admin/scholarships/parse — parse raw text into structured fields
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies();
   const auth = await requireAdmin(cookieStore);
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = getClientIp(req);
-  const rate = await checkRateLimit(`admin:${auth.user.id}:parse`, { limit: 10, windowMs: 10 * 60_000 });
+  const rate = await checkRateLimit(`admin:${auth.user.id}:parse`, { limit: 15, windowMs: 10 * 60_000 });
   if (!rate.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Please retry shortly." },
@@ -52,49 +77,74 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "NIM API key not configured" }, { status: 500 });
-
-  let body: { raw_description: string };
+  let body: { raw_description?: string; model?: string; scrape?: boolean };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.raw_description?.trim()) {
+  const rawDescription = body.raw_description?.trim();
+  if (!rawDescription) {
     return NextResponse.json({ error: "raw_description is required" }, { status: 400 });
   }
 
-  let nimData: { choices?: { message?: { content?: string } }[] };
-  let nimModel = "";
+  const model: ModelChoice = VALID_MODELS.includes(body.model as ModelChoice)
+    ? (body.model as ModelChoice)
+    : "deepseek";
+
+  // ── Optional scrape: if the input contains a URL and scraping is enabled ──
+  let scrapedBlock = "";
+  let scrapeInfo: { attempted: boolean; ok: boolean; url?: string; error?: string } = {
+    attempted: false,
+    ok: false,
+  };
+
+  if (body.scrape !== false) {
+    const url = extractUrl(rawDescription);
+    if (url) {
+      scrapeInfo = { attempted: true, ok: false, url };
+      const result = await scrapeUrl(url);
+      if (result.ok && result.text) {
+        scrapedBlock = `\n\n--- SCRAPED CONTENT FROM ${url} ---\n${result.text}\n--- END SCRAPED CONTENT ---`;
+        scrapeInfo.ok = true;
+      } else {
+        scrapeInfo.error = result.error;
+      }
+      logRequest("admin.parse.scrape", { ip, url, ok: scrapeInfo.ok });
+    }
+  }
+
+  const userPrompt = `Scholarship information provided by the admin:\n\n${rawDescription}${scrapedBlock}`;
+
+  let content: string;
+  let modelUsed: string;
   try {
-    const result = await fetchNimWithFallback(
-      {
-        messages: [
-          { role: "system", content: PARSE_SYSTEM },
-          { role: "user", content: `Parse this scholarship text:\n\n${body.raw_description}` },
-        ],
-        max_tokens: 512,
-        temperature: 0.2,
-        stream: false,
-      },
-      { apiKey, accept: "application/json" }
-    );
-    nimModel = result.model;
-    nimData = (await result.response.json()) as Record<string, unknown>;
+    const result = await fetchCompletion({
+      model,
+      system: PARSE_SYSTEM,
+      user: userPrompt,
+      maxTokens: 900,
+      temperature: 0.2,
+    });
+    content = result.content;
+    modelUsed = result.modelUsed;
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 502 });
   }
 
-  logRequest("admin.parse.complete", { ip, model: nimModel });
-  const raw = nimData?.choices?.[0]?.message?.content ?? "";
+  logRequest("admin.parse.complete", { ip, model: modelUsed });
 
   let parsed: Record<string, unknown>;
   try {
-    const cleaned = raw.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-    parsed = JSON.parse(cleaned);
+    parsed = parseJsonFromCompletion(content);
   } catch {
-    return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 422 });
+    return NextResponse.json({ error: "AI returned invalid JSON", raw: content }, { status: 422 });
   }
 
-  return NextResponse.json({ parsed });
+  return NextResponse.json({
+    parsed,
+    meta: {
+      modelUsed,
+      scrape: scrapeInfo,
+    },
+  });
 }
