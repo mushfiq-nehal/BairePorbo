@@ -228,22 +228,40 @@ function ScholarshipsContent() {
 
   const hasActiveFilters = searchTerm || selectedCountries.length || selectedFunding.length || selectedLevels.length || sortBy !== "Best match";
 
+  // Parses multiple deadline formats into a Date, returns null for free-text.
+  const parseDeadlineDate = (d: string): Date | null => {
+    const s = d.trim();
+    // ISO: YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      const date = new Date(s);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    // DD Month YYYY  e.g. "31 July 2026"
+    const dmy = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+    if (dmy) {
+      const date = new Date(`${dmy[2]} ${dmy[1]}, ${dmy[3]}`);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    // Month DD YYYY or Month DD, YYYY  e.g. "July 31 2026"
+    const mdy = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+    if (mdy) {
+      const date = new Date(`${mdy[1]} ${mdy[2]}, ${mdy[3]}`);
+      return isNaN(date.getTime()) ? null : date;
+    }
+    return null;
+  };
+
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open";
-    // Only format if it's a strict ISO date (YYYY-MM-DD) — Chrome parses
-    // fuzzy strings like "early 2027" as valid dates, giving wrong results.
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
-      const date = new Date(d);
-      if (!isNaN(date.getTime()))
-        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    }
-    return d;
+    const date = parseDeadlineDate(d);
+    if (date) return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    return d; // free-text like "early 2027", "1 Aug – 1 Oct"
   };
 
   const isClosingSoon = (d: string | null) => {
-    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d.trim())) return false;
-    const date = new Date(d);
-    if (isNaN(date.getTime())) return false;
+    if (!d) return false;
+    const date = parseDeadlineDate(d);
+    if (!date) return false;
     const diff = date.getTime() - Date.now();
     return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
   };
