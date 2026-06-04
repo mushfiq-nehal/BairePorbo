@@ -213,13 +213,20 @@ function ScholarshipsContent() {
     });
 
     if (sortBy === "Deadline") {
+      const now = Date.now();
+      const bucket = (d: string | null) => {
+        if (!d) return 1; // free-text / unknown → middle
+        const parsed = parseDeadlineDate(d);
+        if (!parsed) return 1; // free-text → middle
+        return parsed.getTime() > now ? 0 : 2; // upcoming → top, expired → bottom
+      };
       result = [...result].sort((a, b) => {
-        const getTime = (d: string | null) => {
-          if (!d) return Infinity;
-          const parsed = d ? parseDeadlineDate(d) : null;
-          return parsed ? parsed.getTime() : Infinity;
-        };
-        return getTime(a.deadline) - getTime(b.deadline);
+        const ba = bucket(a.deadline), bb = bucket(b.deadline);
+        if (ba !== bb) return ba - bb;
+        // Within the same bucket sort by date asc (expired: most-recently-closed first)
+        const ta = a.deadline ? (parseDeadlineDate(a.deadline)?.getTime() ?? Infinity) : Infinity;
+        const tb = b.deadline ? (parseDeadlineDate(b.deadline)?.getTime() ?? Infinity) : Infinity;
+        return ta - tb;
       });
     }
     if (sortBy === "Funding") {
@@ -262,6 +269,12 @@ function ScholarshipsContent() {
     if (!date) return false;
     const diff = date.getTime() - Date.now();
     return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
+  };
+
+  const isExpired = (d: string | null) => {
+    if (!d) return false;
+    const date = parseDeadlineDate(d);
+    return date ? date.getTime() < Date.now() : false;
   };
 
   const closingSoonCount = useMemo(
@@ -553,8 +566,18 @@ function ScholarshipsContent() {
                         {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} funding
                       </p>
                     </div>
-                    <span className={`${styles.deadline} ${isClosingSoon(s.deadline) ? styles.deadlineSoon : ""}`}>
-                      {isClosingSoon(s.deadline) ? "⚡ " : ""}Deadline {formatDeadline(s.deadline)}
+                    <span className={`${styles.deadline} ${
+                      isExpired(s.deadline)
+                        ? styles.deadlineClosed
+                        : isClosingSoon(s.deadline)
+                        ? styles.deadlineSoon
+                        : ""
+                    }`}>
+                      {isExpired(s.deadline)
+                        ? "✕ Closed"
+                        : isClosingSoon(s.deadline)
+                        ? `⚡ Deadline ${formatDeadline(s.deadline)}`
+                        : `Deadline ${formatDeadline(s.deadline)}`}
                     </span>
                   </div>
                   {s.tags && s.tags.length > 0 && (
