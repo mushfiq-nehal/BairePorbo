@@ -232,7 +232,7 @@ function ScholarshipsContent() {
     if (!d) return "Open";
     const date = new Date(d);
     if (isNaN(date.getTime())) return d;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
   const isClosingSoon = (d: string | null) => {
