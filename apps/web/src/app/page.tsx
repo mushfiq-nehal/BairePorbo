@@ -81,6 +81,7 @@ export default function Home() {
 
   const formatDeadlineShort = (deadline: string | null) => {
     if (!deadline) return "—";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline.trim())) return "—";
     const d = new Date(deadline);
     if (isNaN(d.getTime())) return "—";
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });

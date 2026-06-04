@@ -230,13 +230,18 @@ function ScholarshipsContent() {
 
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open";
-    const date = new Date(d);
-    if (isNaN(date.getTime())) return d;
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    // Only format if it's a strict ISO date (YYYY-MM-DD) — Chrome parses
+    // fuzzy strings like "early 2027" as valid dates, giving wrong results.
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d.trim())) {
+      const date = new Date(d);
+      if (!isNaN(date.getTime()))
+        return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    }
+    return d;
   };
 
   const isClosingSoon = (d: string | null) => {
-    if (!d) return false;
+    if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d.trim())) return false;
     const date = new Date(d);
     if (isNaN(date.getTime())) return false;
     const diff = date.getTime() - Date.now();
