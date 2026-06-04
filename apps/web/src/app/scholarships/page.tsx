@@ -123,6 +123,26 @@ function DropdownFilter({
   );
 }
 
+// ── Deadline parser (shared by sort + display) ───────────────────────────────
+function parseDeadlineDate(d: string): Date | null {
+  const s = d.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const date = new Date(s);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  const dmy = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (dmy) {
+    const date = new Date(`${dmy[2]} ${dmy[1]}, ${dmy[3]}`);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  const mdy = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
+  if (mdy) {
+    const date = new Date(`${mdy[1]} ${mdy[2]}, ${mdy[3]}`);
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null;
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 function ScholarshipsContent() {
   const { user, signOut } = useAuth();
@@ -135,7 +155,7 @@ function ScholarshipsContent() {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedFunding, setSelectedFunding] = useState<string[]>([]);
   const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState("Best match");
+  const [sortBy, setSortBy] = useState("Deadline");
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [bookmarkingId, setBookmarkingId] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(0);
@@ -196,8 +216,8 @@ function ScholarshipsContent() {
       result = [...result].sort((a, b) => {
         const getTime = (d: string | null) => {
           if (!d) return Infinity;
-          const t = new Date(d).getTime();
-          return isNaN(t) ? Infinity : t;
+          const parsed = d ? parseDeadlineDate(d) : null;
+          return parsed ? parsed.getTime() : Infinity;
         };
         return getTime(a.deadline) - getTime(b.deadline);
       });
@@ -223,33 +243,11 @@ function ScholarshipsContent() {
   }, [countries, levelOptions, fundingOptions]);
 
   const clearFilters = () => {
-    setSearchTerm(""); setSelectedCountries([]); setSelectedFunding([]); setSelectedLevels([]); setSortBy("Best match");
+    setSearchTerm(""); setSelectedCountries([]); setSelectedFunding([]); setSelectedLevels([]); setSortBy("Deadline");
   };
 
-  const hasActiveFilters = searchTerm || selectedCountries.length || selectedFunding.length || selectedLevels.length || sortBy !== "Best match";
+  const hasActiveFilters = searchTerm || selectedCountries.length || selectedFunding.length || selectedLevels.length || sortBy !== "Deadline";
 
-  // Parses multiple deadline formats into a Date, returns null for free-text.
-  const parseDeadlineDate = (d: string): Date | null => {
-    const s = d.trim();
-    // ISO: YYYY-MM-DD
-    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-      const date = new Date(s);
-      return isNaN(date.getTime()) ? null : date;
-    }
-    // DD Month YYYY  e.g. "31 July 2026"
-    const dmy = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-    if (dmy) {
-      const date = new Date(`${dmy[2]} ${dmy[1]}, ${dmy[3]}`);
-      return isNaN(date.getTime()) ? null : date;
-    }
-    // Month DD YYYY or Month DD, YYYY  e.g. "July 31 2026"
-    const mdy = s.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
-    if (mdy) {
-      const date = new Date(`${mdy[1]} ${mdy[2]}, ${mdy[3]}`);
-      return isNaN(date.getTime()) ? null : date;
-    }
-    return null;
-  };
 
   const formatDeadline = (d: string | null) => {
     if (!d) return "Open";
