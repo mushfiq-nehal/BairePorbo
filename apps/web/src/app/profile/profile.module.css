@@ -342,6 +342,8 @@
   .saveBar {
     left: 12px;
     right: 12px;
+    /* Sit above the mobile tab bar (56px) + safe-area + breathing room */
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px) + 12px);
     transform: none;
     border-radius: 16px;
     flex-wrap: wrap;

@@ -572,6 +572,30 @@
   transform: translateY(-1px);
 }
 
+.signOutBtn {
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--sand-200);
+  background: transparent;
+  color: var(--ink-500);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.signOutBtn:hover {
+  background: rgba(220, 53, 69, 0.06);
+  border-color: rgba(220, 53, 69, 0.25);
+  color: #c0392b;
+}
+
 /* ── Last chat preview ── */
 .lastSessionItem {
   display: flex;

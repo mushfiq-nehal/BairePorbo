@@ -482,6 +482,13 @@ export default function DashboardPage() {
                     ? "Set up your profile →"
                     : "Complete your profile →"}
               </Link>
+              <button
+                type="button"
+                className={styles.signOutBtn}
+                onClick={signOut}
+              >
+                Sign out
+              </button>
             </div>
 
             {/* Continue chat */}
