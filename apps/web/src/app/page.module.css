@@ -872,6 +872,41 @@
   margin-top: 2px;
 }
 
+.footerSocials {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footerSocialLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--sand-100, #f5f0e8);
+  color: var(--ink-500);
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.footerSocialLink:hover {
+  background: var(--teal-500);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.footerBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sand-200);
+}
+
 /* ── Android install banner ── */
 .androidBanner {
   display: none; /* shown only on Android via JS */
