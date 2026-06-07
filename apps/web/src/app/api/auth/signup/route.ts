@@ -2,6 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 
+// Mirrors the frontend blocklist — catches direct API calls that bypass the UI
+const BLOCKED_DOMAINS = new Set([
+  "mailinator.com", "guerrillamail.com", "tempmail.com", "throwam.com",
+  "sharklasers.com", "guerrillamailblock.com", "grr.la", "guerrillamail.info",
+  "guerrillamail.biz", "guerrillamail.de", "guerrillamail.net", "guerrillamail.org",
+  "spam4.me", "yopmail.com", "yopmail.fr", "trashmail.at", "trashmail.com",
+  "trashmail.io", "trashmail.me", "trashmail.net", "dispostable.com",
+  "fakeinbox.com", "maildrop.cc", "mailnull.com", "spamgourmet.com",
+  "10minutemail.com", "10minutemail.net", "10minutemail.org",
+  "minutemail.com", "mohmal.com", "discard.email", "tempr.email",
+  "tmailinator.com", "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org",
+]);
+
+function validateEmail(email: string): string | null {
+  const trimmed = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    return "Please enter a valid email address.";
+  }
+  const domain = trimmed.split("@")[1];
+  if (BLOCKED_DOMAINS.has(domain)) {
+    return "Disposable email addresses are not allowed.";
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   let body: { email: string; password: string; fullName?: string };
   try {
@@ -13,6 +39,11 @@ export async function POST(req: NextRequest) {
   const { email, password, fullName } = body;
   if (!email || !password) {
     return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+  }
+
+  const emailValidationError = validateEmail(email);
+  if (emailValidationError) {
+    return NextResponse.json({ error: emailValidationError }, { status: 400 });
   }
 
   // Use the SSR (public anon) client to invoke signUp — this is the path that

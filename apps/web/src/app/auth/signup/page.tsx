@@ -6,17 +6,77 @@ import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import styles from "../auth.module.css";
 
+// Disposable / known-fake email domains that generate bounces
+const BLOCKED_DOMAINS = new Set([
+  "mailinator.com", "guerrillamail.com", "tempmail.com", "throwam.com",
+  "sharklasers.com", "guerrillamailblock.com", "grr.la", "guerrillamail.info",
+  "guerrillamail.biz", "guerrillamail.de", "guerrillamail.net", "guerrillamail.org",
+  "spam4.me", "yopmail.com", "yopmail.fr", "cool.fr.nf", "jetable.fr.nf",
+  "nospam.ze.tc", "nomail.xl.cx", "mega.zik.dj", "speed.1s.fr",
+  "courriel.fr.nf", "moncourrier.fr.nf", "monemail.fr.nf", "monmail.fr.nf",
+  "trashmail.at", "trashmail.com", "trashmail.io", "trashmail.me",
+  "trashmail.net", "dispostable.com", "fakeinbox.com", "maildrop.cc",
+  "mailnull.com", "spamgourmet.com", "spamgourmet.net", "spamgourmet.org",
+  "10minutemail.com", "10minutemail.net", "10minutemail.org",
+  "minutemail.com", "mohmal.com", "discard.email", "spamhereplease.com",
+  "binkmail.com", "bobmail.info", "chammy.info", "devnullmail.com",
+  "dingbone.com", "dump-email.info", "fakemail.fr", "filzmail.com",
+  "gowikibooks.com", "gowikicampus.com", "gowikicars.com", "gowikifilms.com",
+  "gowikigames.com", "gowikimusic.com", "gowikinetwork.com", "gowikitravel.com",
+  "gowikitv.com", "inoutmail.de", "inoutmail.eu", "inoutmail.info",
+  "inoutmail.net", "jnxjn.com", "jourrapide.com", "klassmaster.com",
+  "put2.net", "spamfree24.org", "spamfree24.de", "spamfree24.eu",
+  "spamfree24.info", "spamfree24.net", "tempr.email", "tmail.com",
+  "tmailinator.com", "toppmail.com", "trash-mail.at", "trashdevil.com",
+  "trashdevil.de", "trashemail.de", "wegwerfmail.de", "wegwerfmail.net",
+  "wegwerfmail.org", "wh4f.org", "whyspam.me", "willhackforfood.biz",
+  "wuzupmail.net", "xagloo.com", "yuurok.com", "zippymail.info",
+]);
+
+function validateEmail(email: string): string | null {
+  const trimmed = email.trim().toLowerCase();
+  // Basic format check
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!emailRegex.test(trimmed)) {
+    return "Please enter a valid email address.";
+  }
+  // Must have a real TLD (no single char after dot)
+  const parts = trimmed.split("@");
+  const domain = parts[1];
+  if (!domain || domain.split(".").pop()!.length < 2) {
+    return "Please use a valid email domain (e.g. gmail.com).";
+  }
+  // Block disposable domains
+  if (BLOCKED_DOMAINS.has(domain)) {
+    return "Disposable email addresses are not allowed. Please use your real email.";
+  }
+  return null;
+}
+
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
 
+  const handleEmailBlur = () => {
+    setEmailError(validateEmail(email));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Re-validate email before submitting
+    const emailValidationError = validateEmail(email);
+    if (emailValidationError) {
+      setEmailError(emailValidationError);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/signup", {
@@ -59,12 +119,12 @@ export default function SignupPage() {
             <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
             <span className={styles.logoText}>BairePorbo</span>
           </div>
-          <h1 className={styles.heading}>Check your email</h1>
+          <h1 className={styles.heading}>Account created! 🎉</h1>
           <p className={styles.sub}>
-            We sent a confirmation link to <strong>{email}</strong>. Click it to activate your account, then sign in.
+            Welcome aboard! Your account is ready. Sign in to start exploring scholarships.
           </p>
           <Link href="/auth/login" className={styles.primaryBtn} style={{ display: "block", textAlign: "center", marginTop: 20 }}>
-            Go to sign in
+            Sign in now
           </Link>
         </div>
       </div>
@@ -125,9 +185,12 @@ export default function SignupPage() {
               autoComplete="email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setEmailError(null); }}
+              onBlur={handleEmailBlur}
               placeholder="you@example.com"
+              aria-invalid={!!emailError}
             />
+            {emailError && <p className={styles.error} style={{ marginTop: 4 }}>{emailError}</p>}
           </div>
           <div className={styles.field}>
             <label htmlFor="password">Password</label>
