@@ -12,6 +12,7 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
     title: "", country: "", degree_level: "masters", funding_type: "full",
     deadline: "", official_url: "", raw_description: "",
     eligibility_summary: "", tips: "", ai_summary: "", competitiveness: "", tags: "",
+    is_flagship: false as boolean,
   });
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -43,6 +44,7 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
             ai_summary: s.ai_summary ?? "",
             competitiveness: s.competitiveness ?? "",
             tags: (s.tags ?? []).join(", "),
+            is_flagship: s.is_flagship ?? false,
           });
           setOriginalThumbnail(s.thumbnail_url);
         }
@@ -55,6 +57,7 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
   }, [id]);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
+  const setBool = (k: string, v: boolean) => setForm((p) => ({ ...p, [k]: v }));
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; 
@@ -127,6 +130,19 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
       {error && <p className={styles.error}>⚠ {error}</p>}
 
       <form onSubmit={save} className={styles.formCard}>
+        {/* Flagship toggle – shown at the very top for easy access */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, padding: "12px 16px", background: form.is_flagship ? "var(--amber-50, #fffbeb)" : "var(--sand-100, #f5f4f0)", border: `1.5px solid ${form.is_flagship ? "var(--amber-300, #fcd34d)" : "var(--sand-200, #e8e5dc)"}`, borderRadius: 10 }}>
+          <input
+            type="checkbox"
+            id="is_flagship"
+            checked={form.is_flagship}
+            onChange={(e) => setBool("is_flagship", e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: "var(--amber-500, #f59e0b)", cursor: "pointer", flexShrink: 0 }}
+          />
+          <label htmlFor="is_flagship" style={{ cursor: "pointer", fontWeight: 600, fontSize: 14, color: form.is_flagship ? "var(--amber-700, #b45309)" : "var(--ink-700)" }}>
+            ⭐ Mark as Flagship (pinned to top of public list)
+          </label>
+        </div>
         <div className={styles.parsedSection} style={{ marginTop: 0 }}>
           <div className={styles.fieldGrid}>
             <div className={styles.field}>

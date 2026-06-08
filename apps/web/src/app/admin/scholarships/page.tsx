@@ -15,6 +15,7 @@ type Scholarship = {
   deadline: string | null;
   updated_at: string;
   thumbnail_url: string | null;
+  is_flagship: boolean;
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -46,6 +47,15 @@ export default function AdminScholarshipsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "published" }),
+    });
+    load();
+  };
+
+  const toggleFlagship = async (id: string, current: boolean) => {
+    await fetch(`/api/admin/scholarships/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_flagship: !current }),
     });
     load();
   };
@@ -148,6 +158,9 @@ export default function AdminScholarshipsPage() {
                 {s.thumbnail_url && (
                   <img src={s.thumbnail_url} alt="" className={styles.rowThumb} />
                 )}
+                {s.is_flagship && (
+                  <span title="Flagship" style={{ marginRight: 4, fontSize: 14 }}>⭐</span>
+                )}
                 {s.title}
               </span>
               <span>{s.country}</span>
@@ -162,6 +175,18 @@ export default function AdminScholarshipsPage() {
                 <Link href={`/admin/scholarships/${s.id}/edit`} className={styles.actionBtn}>
                   Edit
                 </Link>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => toggleFlagship(s.id, s.is_flagship)}
+                  title={s.is_flagship ? "Remove from featured" : "Mark as featured (shown first)"}
+                  style={{
+                    background: s.is_flagship ? "var(--amber-100, #fef3c7)" : undefined,
+                    color: s.is_flagship ? "var(--amber-700, #b45309)" : undefined,
+                    borderColor: s.is_flagship ? "var(--amber-300, #fcd34d)" : undefined,
+                  }}
+                >
+                  {s.is_flagship ? "★ Unfeature" : "☆ Feature"}
+                </button>
                 <button
                   className={styles.actionBtn}
                   onClick={() => ingest(s.id)}

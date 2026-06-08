@@ -18,6 +18,7 @@ type Scholarship = {
   tags: string[] | null;
   thumbnail_url: string | null;
   competitiveness: string | null;
+  is_flagship: boolean;
 };
 
 const FUNDING_MAP: Record<string, string> = {
@@ -164,7 +165,7 @@ function ScholarshipsContent() {
     const supabase = createClient();
     supabase
       .from("scholarships")
-      .select("id, title, country, funding_type, deadline, degree_level, tags, thumbnail_url, competitiveness")
+      .select("id, title, country, funding_type, deadline, degree_level, tags, thumbnail_url, competitiveness, is_flagship")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
@@ -236,6 +237,13 @@ function ScholarshipsContent() {
         return pa - pb;
       });
     }
+
+    // Flagship scholarships always float to the very top (after all other sorting)
+    result = [...result].sort((a, b) => {
+      if (a.is_flagship === b.is_flagship) return 0;
+      return a.is_flagship ? -1 : 1;
+    });
+
     return result;
   }, [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
 
@@ -517,12 +525,18 @@ function ScholarshipsContent() {
           ) : filtered.length ? (
             <div className={styles.cardGrid}>
               {filtered.map((s) => (
-                <article key={s.id} className={styles.card}>
+                <article key={s.id} className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""}`}>
                   <Link
                     href={`/scholarships/${s.id}`}
                     className={styles.cardLink}
                     aria-label={`View ${s.title}`}
                   />
+
+                  {s.is_flagship && (
+                    <span className={styles.flagshipBadge} aria-label="Featured scholarship">
+                      ⭐ Featured
+                    </span>
+                  )}
 
                   {s.thumbnail_url && (
                     <img src={s.thumbnail_url} alt="" className={styles.cardThumb} />

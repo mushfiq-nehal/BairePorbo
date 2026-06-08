@@ -24,7 +24,7 @@ export async function GET() {
 
   const { data, error } = await auth.supabase
     .from("scholarships")
-    .select("id, title, country, status, created_at, updated_at, thumbnail_url, degree_level, funding_type, deadline")
+    .select("id, title, country, status, created_at, updated_at, thumbnail_url, degree_level, funding_type, deadline, is_flagship")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
