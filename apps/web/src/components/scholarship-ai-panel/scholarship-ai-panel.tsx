@@ -208,6 +208,9 @@ export default function ScholarshipAiPanel({
                 Send
               </button>
             </form>
+            <p className={styles.panelDisclaimer}>
+              ✦ AI responses are a helpful guide — verify key details from the official scholarship website.
+            </p>
           </div>
         </>
       )}

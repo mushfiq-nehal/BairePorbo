@@ -782,6 +782,10 @@ function ChatContent() {
               </button>
             </div>
           </form>
+
+          <p className={styles.aiDisclaimer}>
+            ✦ AI can occasionally get details wrong — always confirm deadlines, eligibility, and requirements from the official scholarship source.
+          </p>
         </main>
       </div>
   );

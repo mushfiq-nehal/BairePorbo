@@ -756,6 +756,15 @@
   color: #b14a2a;
 }
 
+.aiDisclaimer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-500);
+  margin: 0;
+  padding-bottom: 4px;
+  line-height: 1.5;
+}
+
 .primaryButton {
   background: var(--teal-500);
   color: #ffffff;

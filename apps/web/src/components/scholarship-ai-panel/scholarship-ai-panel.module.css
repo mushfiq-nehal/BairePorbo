@@ -311,6 +311,17 @@
   cursor: not-allowed;
 }
 
+.panelDisclaimer {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-500);
+  margin: 0;
+  padding: 8px 24px 10px;
+  background: white;
+  border-top: 1px solid var(--sand-100);
+  line-height: 1.5;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
