@@ -374,6 +374,80 @@ export default function ScholarshipDetailPage() {
           </div>
         </section>
 
+        {/* Required Documents Guide */}
+        <section className={styles.docsGuide}>
+          <div className={styles.docsGuideHeader}>
+            <div className={styles.docsGuideIcon} aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <div>
+              <h2>Documents Required for International Scholarships</h2>
+              <p>A general guide to documents commonly needed when applying for scholarships abroad.</p>
+            </div>
+          </div>
+
+          <div className={styles.docsColumns}>
+            <div className={styles.docsCard}>
+              <h3>
+                <span className={styles.docsBadge} style={{ background: "rgba(15,143,141,0.12)", color: "var(--teal-700)" }}>Core</span>
+                Core Documents
+              </h3>
+              <ul className={styles.docsList}>
+                {[
+                  "Valid Passport",
+                  "Academic Certificates & Transcripts (SSC, HSC, Bachelor's)",
+                  "Curriculum Vitae (CV) or Resume",
+                  "Statement of Purpose (SOP) or Motivation Letter",
+                  "Letters of Recommendation (LOR)",
+                  "English Proficiency Certificate — IELTS, TOEFL, or PTE",
+                  "Recent Passport-Sized Photograph",
+                ].map((doc) => (
+                  <li key={doc}>
+                    <span className={styles.docsDot} />
+                    {doc}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className={styles.docsCard}>
+              <h3>
+                <span className={styles.docsBadge} style={{ background: "rgba(99,102,241,0.1)", color: "#4338ca" }}>Additional</span>
+                Sometimes Required
+              </h3>
+              <ul className={styles.docsList}>
+                {[
+                  "Medical Certificate",
+                  "Research Proposal (especially for Master's & PhD)",
+                  "Work Experience Certificate or Professional Portfolio",
+                ].map((doc) => (
+                  <li key={doc}>
+                    <span className={styles.docsDot} style={{ background: "#818cf8" }} />
+                    {doc}
+                  </li>
+                ))}
+              </ul>
+
+              <div className={styles.docsTip}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+                <p>
+                  <strong>Pro tip:</strong> A valid passport, academic transcripts, a strong CV, and a well-crafted SOP are usually enough to start applying to most scholarships at the initial stage.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <div className={styles.aiDisclaimer}>
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
             <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
