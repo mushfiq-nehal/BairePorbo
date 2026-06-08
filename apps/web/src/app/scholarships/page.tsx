@@ -532,15 +532,20 @@ function ScholarshipsContent() {
                     aria-label={`View ${s.title}`}
                   />
 
-                  {s.is_flagship && (
-                    <span className={styles.flagshipBadge} aria-label="Featured scholarship">
+                  {s.thumbnail_url ? (
+                    <div className={styles.thumbWrap}>
+                      <img src={s.thumbnail_url} alt="" className={styles.cardThumb} />
+                      {s.is_flagship && (
+                        <span className={styles.flagshipBadge} aria-label="Featured scholarship">
+                          ⭐ Featured
+                        </span>
+                      )}
+                    </div>
+                  ) : s.is_flagship ? (
+                    <span className={styles.flagshipBadgeCorner} aria-label="Featured scholarship">
                       ⭐ Featured
                     </span>
-                  )}
-
-                  {s.thumbnail_url && (
-                    <img src={s.thumbnail_url} alt="" className={styles.cardThumb} />
-                  )}
+                  ) : null}
 
                   {/* Mobile-only bookmark icon, top-right corner */}
                   <button
