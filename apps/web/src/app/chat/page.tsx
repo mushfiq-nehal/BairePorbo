@@ -110,14 +110,14 @@ function bumpAnonUsage(): number {
 const WELCOME_USER: ChatMessage = {
   role: "assistant",
   content:
-    "Hi! I'm your BairePorbo Mentor. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
+    "Hi! I'm your BairePorbo Mentor. I can help you find scholarships, check eligibility, and build an application strategy.\n\nType your question below and press **Enter** to send. What program are you aiming for?",
   time: formatTime(new Date()),
 };
 
 const WELCOME_ANON: ChatMessage = {
   role: "assistant",
   content:
-    `Hi! I'm your BairePorbo Mentor. You have **${ANON_DAILY_LIMIT} free messages** today — no signup needed. Ask me anything about scholarships, eligibility, or applications.`,
+    `Hi! I'm your BairePorbo Mentor. You have **${ANON_DAILY_LIMIT} free messages** today — no signup needed.\n\nAsk me anything about scholarships, eligibility, or applications. Type below and press **Enter** to send.`,
   time: formatTime(new Date()),
 };
 
@@ -160,6 +160,13 @@ function ChatContent() {
 
   const chatWindowRef = useRef<HTMLElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
 
   // ── Init: load anon key and sessions ──────────────────────────────────────
 
@@ -468,12 +475,20 @@ function ChatContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
+    // Reset textarea height after send
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage(input);
+      // Reset textarea height after send
+      if (textareaRef.current) {
+        textareaRef.current.style.height = "auto";
+      }
     }
   };
 
@@ -750,13 +765,13 @@ function ChatContent() {
 
           <form className={styles.inputBar} onSubmit={handleSubmit}>
             <label className={styles.inputLabel}>
-              Ask BairePorbo Mentor
+              <span className={styles.inputLabelText}>Ask BairePorbo Mentor</span>
               <textarea
                 ref={textareaRef}
-                rows={2}
-                placeholder="Ask about eligibility, funding, or application strategy… (Enter to send)"
+                rows={1}
+                placeholder="Ask anything…"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => { setInput(e.target.value); autoResize(); }}
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
               />
