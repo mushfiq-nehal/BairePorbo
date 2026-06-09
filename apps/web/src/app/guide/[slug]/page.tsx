@@ -1,0 +1,237 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import AppNavbar from "@/components/layout/app-navbar";
+import { getGuideBySlug, getAllSlugs, guides } from "../data/index";
+import GuideAccordion from "./guide-accordion";
+import styles from "./guide-detail.module.css";
+
+interface Props {
+  params: Promise<{ slug: string }>;
+}
+
+export function generateStaticParams() {
+  return getAllSlugs().map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const guide = getGuideBySlug(slug);
+  if (!guide) return {};
+
+  const BASE = "https://baireporbo.app";
+  const url = `${BASE}/guide/${guide.slug}`;
+
+  return {
+    title: guide.title,
+    description: guide.description,
+    alternates: { canonical: url },
+    openGraph: {
+      title: `${guide.title} | BairePorbo`,
+      description: guide.description,
+      url,
+      type: "article",
+      publishedTime: guide.publishedAt,
+      modifiedTime: guide.updatedAt,
+      tags: guide.tags,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: guide.title,
+      description: guide.description,
+    },
+  };
+}
+
+export default async function GuideDetailPage({ params }: Props) {
+  const { slug } = await params;
+  const guide = getGuideBySlug(slug);
+  if (!guide) notFound();
+
+  /* Related guides: same category, exclude current */
+  const related = guides
+    .filter((g) => g.slug !== guide.slug && g.category === guide.category)
+    .slice(0, 3);
+
+  /* ── JSON-LD: FAQ Schema ── */
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: guide.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+
+  /* ── JSON-LD: Article Schema ── */
+  const articleSchema = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.description,
+    datePublished: guide.publishedAt,
+    dateModified: guide.updatedAt,
+    author: {
+      "@type": "Organization",
+      name: "BairePorbo",
+      url: "https://baireporbo.app",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "BairePorbo",
+      url: "https://baireporbo.app",
+    },
+    keywords: guide.tags.join(", "),
+    url: `https://baireporbo.app/guide/${guide.slug}`,
+  };
+
+  /* ── Breadcrumb Schema ── */
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://baireporbo.app" },
+      { "@type": "ListItem", position: 2, name: "Guide", item: "https://baireporbo.app/guide" },
+      { "@type": "ListItem", position: 3, name: guide.title, item: `https://baireporbo.app/guide/${guide.slug}` },
+    ],
+  };
+
+  const formattedDate = new Date(guide.updatedAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  return (
+    <>
+      {/* Structured data */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
+      <div className={styles.page}>
+        <AppNavbar />
+
+        <main className={styles.main}>
+          {/* Breadcrumb */}
+          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
+            <Link href="/">Home</Link>
+            <span aria-hidden="true">›</span>
+            <Link href="/guide">Guide</Link>
+            <span aria-hidden="true">›</span>
+            <span>{guide.title}</span>
+          </nav>
+
+          <div className={styles.layout}>
+            {/* Article body */}
+            <article className={styles.article}>
+              {/* Meta header */}
+              <header className={styles.articleHeader}>
+                <div className={styles.headerMeta}>
+                  <span className={styles.categoryBadge}>{guide.category}</span>
+                  <span className={styles.updateDate}>Updated {formattedDate}</span>
+                </div>
+                <h1 className={styles.articleTitle}>{guide.title}</h1>
+                <p className={styles.articleIntro}>{guide.intro}</p>
+
+                {/* Tags */}
+                <div className={styles.tagList}>
+                  {guide.tags.map((tag) => (
+                    <span key={tag} className={styles.tag}>
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </header>
+
+              {/* FAQ count indicator */}
+              <div className={styles.faqHeader}>
+                <h2 className={styles.faqSectionTitle}>
+                  Frequently Asked Questions
+                </h2>
+                <span className={styles.faqCount}>{guide.faqs.length} questions</span>
+              </div>
+
+              {/* Expandable FAQ Accordion */}
+              <GuideAccordion faqs={guide.faqs} />
+
+              {/* Bottom CTA */}
+              <div className={styles.bottomCta}>
+                <p>Have a more specific question?</p>
+                <Link href="/chat" className={styles.mentorLink}>
+                  Ask the AI Mentor →
+                </Link>
+              </div>
+            </article>
+
+            {/* Sidebar */}
+            <aside className={styles.sidebar}>
+              <div className={styles.sidebarCard}>
+                <p className={styles.sidebarKicker}>Quick navigation</p>
+                <ol className={styles.tocList}>
+                  {guide.faqs.map((faq, i) => (
+                    <li key={i}>
+                      <a href={`#faq-${i}`} className={styles.tocLink}>
+                        {faq.question}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className={styles.sidebarMentorCard}>
+                <p className={styles.sidebarMentorTitle}>Still unsure?</p>
+                <p className={styles.sidebarMentorText}>
+                  Our AI Mentor gives personalised answers based on your specific
+                  CGPA, university, and goals.
+                </p>
+                <Link href="/chat" className={styles.sidebarMentorCta}>
+                  Talk to the Mentor
+                </Link>
+              </div>
+
+              {related.length > 0 && (
+                <div className={styles.relatedCard}>
+                  <p className={styles.sidebarKicker}>Related guides</p>
+                  <ul className={styles.relatedList}>
+                    {related.map((g) => (
+                      <li key={g.slug}>
+                        <Link href={`/guide/${g.slug}`} className={styles.relatedLink}>
+                          {g.title}
+                          <span className={styles.relatedArrow}>→</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className={styles.scholarshipsCard}>
+                <p className={styles.sidebarKicker}>Ready to apply?</p>
+                <p className={styles.scholarshipsText}>
+                  Browse scholarships curated for Bangladeshi students.
+                </p>
+                <Link href="/scholarships" className={styles.scholarshipsLink}>
+                  Browse scholarships →
+                </Link>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}

@@ -1266,4 +1266,149 @@
     flex-wrap: wrap;
     gap: 28px;
   }
+  .guideTeaser {
+    order: 5;
+  }
+}
+
+/* ── Guide Teaser Section (homepage) ── */
+.guideTeaser {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 48px 40px;
+  background: linear-gradient(135deg, #0f2633 0%, #0a4a48 60%, #0f8f8d 100%);
+  border-radius: 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+.guideTeaser::before {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(93, 232, 222, 0.12), transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.guideTeaserHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.guideTeaserHeader .kicker {
+  color: #5de8de;
+}
+
+.guideTeaserHeader h2 {
+  font-family: var(--font-display), serif;
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+  color: #fff;
+  margin-top: 6px;
+}
+
+.guideTeaserHeader .sectionSubtext {
+  color: rgba(255, 255, 255, 0.75);
+  max-width: 460px;
+}
+
+.guideTeaserSeeAll {
+  display: inline-block;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5de8de;
+  border: 1px solid rgba(93, 232, 222, 0.4);
+  padding: 8px 18px;
+  border-radius: 100px;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.guideTeaserSeeAll:hover {
+  background: rgba(93, 232, 222, 0.12);
+  color: #fff;
+}
+
+.guideTeaserGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.guideTeaserCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  text-decoration: none;
+  color: #fff;
+  backdrop-filter: blur(6px);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.guideTeaserCard:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(93, 232, 222, 0.4);
+  transform: translateY(-2px);
+}
+
+.guideTeaserCategory {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #5de8de;
+}
+
+.guideTeaserTitle {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: #fff;
+  margin: 0;
+}
+
+.guideTeaserExcerpt {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.guideTeaserCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5de8de;
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .guideTeaser {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+
+  .guideTeaserGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .guideTeaserHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }

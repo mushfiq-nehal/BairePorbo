@@ -23,20 +23,29 @@ const CACHE_DISABLED = process.env.PROMPT_CACHE_DISABLED === "1";
 
 // Bump this any time the system prompt or shape changes so old entries
 // invalidate naturally instead of needing a manual flush.
-export const SYSTEM_PROMPT_VERSION = "v1";
+export const SYSTEM_PROMPT_VERSION = "v2";
 
 const normalize = (text: string) => text.trim().toLowerCase().replace(/\s+/g, " ");
 
 export type CacheKeyInput = {
   model: string;
   userMessage: string;
+  /**
+   * Optional scholarship-specific context. When present (e.g. from the
+   * per-scholarship AI panel), it is hashed into the key so that the same
+   * question asked on different scholarship pages never collides in the cache.
+   */
+  systemContext?: string;
 };
 
-export const buildCacheKey = ({ model, userMessage }: CacheKeyInput): string => {
+export const buildCacheKey = ({ model, userMessage, systemContext }: CacheKeyInput): string => {
   const payload = [
     SYSTEM_PROMPT_VERSION,
     model,
     normalize(userMessage),
+    // Include a hash of the scholarship context so identical questions on
+    // different scholarship pages produce different cache keys.
+    systemContext ? createHash("sha256").update(systemContext.trim()).digest("hex").slice(0, 16) : "",
   ].join("|");
   return createHash("sha256").update(payload).digest("hex");
 };

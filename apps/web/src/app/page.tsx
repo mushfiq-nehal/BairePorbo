@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { createClient } from "@/utils/supabase/client";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
+import { guides } from "./guide/data/index";
 import styles from "./page.module.css";
 
 type ClosingScholarship = {
@@ -278,6 +279,36 @@ export default function Home() {
 
           <MentorMock />
         </section>
+
+        {/* ── From the Guide ── */}
+        <section className={styles.guideTeaser} aria-label="Study abroad guides">
+          <div className={styles.guideTeaserHeader}>
+            <div>
+              <p className={styles.kicker}>Knowledge hub</p>
+              <h2>Study abroad guides & FAQs</h2>
+              <p className={styles.sectionSubtext}>
+                Answers to the questions Bangladeshi students ask most — scholarships, IELTS, SOP writing, and more.
+              </p>
+            </div>
+            <Link href="/guide" className={styles.guideTeaserSeeAll}>
+              All guides →
+            </Link>
+          </div>
+          <div className={styles.guideTeaserGrid}>
+            {guides.slice(0, 3).map((guide) => (
+              <Link
+                key={guide.slug}
+                href={`/guide/${guide.slug}`}
+                className={styles.guideTeaserCard}
+              >
+                <span className={styles.guideTeaserCategory}>{guide.category}</span>
+                <h3 className={styles.guideTeaserTitle}>{guide.title}</h3>
+                <p className={styles.guideTeaserExcerpt}>{guide.description}</p>
+                <span className={styles.guideTeaserCount}>{guide.faqs.length} FAQs →</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </main>
 
       {/* ── Footer ── */}
@@ -309,6 +340,7 @@ export default function Home() {
               <h4>Platform</h4>
               <Link href="/scholarships">Browse scholarships</Link>
               <Link href="/chat">AI Mentor</Link>
+              <Link href="/guide">Study guides</Link>
               <Link href={user ? "/dashboard" : "/auth/login"}>Dashboard</Link>
             </div>
             <div className={styles.footerCol}>

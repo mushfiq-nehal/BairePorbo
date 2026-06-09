@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { createServiceClient } from "@/utils/supabase/server";
+import { getAllSlugs } from "@/app/guide/data/index";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -18,6 +19,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    {
+      url: `${BASE_URL}/guide`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...getAllSlugs().map((slug) => ({
+      url: `${BASE_URL}/guide/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     {
       url: `${BASE_URL}/auth/login`,
       lastModified: new Date(),

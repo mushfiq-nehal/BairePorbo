@@ -201,11 +201,17 @@ export async function POST(req: NextRequest) {
   const userTurnCount = trimmedMessages.filter((m) => m.role === "user").length;
   const cacheEligible = !!lastUserMessage?.content && userTurnCount === 1;
 
+  // Extract any scholarship-specific context from the system message so it can
+  // be hashed into the cache key. Without this, "Am I eligible for this?" on
+  // ANY scholarship page would collide to the same cache entry.
+  const systemMessageContent = trimmedMessages.find((m) => m.role === "system")?.content ?? "";
+
   let cacheKey: string | null = null;
   if (cacheEligible && lastUserMessage?.content) {
     const lookup = await lookupPromptCache({
       model: primaryModel,
       userMessage: lastUserMessage.content,
+      systemContext: systemMessageContent || undefined,
     });
     cacheKey = lookup.cacheKey;
     if (lookup.hit && lookup.response) {
