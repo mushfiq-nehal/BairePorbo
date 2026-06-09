@@ -15,4 +15,6 @@ export type Guide = {
   updatedAt: string;
   intro: string;
   faqs: FAQ[];
+  /** Optional hero image URL — shown only on the guide detail page, not on listing cards */
+  coverImageUrl?: string;
 };

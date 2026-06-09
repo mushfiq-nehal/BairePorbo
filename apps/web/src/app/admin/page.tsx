@@ -5,21 +5,27 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import styles from "./admin.module.css";
 
-type Stats = { total: number; published: number; drafts: number };
+type Stats = { total: number; published: number; drafts: number; guides: number };
 
 export default function AdminDashboard() {
   const { user } = useAuth();
-  const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0 });
+  const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0, guides: 0 });
 
   useEffect(() => {
     fetch("/api/admin/scholarships")
       .then((r) => r.json())
       .then(({ scholarships = [] }) => {
-        setStats({
+        setStats((prev) => ({
+          ...prev,
           total: scholarships.length,
           published: scholarships.filter((s: { status: string }) => s.status === "published").length,
           drafts: scholarships.filter((s: { status: string }) => s.status === "draft").length,
-        });
+        }));
+      });
+    fetch("/api/admin/guides")
+      .then((r) => r.json())
+      .then(({ guides = [] }) => {
+        setStats((prev) => ({ ...prev, guides: guides.length }));
       });
   }, []);
 
@@ -46,12 +52,16 @@ export default function AdminDashboard() {
           <span className={styles.statLabel}>Published</span>
         </div>
         <div className={styles.statCard}>
-          <span className={styles.statValue}>{stats.drafts}</span>
-          <span className={styles.statLabel}>Drafts</span>
+          <span className={styles.statValue}>{stats.guides}</span>
+          <span className={styles.statLabel}>Guides</span>
         </div>
       </div>
 
       <div className={styles.quickLinks}>
+        <Link href="/admin/guides" className={styles.linkCard}>
+          <span className={styles.linkIcon}>📝</span>
+          <span>Manage Guides</span>
+        </Link>
         <Link href="/admin/scholarships" className={styles.linkCard}>
           <span className={styles.linkIcon}>🎓</span>
           <span>Manage Scholarships</span>

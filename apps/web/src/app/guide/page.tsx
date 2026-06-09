@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import AppNavbar from "@/components/layout/app-navbar";
-import { guides } from "./data/index";
+import NavbarWithAuth from "@/components/layout/navbar-with-auth";
+import { guides as staticGuides } from "./data/index";
+import { createServiceClient } from "@/utils/supabase/server";
+import type { Guide } from "./data/types";
 import styles from "./page.module.css";
+
+export const revalidate = 3600; // ISR: regenerate once per hour
 
 export const metadata: Metadata = {
   title: "Study Abroad Guides & FAQs for Bangladeshi Students",
@@ -28,10 +32,43 @@ const CATEGORY_COLORS: Record<string, string> = {
   Visa: "purple",
 };
 
-export default function GuidePage() {
+export default async function GuidePage() {
+  // Fetch published guides from DB (admin-created ones)
+  let dbGuides: Guide[] = [];
+  try {
+    const db = createServiceClient();
+    const { data } = await db
+      .from("guides")
+      .select("slug, title, description, category, tags, intro, faqs, published_at, updated_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false });
+    if (data) {
+      dbGuides = data.map((g) => ({
+        slug: g.slug,
+        title: g.title,
+        description: g.description,
+        category: g.category as Guide["category"],
+        tags: g.tags ?? [],
+        intro: g.intro,
+        faqs: Array.isArray(g.faqs) ? g.faqs : [],
+        publishedAt: g.published_at ?? g.updated_at ?? "",
+        updatedAt: g.updated_at ?? "",
+      }));
+    }
+  } catch {
+    // DB unavailable — fall back to static only
+  }
+
+  // Merge: DB guides first, then static guides not already in DB
+  const dbSlugs = new Set(dbGuides.map((g) => g.slug));
+  const allGuides: Guide[] = [
+    ...dbGuides,
+    ...staticGuides.filter((g) => !dbSlugs.has(g.slug)),
+  ];
+
   return (
     <div className={styles.page}>
-      <AppNavbar />
+      <NavbarWithAuth />
 
       <main className={styles.main}>
         {/* Header */}
@@ -51,7 +88,7 @@ export default function GuidePage() {
           {/* Stats bar */}
           <div className={styles.statsBar}>
             <span>
-              <strong>{guides.length}</strong> guides published
+              <strong>{allGuides.length}</strong> guides published
             </span>
             <span className={styles.statsDivider} aria-hidden="true">·</span>
             <span>Free to read</span>
@@ -63,7 +100,7 @@ export default function GuidePage() {
         {/* Guide grid */}
         <section className={styles.gridSection} aria-label="All guides">
           <div className={styles.grid}>
-            {guides.map((guide) => {
+            {allGuides.map((guide) => {
               const colorKey = CATEGORY_COLORS[guide.category] ?? "teal";
               return (
                 <Link
@@ -109,7 +146,7 @@ export default function GuidePage() {
             <p className={styles.ctaKicker}>Still have questions?</p>
             <h2 className={styles.ctaTitle}>Ask our AI Mentor anything</h2>
             <p className={styles.ctaText}>
-              The guides cover common questions, but every student's situation
+              The guides cover common questions, but every student&apos;s situation
               is unique. Get personalised answers in seconds.
             </p>
             <Link href="/chat" className={styles.ctaButton}>

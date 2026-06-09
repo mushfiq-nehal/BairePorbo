@@ -2,6 +2,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  padding: 32px 8vw 0;
 }
 
 .main {
@@ -9,6 +10,10 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  /* Break out of the 8vw horizontal padding for full-bleed sections */
+  margin-left: -8vw;
+  margin-right: -8vw;
+  width: calc(100% + 16vw);
 }
 
 /* ── Header ── */

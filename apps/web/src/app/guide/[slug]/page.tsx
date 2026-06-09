@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import AppNavbar from "@/components/layout/app-navbar";
+import Image from "next/image";
+import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { getGuideBySlug, getAllSlugs, guides } from "../data/index";
+import { createServiceClient } from "@/utils/supabase/server";
+import type { Guide } from "../data/types";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
+
+export const revalidate = 3600; // ISR: rebuild slug pages hourly
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export function generateStaticParams() {
+  // Pre-render static file guides at build time.
+  // DB-created guides are handled by ISR (on-demand after revalidate).
   return getAllSlugs().map((slug) => ({ slug }));
 }
 
@@ -45,7 +52,36 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GuideDetailPage({ params }: Props) {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+
+  // Try DB first (for admin-created guides), then fall back to static files
+  let guide: Guide | undefined;
+  try {
+    const db = createServiceClient();
+    const { data } = await db
+      .from("guides")
+      .select("*")
+      .eq("slug", slug)
+      .eq("status", "published")
+      .maybeSingle();
+    if (data) {
+      guide = {
+        slug: data.slug,
+        title: data.title,
+        description: data.description,
+        category: data.category as Guide["category"],
+        tags: data.tags ?? [],
+        intro: data.intro,
+        faqs: Array.isArray(data.faqs) ? data.faqs : [],
+        publishedAt: data.published_at ?? data.created_at ?? "",
+        updatedAt: data.updated_at ?? "",
+        coverImageUrl: data.cover_image_url ?? undefined,
+      };
+    }
+  } catch {
+    // DB unavailable
+  }
+
+  if (!guide) guide = getGuideBySlug(slug);
   if (!guide) notFound();
 
   /* Related guides: same category, exclude current */
@@ -123,7 +159,7 @@ export default async function GuideDetailPage({ params }: Props) {
       />
 
       <div className={styles.page}>
-        <AppNavbar />
+        <NavbarWithAuth />
 
         <main className={styles.main}>
           {/* Breadcrumb */}
@@ -156,6 +192,21 @@ export default async function GuideDetailPage({ params }: Props) {
                   ))}
                 </div>
               </header>
+
+              {/* Cover image — optional, only shown if provided */}
+              {guide.coverImageUrl && (
+                <div className={styles.coverImageWrap}>
+                  <Image
+                    src={guide.coverImageUrl}
+                    alt={`Cover image for ${guide.title}`}
+                    width={800}
+                    height={420}
+                    className={styles.coverImage}
+                    priority
+                    unoptimized
+                  />
+                </div>
+              )}
 
               {/* FAQ count indicator */}
               <div className={styles.faqHeader}>
