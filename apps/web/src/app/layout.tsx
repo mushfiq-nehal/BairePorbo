@@ -19,7 +19,7 @@ const bodyFont = Manrope({
 
 const bengaliFont = Hind_Siliguri({
   variable: "--font-bengali",
-  subsets: ["bengali"],
+  subsets: ["bengali", "latin"],
   weight: ["400", "500", "600", "700"],
 });
 
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "bn_BD",
     url: BASE_URL,
     siteName: "BairePorbo",
     title: "BairePorbo — AI Scholarship Guidance for Bangladeshi Students",
@@ -97,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
+    <html lang="bn" className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f8f8d" />

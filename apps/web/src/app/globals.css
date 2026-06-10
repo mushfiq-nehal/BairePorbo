@@ -30,7 +30,7 @@ body {
   flex-direction: column;
   color: var(--ink-900);
   background: radial-gradient(circle at top, #ffffff 0%, #f3efe7 35%, #efe7db 100%);
-  font-family: var(--font-body), var(--font-bengali), "Segoe UI", sans-serif;
+  font-family: var(--font-bengali), var(--font-body), "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
