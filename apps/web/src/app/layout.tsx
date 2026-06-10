@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
-import { Fraunces, Manrope } from "next/font/google";
+import { Fraunces, Manrope, Hind_Siliguri } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "./providers";
@@ -15,6 +15,12 @@ const displayFont = Fraunces({
 const bodyFont = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
+});
+
+const bengaliFont = Hind_Siliguri({
+  variable: "--font-bengali",
+  subsets: ["bengali"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const BASE_URL = "https://baireporbo.app";
@@ -91,7 +97,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f8f8d" />

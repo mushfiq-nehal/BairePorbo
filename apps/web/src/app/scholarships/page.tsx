@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./scholarships.module.css";
 
@@ -149,6 +150,7 @@ function ScholarshipsContent() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useT();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
@@ -330,9 +332,9 @@ function ScholarshipsContent() {
 
   const actions: NavAction[] = [
     user
-      ? { label: "Sign out", onClick: signOut }
-      : { label: "Sign in", href: "/auth/login", variant: "ghost" },
-    !user ? { label: "Get started", href: "/auth/signup" } : null,
+      ? { label: t("nav.signOut"), onClick: signOut }
+      : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" },
+    !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
   ].filter(Boolean) as NavAction[];
 
   return (
@@ -342,14 +344,12 @@ function ScholarshipsContent() {
       <main className={styles.main}>
         <section className={styles.hero}>
           <div>
-            <p className={styles.kicker}>Curated and explained</p>
+            <p className={styles.kicker}>{t("scholarships.kicker")}</p>
             <h1 className={styles.heroTitle}>
-              <span className={styles.heroTitleFull}>Scholarships filtered for Bangladeshi applicants</span>
+              <span className={styles.heroTitleFull}>{t("scholarships.heroTitle")}</span>
               <span className={styles.heroTitleShort} aria-hidden="true">Scholarships</span>
             </h1>
-            <p className={styles.subtitle}>
-              Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.
-            </p>
+            <p className={styles.subtitle}>{t("scholarships.heroSubtitle")}</p>
           </div>
           <div className={styles.heroPanel}>
             <div className={styles.snapshotHeader}>
@@ -357,23 +357,23 @@ function ScholarshipsContent() {
                 <span className={styles.liveDot} />
                 LIVE
               </span>
-              <h3>Search snapshot</h3>
+              <h3>{t("scholarships.searchSnapshot")}</h3>
             </div>
 
             {loading ? (
               <p className={styles.snapshotLine}>
                 <span className={styles.shimmerBar} aria-hidden="true" />
-                <span className={styles.srOnly}>Loading scholarships…</span>
+                <span className={styles.srOnly}>{t("scholarships.loading")}</span>
               </p>
             ) : filtered.length === 0 ? (
-              <p className={styles.snapshotLine}>No live scholarships to apply yet.</p>
+              <p className={styles.snapshotLine}>{t("scholarships.noLive")}</p>
             ) : (
               <>
                 <div className={styles.snapshotCount} aria-live="polite">
                   <span className={styles.countNumber}>{displayCount}</span>
                   <span className={styles.countLabel}>
-                    <span>live scholarship{filtered.length !== 1 ? "s" : ""}</span>
-                    <em>ready to apply</em>
+                    <span>{filtered.length !== 1 ? t("scholarships.liveScholarships") : t("scholarships.liveScholarship")}</span>
+                    <em>{t("scholarships.readyToApply")}</em>
                   </span>
                 </div>
                 <div className={styles.snapshotProgress} aria-hidden="true">
@@ -382,7 +382,7 @@ function ScholarshipsContent() {
                 {closingSoonCount > 0 && (
                   <p className={styles.urgencyLine}>
                     <span className={styles.urgencyPulse} aria-hidden="true">⚡</span>
-                    {closingSoonCount} closing within 60 days — don&apos;t miss out
+                    {closingSoonCount} {t("scholarships.closingIn60")}
                   </p>
                 )}
               </>
@@ -390,7 +390,7 @@ function ScholarshipsContent() {
 
             {!loading && scholarships.length === 0 && (
               <p style={{ fontSize: 13, color: "var(--ink-500)", marginTop: 8 }}>
-                No scholarships published yet. Check back soon!
+                {t("scholarships.nonePublished")}
               </p>
             )}
           </div>
@@ -407,10 +407,10 @@ function ScholarshipsContent() {
             <input
               type="text"
               className={styles.searchInput}
-              placeholder="Search scholarships…"
+              placeholder={t("scholarships.searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              aria-label="Search scholarships"
+              aria-label={t("scholarships.searchAriaLabel")}
               ref={searchInputRef}
             />
             {searchTerm && (
@@ -433,7 +433,7 @@ function ScholarshipsContent() {
           {/* Dropdown filters */}
           {countries.length > 0 && (
             <DropdownFilter
-              label="Country"
+              label={t("scholarships.country")}
               options={countries}
               selected={selectedCountries}
               onChange={setSelectedCountries}
@@ -441,7 +441,7 @@ function ScholarshipsContent() {
           )}
           {fundingOptions.length > 0 && (
             <DropdownFilter
-              label="Funding"
+              label={t("scholarships.funding")}
               options={fundingOptions}
               selected={selectedFunding}
               onChange={setSelectedFunding}
@@ -449,7 +449,7 @@ function ScholarshipsContent() {
           )}
           {levelOptions.length > 0 && (
             <DropdownFilter
-              label="Level"
+              label={t("scholarships.level")}
               options={levelOptions}
               selected={selectedLevels}
               onChange={setSelectedLevels}
@@ -468,18 +468,18 @@ function ScholarshipsContent() {
               className={styles.sortSelect}
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              aria-label="Sort results"
+              aria-label={t("scholarships.sortResults")}
             >
-              <option>Best match</option>
-              <option>Deadline</option>
-              <option>Funding</option>
+              <option value="Best match">{t("scholarships.bestMatch")}</option>
+              <option value="Deadline">{t("scholarships.deadline")}</option>
+              <option value="Funding">{t("scholarships.funding")}</option>
             </select>
           </div>
 
           {/* Clear */}
           {hasActiveFilters && (
             <button type="button" className={styles.clearBtn} onClick={clearFilters}>
-              Clear
+              {t("scholarships.clear")}
             </button>
           )}
         </section>
@@ -511,17 +511,17 @@ function ScholarshipsContent() {
                 </button>
               </span>
             ))}
-            <span className={styles.matchCount}>{filtered.length} match{filtered.length !== 1 ? "es" : ""}</span>
+            <span className={styles.matchCount}>{filtered.length} {filtered.length !== 1 ? t("scholarships.matches") : t("scholarships.match")}</span>
           </div>
         )}
 
         <section className={styles.results}>
           <div className={styles.resultsHeader}>
-            <h2>Results <span className={styles.resultsCount}>{filtered.length}</span></h2>
+            <h2>{t("scholarships.results")} <span className={styles.resultsCount}>{filtered.length}</span></h2>
           </div>
 
           {loading ? (
-            <div className={styles.emptyState}><p>Loading scholarships…</p></div>
+            <div className={styles.emptyState}><p>{t("scholarships.loading")}</p></div>
           ) : filtered.length ? (
             <div className={styles.cardGrid}>
               {filtered.map((s) => (
@@ -536,14 +536,14 @@ function ScholarshipsContent() {
                     <div className={styles.thumbWrap}>
                       <img src={s.thumbnail_url} alt="" className={styles.cardThumb} />
                       {s.is_flagship && (
-                        <span className={styles.flagshipBadge} aria-label="Featured scholarship">
-                          ⭐ Featured
+                        <span className={styles.flagshipBadge} aria-label={t("scholarships.featured")}>
+                          {t("scholarships.featured")}
                         </span>
                       )}
                     </div>
                   ) : s.is_flagship ? (
-                    <span className={styles.flagshipBadgeCorner} aria-label="Featured scholarship">
-                      ⭐ Featured
+                    <span className={styles.flagshipBadgeCorner} aria-label={t("scholarships.featured")}>
+                      {t("scholarships.featured")}
                     </span>
                   ) : null}
 
@@ -582,7 +582,7 @@ function ScholarshipsContent() {
                       <p className={styles.cardLabel}>{s.country}</p>
                       <h3>{s.title}</h3>
                       <p className={styles.cardMeta}>
-                        {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} funding
+                        {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
                       </p>
                     </div>
                     <span className={`${styles.deadline} ${
@@ -593,10 +593,10 @@ function ScholarshipsContent() {
                         : ""
                     }`}>
                       {isExpired(s.deadline)
-                        ? "✕ Closed"
+                        ? t("scholarships.closedBadge")
                         : isClosingSoon(s.deadline)
-                        ? `⚡ Deadline ${formatDeadline(s.deadline)}`
-                        : `Deadline ${formatDeadline(s.deadline)}`}
+                        ? `⚡ ${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`
+                        : `${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`}
                     </span>
                   </div>
                   {s.tags && s.tags.length > 0 && (
@@ -606,7 +606,7 @@ function ScholarshipsContent() {
                   )}
                   <div className={styles.cardActions}>
                     <Link className={styles.primaryButton} href={`/scholarships/${s.id}`}>
-                      View details
+                      {t("scholarships.viewDetails")}
                     </Link>
                     <button
                       className={`${styles.secondaryButton} ${
@@ -616,7 +616,7 @@ function ScholarshipsContent() {
                       onClick={() => toggleBookmark(s.id)}
                       disabled={bookmarkingId === s.id}
                     >
-                      {bookmarkedIds.includes(s.id) ? "Bookmarked" : "Bookmark"}
+                      {bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
                     </button>
                   </div>
                 </article>
@@ -624,8 +624,8 @@ function ScholarshipsContent() {
             </div>
           ) : (
             <div className={styles.emptyState}>
-              <p>No scholarships match those filters yet.</p>
-              <p className={styles.emptyHint}>Scholarships you might like:</p>
+              <p>{t("scholarships.noMatch")}</p>
+              <p className={styles.emptyHint}>{t("scholarships.youMightLike")}</p>
               {emptySuggestions.length > 0 && (
                 <div className={styles.emptySuggestions}>
                   {emptySuggestions.map((s) => (
@@ -640,7 +640,7 @@ function ScholarshipsContent() {
                   ))}
                 </div>
               )}
-              <button className={styles.primaryButton} type="button" onClick={clearFilters}>Reset filters</button>
+              <button className={styles.primaryButton} type="button" onClick={clearFilters}>{t("scholarships.resetFilters")}</button>
             </div>
           )}
         </section>

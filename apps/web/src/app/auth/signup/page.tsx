@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
 // Disposable / known-fake email domains that generate bounces
@@ -54,6 +55,7 @@ function validateEmail(email: string): string | null {
 }
 
 export default function SignupPage() {
+  const t = useT();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -119,12 +121,10 @@ export default function SignupPage() {
             <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
             <span className={styles.logoText}>BairePorbo</span>
           </div>
-          <h1 className={styles.heading}>Account created! 🎉</h1>
-          <p className={styles.sub}>
-            Welcome aboard! Your account is ready. Sign in to start exploring scholarships.
-          </p>
+          <h1 className={styles.heading}>{t("signup.successHeading")}</h1>
+          <p className={styles.sub}>{t("signup.successSub")}</p>
           <Link href="/auth/login" className={styles.primaryBtn} style={{ display: "block", textAlign: "center", marginTop: 20 }}>
-            Sign in now
+            {t("signup.signInNow")}
           </Link>
         </div>
       </div>
@@ -138,8 +138,8 @@ export default function SignupPage() {
           <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
           <span className={styles.logoText}>BairePorbo</span>
         </div>
-        <h1 className={styles.heading}>Create your account</h1>
-        <p className={styles.sub}>Free for students. AI-powered scholarship guidance.</p>
+        <h1 className={styles.heading}>{t("signup.heading")}</h1>
+        <p className={styles.sub}>{t("signup.sub")}</p>
 
         <button type="button" onClick={handleGoogleSignIn} className={styles.googleBtn}>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -160,25 +160,25 @@ export default function SignupPage() {
               fill="#EA4335"
             />
           </svg>
-          Continue with Google
+          {t("signup.continueWithGoogle")}
         </button>
 
         <div className={styles.divider}>OR</div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label htmlFor="fullName">Full name</label>
+            <label htmlFor="fullName">{t("signup.fullName")}</label>
             <input
               id="fullName"
               type="text"
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Your full name"
+              placeholder={t("signup.fullNamePlaceholder")}
             />
           </div>
           <div className={styles.field}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t("signup.email")}</label>
             <input
               id="email"
               type="email"
@@ -193,7 +193,7 @@ export default function SignupPage() {
             {emailError && <p className={styles.error} style={{ marginTop: 4 }}>{emailError}</p>}
           </div>
           <div className={styles.field}>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t("signup.password")}</label>
             <input
               id="password"
               type="password"
@@ -202,26 +202,28 @@ export default function SignupPage() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="At least 8 characters"
+              placeholder={t("signup.passwordPlaceholder")}
             />
           </div>
 
           {error && <p className={styles.error}>{error}</p>}
 
           <button type="submit" className={styles.primaryBtn} disabled={loading}>
-            {loading ? "Creating account…" : "Create account"}
+            {loading ? t("signup.creating") : t("signup.create")}
           </button>
 
           <p className={styles.consent}>
-            By creating an account you agree to our{" "}
-            <Link href="/legal/terms">Terms of Service</Link> and{" "}
-            <Link href="/legal/privacy">Privacy Policy</Link>.
+            {t("signup.consentPre")}{" "}
+            <Link href="/legal/terms">{t("signup.terms")}</Link>{" "}
+            {t("signup.and")}{" "}
+            <Link href="/legal/privacy">{t("signup.privacy")}</Link>
+            {t("signup.consentPost")}
           </p>
         </form>
 
         <p className={styles.switchLink}>
-          Already have an account?{" "}
-          <Link href="/auth/login">Sign in</Link>
+          {t("signup.haveAccount")}{" "}
+          <Link href="/auth/login">{t("signup.signIn")}</Link>
         </p>
       </div>
     </div>

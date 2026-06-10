@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import { useDialog } from "@/components/ui/dialog-provider";
 import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./profile.module.css";
@@ -64,6 +65,7 @@ const SCORED_FIELDS: (keyof ProfileData)[] = [
 export default function ProfilePage() {
   const { signOut } = useAuth();
   const dialog = useDialog();
+  const t = useT();
 
   const [profile, setProfile] = useState<ProfileData>(EMPTY_PROFILE);
   const [initialProfile, setInitialProfile] = useState<ProfileData>(EMPTY_PROFILE);
@@ -148,23 +150,20 @@ export default function ProfilePage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+        <AppNavbar actions={[{ label: t("nav.signOut"), onClick: signOut }]} />
 
         <main className={styles.main}>
           {/* ── Hero ── */}
           <section className={styles.hero}>
             <div>
-              <p className={styles.kicker}>Student profile</p>
-              <h1>Your details, your matches</h1>
-              <p className={styles.subtitle}>
-                The more we know about you, the more accurate our scholarship suggestions will be.
-                Nothing here is shared publicly.
-              </p>
+              <p className={styles.kicker}>{t("profile.kicker")}</p>
+              <h1>{t("profile.title")}</h1>
+              <p className={styles.subtitle}>{t("profile.subtitle")}</p>
             </div>
 
             <div className={styles.completionCard} aria-live="polite">
               <div className={styles.completionTop}>
-                <span className={styles.completionLabel}>Profile completeness</span>
+                <span className={styles.completionLabel}>{t("profile.completeness")}</span>
                 <span className={styles.completionValue}>{completion}%</span>
               </div>
               <div className={styles.progressTrack} aria-hidden="true">
@@ -175,10 +174,10 @@ export default function ProfilePage() {
               </div>
               <p className={styles.completionHint}>
                 {completion === 100
-                  ? "All fields filled. Your matches are as accurate as they get."
+                  ? t("profile.hint100")
                   : completion >= 60
-                    ? "Looking solid. A few more fields will sharpen your matches."
-                    : "Fill the essentials below to unlock useful AI matches."}
+                    ? t("profile.hint60")
+                    : t("profile.hintDefault")}
               </p>
             </div>
           </section>
@@ -186,46 +185,46 @@ export default function ProfilePage() {
           {/* ── Form ── */}
           <form className={styles.form} onSubmit={handleSave}>
             {loading ? (
-              <p className={styles.muted}>Loading your profile…</p>
+              <p className={styles.muted}>{t("profile.loadingProfile")}</p>
             ) : (
               <>
                 <FieldGroup
-                  title="About you"
-                  description="The basics that go on every application."
+                  title={t("profile.aboutYouTitle")}
+                  description={t("profile.aboutYouDesc")}
                 >
                   <Field
-                    label="Full name"
+                    label={t("profile.fullName")}
                     value={profile.full_name}
                     onChange={(v) => setProfile({ ...profile, full_name: v })}
-                    placeholder="As it appears on official documents"
+                    placeholder={t("profile.fullNamePlaceholder")}
                   />
                   <Field
-                    label="University / institution"
+                    label={t("profile.university")}
                     value={profile.university}
                     onChange={(v) => setProfile({ ...profile, university: v })}
-                    placeholder="e.g. BUET, BRAC, DU"
+                    placeholder={t("profile.universityPlaceholder")}
                   />
                   <Field
-                    label="BSc major / department"
+                    label={t("profile.bscMajor")}
                     value={profile.bsc_major}
                     onChange={(v) => setProfile({ ...profile, bsc_major: v })}
-                    placeholder="e.g. Computer Science"
+                    placeholder={t("profile.bscMajorPlaceholder")}
                   />
                   <Field
-                    label="Graduation year"
+                    label={t("profile.graduationYear")}
                     type="number"
                     value={profile.graduation_year}
                     onChange={(v) => setProfile({ ...profile, graduation_year: v })}
                     placeholder="e.g. 2024"
                   />
                   <Field
-                    label="CGPA"
+                    label={t("profile.cgpa")}
                     value={profile.cgpa}
                     onChange={(v) => setProfile({ ...profile, cgpa: v })}
                     placeholder="e.g. 3.65"
                   />
                   <SelectField
-                    label="Target degree level"
+                    label={t("profile.targetDegree")}
                     value={profile.target_degree}
                     onChange={(v) => setProfile({ ...profile, target_degree: v })}
                     options={[
@@ -239,23 +238,23 @@ export default function ProfilePage() {
                 </FieldGroup>
 
                 <FieldGroup
-                  title="Goals"
-                  description="What you're aiming for."
+                  title={t("profile.goalsTitle")}
+                  description={t("profile.goalsDesc")}
                 >
                   <Field
-                    label="Preferred countries"
+                    label={t("profile.preferredCountries")}
                     value={profile.preferred_countries}
                     onChange={(v) => setProfile({ ...profile, preferred_countries: v })}
-                    placeholder="e.g. Germany, UK, Canada"
+                    placeholder={t("profile.preferredCountriesPlaceholder")}
                   />
                   <TextareaField
-                    label="Research interests / focus area"
+                    label={t("profile.researchInterests")}
                     value={profile.research_interests}
                     onChange={(v) => setProfile({ ...profile, research_interests: v })}
                     placeholder="e.g. AI for healthcare, NLP, climate modelling"
                   />
                   <TextareaField
-                    label="Goals & notes"
+                    label={t("profile.goalsNotes")}
                     value={profile.goals_notes}
                     onChange={(v) => setProfile({ ...profile, goals_notes: v })}
                     placeholder="e.g. Looking for full funding in data science, open to scholarships requiring 2-year return commitment."
@@ -264,17 +263,17 @@ export default function ProfilePage() {
                 </FieldGroup>
 
                 <FieldGroup
-                  title="Tests & scores"
-                  description="Add what you have. Empty fields won't be assumed."
+                  title={t("profile.testsTitle")}
+                  description={t("profile.testsDesc")}
                 >
                   <Field
-                    label="IELTS / TOEFL score"
+                    label={t("profile.ieltsToefl")}
                     value={profile.ielts_score}
                     onChange={(v) => setProfile({ ...profile, ielts_score: v })}
                     placeholder="e.g. IELTS 7.5 (or TOEFL 105)"
                   />
                   <Field
-                    label="GRE / GMAT score"
+                    label={t("profile.greGmat")}
                     value={profile.gre_gmat_score}
                     onChange={(v) => setProfile({ ...profile, gre_gmat_score: v })}
                     placeholder="e.g. GRE 320, GMAT 700"
@@ -282,29 +281,29 @@ export default function ProfilePage() {
                 </FieldGroup>
 
                 <FieldGroup
-                  title="Experience"
-                  description="Optional but improves matching for competitive scholarships."
+                  title={t("profile.experienceTitle")}
+                  description={t("profile.experienceDesc")}
                 >
                   <Field
-                    label="Work experience"
+                    label={t("profile.workExperience")}
                     value={profile.work_experience}
                     onChange={(v) => setProfile({ ...profile, work_experience: v })}
                     placeholder="e.g. 2 years as a software engineer"
                   />
                   <TextareaField
-                    label="Internships / part-time roles"
+                    label={t("profile.internships")}
                     value={profile.internships}
                     onChange={(v) => setProfile({ ...profile, internships: v })}
                     placeholder="e.g. ML intern at XYZ Labs (Summer 2023)"
                   />
                   <TextareaField
-                    label="Published papers"
+                    label={t("profile.publishedPapers")}
                     value={profile.published_papers}
                     onChange={(v) => setProfile({ ...profile, published_papers: v })}
                     placeholder="e.g. 2 papers — Title 1 (link), Title 2 (link)"
                   />
                   <Field
-                    label="Portfolio / LinkedIn"
+                    label={t("profile.portfolio")}
                     type="url"
                     value={profile.portfolio_url}
                     onChange={(v) => setProfile({ ...profile, portfolio_url: v })}
@@ -319,7 +318,7 @@ export default function ProfilePage() {
         {/* Sticky save bar appears whenever there are unsaved changes */}
         {isDirty && !loading && (
           <div className={styles.saveBar} role="region" aria-label="Unsaved changes">
-            <p className={styles.saveBarHint}>You have unsaved changes.</p>
+            <p className={styles.saveBarHint}>{t("profile.unsavedChanges")}</p>
             <div className={styles.saveBarActions}>
               <button
                 type="button"
@@ -327,7 +326,7 @@ export default function ProfilePage() {
                 onClick={() => setProfile(initialProfile)}
                 disabled={isSaving}
               >
-                Discard
+                {t("profile.discard")}
               </button>
               <button
                 type="button"
@@ -335,7 +334,7 @@ export default function ProfilePage() {
                 onClick={() => handleSave()}
                 disabled={isSaving}
               >
-                {isSaving ? "Saving…" : "Save changes"}
+                {isSaving ? t("profile.saving") : t("profile.saveChanges")}
               </button>
             </div>
           </div>

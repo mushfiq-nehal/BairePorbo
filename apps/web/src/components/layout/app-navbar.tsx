@@ -4,6 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import PrimaryNav from "@/components/layout/primary-nav";
+import LangToggle from "@/components/layout/lang-toggle";
+import { useT } from "@/lib/lang-context";
 import styles from "./app-navbar.module.css";
 
 export type NavAction = {
@@ -19,6 +21,7 @@ type AppNavbarProps = {
 
 export default function AppNavbar({ actions = [] }: AppNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const t = useT();
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -35,11 +38,12 @@ export default function AppNavbar({ actions = [] }: AppNavbarProps) {
         onClick={() => setMenuOpen((open) => !open)}
         aria-expanded={menuOpen}
         aria-controls="mobile-nav-panel"
-        aria-label={menuOpen ? "Close navigation menu" : "Open navigation menu"}
+        aria-label={menuOpen ? t("nav.closeMenu") : t("nav.openMenu")}
       >
-        {menuOpen ? "Close" : "Menu"}
+        {menuOpen ? t("nav.close") : t("nav.menu")}
       </button>
       <div className={styles.actions}>
+        <LangToggle />
         {actions.map((action) => {
           const className = action.variant === "ghost" ? styles.ghostButton : styles.actionButton;
           return action.href ? (
@@ -64,17 +68,18 @@ export default function AppNavbar({ actions = [] }: AppNavbarProps) {
             type="button"
             className={styles.mobileBackdrop}
             onClick={closeMenu}
-            aria-label="Close navigation menu"
+            aria-label={t("nav.closeMenu")}
           />
           <div className={styles.mobilePanel} id="mobile-nav-panel" role="dialog" aria-modal="true">
             <div className={styles.mobilePanelHeader}>
-              <span>Navigate</span>
+              <span>{t("nav.navigate")}</span>
               <button type="button" className={styles.mobileClose} onClick={closeMenu}>
-                Close
+                {t("nav.close")}
               </button>
             </div>
             <PrimaryNav orientation="vertical" onNavigate={closeMenu} />
             <div className={styles.mobileActions}>
+              <LangToggle />
               {actions.map((action) => {
                 const className = action.variant === "ghost" ? styles.ghostButton : styles.actionButton;
                 return action.href ? (

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import { createClient } from "@/utils/supabase/client";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import { guides } from "./guide/data/index";
@@ -20,6 +21,7 @@ type ClosingScholarship = {
 export default function Home() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const t = useT();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [stats, setStats] = useState({ scholarships: 0, countries: 0 });
@@ -67,17 +69,17 @@ export default function Home() {
     ? []
     : [
         user
-          ? { label: "Sign out", onClick: signOut }
-          : { label: "Sign in", href: "/auth/login", variant: "ghost" },
-        !user ? { label: "Get started", href: "/auth/signup" } : null,
+          ? { label: t("nav.signOut"), onClick: signOut }
+          : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" },
+        !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
       ].filter(Boolean) as NavAction[];
 
   const formatDaysLeft = (deadline: string | null) => {
-    if (!deadline) return "Open";
+    if (!deadline) return t("label.open");
     const diff = new Date(deadline).getTime() - Date.now();
-    if (isNaN(diff) || diff <= 0) return "Closed";
+    if (isNaN(diff) || diff <= 0) return t("label.closed");
     const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
-    return `${days} day${days !== 1 ? "s" : ""} left`;
+    return `${days} ${t("label.daysLeft")}`;
   };
 
   const formatDeadlineShort = (deadline: string | null) => {
@@ -98,12 +100,9 @@ export default function Home() {
         {/* ── Hero ── */}
         <section className={styles.hero}>
           <div className={styles.heroLeft}>
-            <p className={styles.kicker}>AI scholarship compass for Bangladesh</p>
-            <h1>Find scholarships that fit your story, not just your grades.</h1>
-            <p className={styles.lede}>
-              BairePorbo guides students through higher-study decisions with explainable AI,
-              localized advice, and a curated scholarship map.
-            </p>
+            <p className={styles.kicker}>{t("home.kicker")}</p>
+            <h1>{t("home.heroTitle")}</h1>
+            <p className={styles.lede}>{t("home.heroCopy")}</p>
 
             <form className={styles.searchForm} onSubmit={handleSearchSubmit}>
               <div className={styles.searchInputWrap}>
@@ -126,14 +125,14 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by country, field, or scholarship name…"
+                  placeholder={t("home.searchPlaceholder")}
                   className={styles.searchInput}
-                  aria-label="Search scholarships"
+                  aria-label={t("home.searchAriaLabel")}
                   autoComplete="off"
                 />
               </div>
               <button type="submit" className={styles.searchButton}>
-                Search
+                {t("home.searchButton")}
               </button>
             </form>
 
@@ -141,9 +140,9 @@ export default function Home() {
               <Link
                 href="/scholarships"
                 className={styles.browseAllCta}
-                aria-label="Browse all scholarships"
+                aria-label={t("home.browseAll")}
               >
-                <span className={styles.browseAllLabel}>Browse all scholarships</span>
+                <span className={styles.browseAllLabel}>{t("home.browseAll")}</span>
                 {stats.scholarships > 0 && (
                   <span className={styles.browseAllCount}>{stats.scholarships}</span>
                 )}
@@ -153,7 +152,7 @@ export default function Home() {
 
             {quickTags.length > 0 && (
               <div className={styles.quickTags}>
-                <span>Popular:</span>
+                <span>{t("home.popular")}</span>
                 {quickTags.map((tag) => (
                   <Link key={tag} href={`/scholarships?q=${encodeURIComponent(tag)}`}>
                     {tag}
@@ -164,7 +163,7 @@ export default function Home() {
 
             <div className={styles.heroAlternative}>
               <p>
-                Not sure what to search? <Link href="/chat">Talk to our AI Mentor →</Link>
+                {t("home.notSure")} <Link href="/chat">{t("home.talkToMentor")}</Link>
               </p>
             </div>
 
@@ -173,17 +172,17 @@ export default function Home() {
                 <span className={styles.statValue}>
                   {stats.scholarships > 0 ? stats.scholarships : "—"}
                 </span>
-                <span className={styles.statLabel}>Scholarships tracked</span>
+                <span className={styles.statLabel}>{t("home.scholarshipsTracked")}</span>
               </div>
               <div>
                 <span className={styles.statValue}>
                   {stats.countries > 0 ? stats.countries : "—"}
                 </span>
-                <span className={styles.statLabel}>Countries covered</span>
+                <span className={styles.statLabel}>{t("home.countriesCovered")}</span>
               </div>
               <div className={styles.statTertiary}>
                 <span className={styles.statValue}>24/7</span>
-                <span className={styles.statLabel}>AI guidance</span>
+                <span className={styles.statLabel}>{t("home.aiGuidance")}</span>
               </div>
             </div>
           </div>
@@ -197,24 +196,24 @@ export default function Home() {
         <section className={styles.workflowRow} aria-label="How it works">
           <div className={styles.workflowItem}>
             <span className={styles.workflowDot}>1</span>
-            <strong>Search</strong>
-            <span>scholarships across 30+ countries</span>
+            <strong>{t("home.step1Label")}</strong>
+            <span>{t("home.step1Desc")}</span>
           </div>
           <div className={styles.workflowArrow} aria-hidden="true">
             →
           </div>
           <div className={styles.workflowItem}>
             <span className={styles.workflowDot}>2</span>
-            <strong>Match</strong>
-            <span>with AI-explained eligibility</span>
+            <strong>{t("home.step2Label")}</strong>
+            <span>{t("home.step2Desc")}</span>
           </div>
           <div className={styles.workflowArrow} aria-hidden="true">
             →
           </div>
           <div className={styles.workflowItem}>
             <span className={styles.workflowDot}>3</span>
-            <strong>Apply</strong>
-            <span>with a personalised roadmap</span>
+            <strong>{t("home.step3Label")}</strong>
+            <span>{t("home.step3Desc")}</span>
           </div>
         </section>
 
@@ -226,20 +225,21 @@ export default function Home() {
             <div>
               <p className={styles.kicker}>
                 <span className={styles.liveDot} aria-hidden="true" />
-                Closing soon
+                {t("home.closingSoon")}
               </p>
-              <h2>Don&apos;t miss these deadlines</h2>
+              <h2>{t("home.dontMissDeadlines")}</h2>
             </div>
             <Link href="/scholarships?sort=deadline" className={styles.closingMore}>
-              See all scholarships →
+              {t("home.seeAllScholarships")}
             </Link>
           </div>
 
           {closingSoon.length === 0 ? (
             <div className={styles.closingEmpty}>
               <p>
-                Nothing closing in the next 30 days. Check the{" "}
-                <Link href="/scholarships">full list</Link> for upcoming opportunities.
+                {t("home.nothingClosingPre")}{" "}
+                <Link href="/scholarships">{t("home.fullList")}</Link>{" "}
+                {t("home.upcomingOpportunities")}
               </p>
             </div>
           ) : (
@@ -255,7 +255,7 @@ export default function Home() {
                   <p className={styles.closingMeta}>
                     <span>{s.country}</span>
                     <span aria-hidden="true">·</span>
-                    <span>Deadline {formatDeadlineShort(s.deadline)}</span>
+                    <span>{t("home.deadlinePrefix")} {formatDeadlineShort(s.deadline)}</span>
                   </p>
                 </Link>
               ))}
@@ -266,14 +266,11 @@ export default function Home() {
         {/* ── Mentor showcase ── */}
         <section className={styles.mentorShowcase}>
           <div className={styles.mentorCopy}>
-            <p className={styles.kicker}>The AI Mentor in action</p>
-            <h2>Real answers to the questions students actually ask.</h2>
-            <p className={styles.sectionSubtext}>
-              Not a generic chatbot. The mentor knows Bangladeshi context — your CGPA, IELTS
-              expectations, and what scholarships realistically open up.
-            </p>
+            <p className={styles.kicker}>{t("home.mentorKicker")}</p>
+            <h2>{t("home.mentorTitle")}</h2>
+            <p className={styles.sectionSubtext}>{t("home.mentorDesc")}</p>
             <Link href="/chat" className={styles.mentorCta}>
-              Try the mentor →
+              {t("home.tryMentor")}
             </Link>
           </div>
 
@@ -284,14 +281,12 @@ export default function Home() {
         <section className={styles.guideTeaser} aria-label="Study abroad guides">
           <div className={styles.guideTeaserHeader}>
             <div>
-              <p className={styles.kicker}>Knowledge hub</p>
-              <h2>Study abroad guides & FAQs</h2>
-              <p className={styles.sectionSubtext}>
-                Answers to the questions Bangladeshi students ask most — scholarships, IELTS, SOP writing, and more.
-              </p>
+              <p className={styles.kicker}>{t("home.knowledgeHub")}</p>
+              <h2>{t("home.guidesTitle")}</h2>
+              <p className={styles.sectionSubtext}>{t("home.guidesDesc")}</p>
             </div>
             <Link href="/guide" className={styles.guideTeaserSeeAll}>
-              All guides →
+              {t("home.allGuides")}
             </Link>
           </div>
           <div className={styles.guideTeaserGrid}>
@@ -304,7 +299,7 @@ export default function Home() {
                 <span className={styles.guideTeaserCategory}>{guide.category}</span>
                 <h3 className={styles.guideTeaserTitle}>{guide.title}</h3>
                 <p className={styles.guideTeaserExcerpt}>{guide.description}</p>
-                <span className={styles.guideTeaserCount}>{guide.faqs.length} FAQs →</span>
+                <span className={styles.guideTeaserCount}>{guide.faqs.length} {t("home.faqsCount")}</span>
               </Link>
             ))}
           </div>
@@ -326,35 +321,35 @@ export default function Home() {
               <strong>BairePorbo</strong>
             </div>
             <p className={styles.footerTagline}>
-              AI-powered scholarship guidance,
-              <br />
-              built for Bangladeshi students.
+              {t("footer.tagline").split("\n").map((line, i) => (
+                <span key={i}>{line}{i === 0 && <br />}</span>
+              ))}
             </p>
             <p className={styles.footerCopyright}>
-              © {new Date().getFullYear()} BairePorbo. All rights reserved.
+              © {new Date().getFullYear()} BairePorbo. {t("footer.copyright")}
             </p>
           </div>
 
           <div className={styles.footerColumns}>
             <div className={styles.footerCol}>
-              <h4>Platform</h4>
-              <Link href="/scholarships">Browse scholarships</Link>
-              <Link href="/chat">AI Mentor</Link>
-              <Link href="/guide">Study guides</Link>
-              <Link href={user ? "/dashboard" : "/auth/login"}>Dashboard</Link>
+              <h4>{t("footer.platform")}</h4>
+              <Link href="/scholarships">{t("footer.browseScholarships")}</Link>
+              <Link href="/chat">{t("nav.aiMentor")}</Link>
+              <Link href="/guide">{t("footer.studyGuides")}</Link>
+              <Link href={user ? "/dashboard" : "/auth/login"}>{t("nav.dashboard")}</Link>
             </div>
             <div className={styles.footerCol}>
-              <h4>Account</h4>
-              <Link href="/auth/login">Sign in</Link>
-              <Link href="/auth/signup">Create account</Link>
+              <h4>{t("footer.account")}</h4>
+              <Link href="/auth/login">{t("nav.signIn")}</Link>
+              <Link href="/auth/signup">{t("footer.createAccount")}</Link>
             </div>
             <div className={styles.footerCol}>
-              <h4>Legal</h4>
-              <Link href="/legal/privacy">Privacy policy</Link>
-              <Link href="/legal/terms">Terms of service</Link>
+              <h4>{t("footer.legal")}</h4>
+              <Link href="/legal/privacy">{t("footer.privacyPolicy")}</Link>
+              <Link href="/legal/terms">{t("footer.termsOfService")}</Link>
             </div>
             <div className={styles.footerCol}>
-              <h4>Connect &amp; Support</h4>
+              <h4>{t("footer.connectSupport")}</h4>
               <a href="mailto:support@baireporbo.app" className={styles.footerEmail}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -393,7 +388,7 @@ export default function Home() {
                 facebook.com/baireporbo
               </a>
               <p className={styles.footerSupportNote}>
-                We typically reply within 24 hours.
+                {t("footer.replyTime")}
               </p>
             </div>
           </div>
@@ -406,6 +401,7 @@ export default function Home() {
 // ── Android install banner ────────────────────────────────────────────────────
 function AndroidBanner() {
   const [visible, setVisible] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     // Only show on Android browsers, and only if not already dismissed
@@ -427,8 +423,8 @@ function AndroidBanner() {
       <div className={styles.androidBannerLeft}>
         <img src="/logo.png" alt="" className={styles.androidBannerIcon} />
         <div>
-          <p className={styles.androidBannerTitle}>Get the BairePorbo app</p>
-          <p className={styles.androidBannerSub}>Faster, app-like experience</p>
+          <p className={styles.androidBannerTitle}>{t("banner.title")}</p>
+          <p className={styles.androidBannerSub}>{t("banner.sub")}</p>
         </div>
       </div>
       <div className={styles.androidBannerActions}>
@@ -437,7 +433,7 @@ function AndroidBanner() {
           className={styles.androidBannerInstall}
           download
         >
-          Install
+          {t("banner.install")}
         </a>
         <button
           type="button"

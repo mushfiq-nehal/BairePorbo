@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import AppNavbar from "@/components/layout/app-navbar";
 
 /**
@@ -12,14 +13,15 @@ import AppNavbar from "@/components/layout/app-navbar";
  */
 export default function NavbarWithAuth() {
   const { user, loading, signOut } = useAuth();
+  const t = useT();
 
   const actions = loading
     ? []
     : [
         user
-          ? { label: "Sign out", onClick: signOut }
-          : { label: "Sign in", href: "/auth/login", variant: "ghost" as const },
-        !user ? { label: "Get started", href: "/auth/signup" } : null,
+          ? { label: t("nav.signOut"), onClick: signOut }
+          : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" as const },
+        !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
       ].filter(Boolean) as Parameters<typeof AppNavbar>[0]["actions"];
 
   return <AppNavbar actions={actions} />;

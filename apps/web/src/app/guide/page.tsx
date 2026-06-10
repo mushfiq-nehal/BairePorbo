@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { guides as staticGuides } from "./data/index";
 import { createServiceClient } from "@/utils/supabase/server";
 import type { Guide } from "./data/types";
+import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
 
 export const revalidate = 3600; // ISR: regenerate once per hour
@@ -22,14 +22,6 @@ export const metadata: Metadata = {
     url: "https://baireporbo.app/guide",
     type: "website",
   },
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Scholarships: "teal",
-  Applications: "coral",
-  Tests: "sky",
-  Destinations: "sand",
-  Visa: "purple",
 };
 
 export default async function GuidePage() {
@@ -69,92 +61,7 @@ export default async function GuidePage() {
   return (
     <div className={styles.page}>
       <NavbarWithAuth />
-
-      <main className={styles.main}>
-        {/* Header */}
-        <section className={styles.header}>
-          <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-            <Link href="/">Home</Link>
-            <span aria-hidden="true">›</span>
-            <span>Guide</span>
-          </nav>
-          <p className={styles.kicker}>Knowledge hub</p>
-          <h1 className={styles.title}>Study Abroad Guides</h1>
-          <p className={styles.subtitle}>
-            Expert answers to the questions Bangladeshi students ask most —
-            scholarships, language tests, applications, and destinations.
-          </p>
-
-          {/* Stats bar */}
-          <div className={styles.statsBar}>
-            <span>
-              <strong>{allGuides.length}</strong> guides published
-            </span>
-            <span className={styles.statsDivider} aria-hidden="true">·</span>
-            <span>Free to read</span>
-            <span className={styles.statsDivider} aria-hidden="true">·</span>
-            <span>Updated regularly</span>
-          </div>
-        </section>
-
-        {/* Guide grid */}
-        <section className={styles.gridSection} aria-label="All guides">
-          <div className={styles.grid}>
-            {allGuides.map((guide) => {
-              const colorKey = CATEGORY_COLORS[guide.category] ?? "teal";
-              return (
-                <Link
-                  key={guide.slug}
-                  href={`/guide/${guide.slug}`}
-                  className={styles.card}
-                  aria-label={`Read guide: ${guide.title}`}
-                >
-                  <div className={styles.cardTop}>
-                    <span
-                      className={styles.categoryBadge}
-                      data-color={colorKey}
-                    >
-                      {guide.category}
-                    </span>
-                    <span className={styles.faqCount}>
-                      {guide.faqs.length} FAQs
-                    </span>
-                  </div>
-                  <h2 className={styles.cardTitle}>{guide.title}</h2>
-                  <p className={styles.cardExcerpt}>{guide.description}</p>
-                  <div className={styles.cardFooter}>
-                    <div className={styles.tagList}>
-                      {guide.tags.slice(0, 3).map((tag) => (
-                        <span key={tag} className={styles.tag}>
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <span className={styles.readMore}>
-                      Read →
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* CTA banner */}
-        <section className={styles.ctaBanner} aria-label="AI Mentor CTA">
-          <div className={styles.ctaInner}>
-            <p className={styles.ctaKicker}>Still have questions?</p>
-            <h2 className={styles.ctaTitle}>Ask our AI Mentor anything</h2>
-            <p className={styles.ctaText}>
-              The guides cover common questions, but every student&apos;s situation
-              is unique. Get personalised answers in seconds.
-            </p>
-            <Link href="/chat" className={styles.ctaButton}>
-              Talk to the Mentor →
-            </Link>
-          </div>
-        </section>
-      </main>
+      <GuidePageClient guides={allGuides} />
     </div>
   );
 }

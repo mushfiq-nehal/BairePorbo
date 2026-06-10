@@ -7,6 +7,7 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import { formatModelLabel } from "@/lib/model-label";
 import { useDialog } from "@/components/ui/dialog-provider";
 import PrimaryNav from "@/components/layout/primary-nav";
@@ -134,6 +135,7 @@ function ChatContent() {
   const searchParams = useSearchParams();
   const dialog = useDialog();
   const { user, signOut } = useAuth();
+  const t = useT();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -297,10 +299,10 @@ function ChatContent() {
 
   const deleteSession = async (sessionId: string) => {
     const confirmed = await dialog.confirm({
-      title: "Delete Chat",
-      description: "Are you sure you want to delete this chat history? This action cannot be undone.",
+      title: t("chat.deleteTitle"),
+      description: t("chat.deleteDesc"),
       isDestructive: true,
-      confirmText: "Delete",
+      confirmText: t("chat.delete"),
     });
     if (!confirmed) return;
     try {
@@ -519,7 +521,7 @@ function ChatContent() {
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                 type="button"
               >
-                {isSidebarOpen ? "Close" : "Menu"}
+                {isSidebarOpen ? t("nav.close") : t("nav.menu")}
               </button>
             </div>
             <button
@@ -530,7 +532,7 @@ function ChatContent() {
                 setIsSidebarOpen(false);
               }}
             >
-              New chat
+              {t("chat.newChat")}
             </button>
           </div>
 
@@ -543,7 +545,7 @@ function ChatContent() {
               </div>
               {user ? (
                 <button className={styles.ghostButton} type="button" onClick={signOut}>
-                  Sign out
+                  {t("chat.signOut")}
                 </button>
               ) : (
                 <Link
@@ -551,7 +553,7 @@ function ChatContent() {
                   className={styles.primaryButton}
                   style={{ display: "block", textAlign: "center" }}
                 >
-                  Sign up free
+                  {t("chat.signUpFree")}
                 </Link>
               )}
             </div>
@@ -559,7 +561,7 @@ function ChatContent() {
             {!isAnon && (
               <div className={styles.sessionList}>
                 {sessions.length === 0 && (
-                  <p className={styles.sessionEmpty}>No past conversations yet.</p>
+                  <p className={styles.sessionEmpty}>{t("chat.noPastConversations")}</p>
                 )}
                 {sessions.map((session) => (
                   <div
@@ -594,9 +596,9 @@ function ChatContent() {
                             event.stopPropagation();
                             deleteSession(session.id);
                           }}
-                          aria-label="Delete chat"
+                          aria-label={t("chat.delete")}
                         >
-                          Delete
+                          {t("chat.delete")}
                         </button>
                       </div>
                     </div>
@@ -607,21 +609,19 @@ function ChatContent() {
 
             {isAnon && (
               <div className={styles.anonSidebar}>
-                <p className={styles.anonSidebarTitle}>Free preview</p>
+                <p className={styles.anonSidebarTitle}>{t("chat.freePreview")}</p>
                 <p className={styles.anonSidebarBody}>
-                  You&apos;re trying BairePorbo without an account.{" "}
-                  <strong>{anonRemaining} of {ANON_DAILY_LIMIT}</strong> free
-                  messages left today.
+                  {t("chat.tryingWithout")}{" "}
+                  <strong>{anonRemaining} of {ANON_DAILY_LIMIT}</strong> {t("chat.freeMessagesLeftPost")}
                 </p>
                 <p className={styles.anonSidebarBody} style={{ marginTop: 8 }}>
-                  Sign up to get more messages, save conversations, and unlock
-                  scholarship matching.
+                  {t("chat.signUpForMore")}
                 </p>
               </div>
             )}
 
             <div className={styles.sidebarFooter}>
-              <span>Powered by {formatModelLabel(activeModel ?? modelLabel)}</span>
+              <span>{t("chat.poweredBy")} {formatModelLabel(activeModel ?? modelLabel)}</span>
             </div>
           </div>
         </aside>
@@ -633,7 +633,7 @@ function ChatContent() {
               <button 
                 className={styles.mobileSidebarToggleMain} 
                 onClick={() => setIsSidebarOpen(true)}
-                aria-label="Open menu"
+                aria-label={t("chat.openMenu")}
                 type="button"
               >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -643,15 +643,15 @@ function ChatContent() {
                 </svg>
               </button>
               <h1>
-                <span className={styles.titleFull}>Scholarship mentor chat</span>
-                <span className={styles.titleShort} aria-hidden="true">Mentor</span>
+                <span className={styles.titleFull}>{t("chat.title")}</span>
+                <span className={styles.titleShort} aria-hidden="true">{t("chat.titleShort")}</span>
               </h1>
             </div>
           </header>
 
           <section className={styles.contextBar}>
             <div className={styles.contextItem}>
-              <span className={styles.contextLabelInline}>AI model</span>
+              <span className={styles.contextLabelInline}>{t("chat.aiModel")}</span>
               <span
                 className={styles.contextValue}
                 title={activeModel ?? modelLabel}
@@ -660,12 +660,12 @@ function ChatContent() {
               </span>
               {activeModel && activeModel !== modelLabel && (
                 <span className={styles.fallbackTag} title={`Primary "${formatModelLabel(modelLabel)}" was unavailable, using fallback`}>
-                  fallback
+                  {t("chat.fallback")}
                 </span>
               )}
             </div>
             <div className={styles.contextItem}>
-              <span className={styles.contextLabelInline}>Status</span>
+              <span className={styles.contextLabelInline}>{t("chat.status")}</span>
               <span
                 className={
                   status === "thinking"
@@ -680,12 +680,12 @@ function ChatContent() {
               >
                 <span className={styles.statusDot} aria-hidden="true" />
                 {status === "thinking"
-                  ? "Thinking…"
+                  ? t("chat.thinking")
                   : status === "streaming"
-                    ? "Streaming"
+                    ? t("chat.streaming")
                     : status === "error"
-                      ? "Error"
-                      : "Ready"}
+                      ? t("chat.error")
+                      : t("chat.ready")}
               </span>
             </div>
           </section>
@@ -728,11 +728,11 @@ function ChatContent() {
                   <p className={styles.rateLimitTitle}>{rateLimitInfo.message}</p>
                   {rateLimitInfo.signinRequired ? (
                     <Link href="/auth/login" className={styles.rateLimitCta}>
-                      Sign in to continue →
+                      {t("chat.signInToContinue")}
                     </Link>
                   ) : (
                     <p className={styles.rateLimitHint}>
-                      Try again in {rateLimitInfo.resetIn}.
+                      {t("chat.tryAgainIn")} {rateLimitInfo.resetIn}.
                     </p>
                   )}
                 </div>
@@ -746,7 +746,7 @@ function ChatContent() {
 
           {messages.every((m) => m.role !== "user") && (
             <section className={styles.suggestions}>
-              <p className={styles.suggestionLabel}>Suggested prompts</p>
+              <p className={styles.suggestionLabel}>{t("chat.suggestedPrompts")}</p>
               <div className={styles.suggestionGrid}>
                 {SUGGESTIONS.map((prompt) => (
                   <button
@@ -765,11 +765,11 @@ function ChatContent() {
 
           <form className={styles.inputBar} onSubmit={handleSubmit}>
             <label className={styles.inputLabel}>
-              <span className={styles.inputLabelText}>Ask BairePorbo Mentor</span>
+              <span className={styles.inputLabelText}>{t("chat.askMentor")}</span>
               <textarea
                 ref={textareaRef}
                 rows={1}
-                placeholder="Ask anything…"
+                placeholder={t("chat.askAnything")}
                 value={input}
                 onChange={(e) => { setInput(e.target.value); autoResize(); }}
                 onKeyDown={handleKeyDown}
@@ -784,8 +784,8 @@ function ChatContent() {
                   }`}
                   aria-live="polite"
                 >
-                  {anonRemaining} free message{anonRemaining !== 1 ? "s" : ""} left ·{" "}
-                  <Link href="/auth/signup">Sign up</Link>
+                  {anonRemaining} {t("chat.freeMessagesLeftPost")}{" "}
+                  <Link href="/auth/signup">{t("tab.signUp")}</Link>
                 </span>
               )}
               <button
@@ -793,13 +793,13 @@ function ChatContent() {
                 type="submit"
                 disabled={isLoading || !input.trim()}
               >
-                {isLoading ? "Sending…" : "Send"}
+                {isLoading ? t("chat.sending") : t("chat.send")}
               </button>
             </div>
           </form>
 
           <p className={styles.aiDisclaimer}>
-            ✦ AI can occasionally get details wrong — always confirm deadlines, eligibility, and requirements from the official scholarship source.
+            {t("chat.disclaimer")}
           </p>
         </main>
       </div>

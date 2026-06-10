@@ -5,12 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
+  const t = useT();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,8 +54,8 @@ function LoginForm() {
           <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
           <span className={styles.logoText}>BairePorbo</span>
         </div>
-        <h1 className={styles.heading}>Welcome back</h1>
-        <p className={styles.sub}>Sign in to continue to your account</p>
+        <h1 className={styles.heading}>{t("login.heading")}</h1>
+        <p className={styles.sub}>{t("login.sub")}</p>
 
         <button type="button" onClick={handleGoogleSignIn} className={styles.googleBtn}>
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -74,14 +76,14 @@ function LoginForm() {
               fill="#EA4335"
             />
           </svg>
-          Continue with Google
+          {t("login.continueWithGoogle")}
         </button>
 
         <div className={styles.divider}>OR</div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.field}>
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t("login.email")}</label>
             <input
               id="email"
               type="email"
@@ -93,7 +95,7 @@ function LoginForm() {
             />
           </div>
           <div className={styles.field}>
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t("login.password")}</label>
             <input
               id="password"
               type="password"
@@ -108,13 +110,13 @@ function LoginForm() {
           {error && <p className={styles.error}>{error}</p>}
 
           <button type="submit" className={styles.primaryBtn} disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
+            {loading ? t("login.signingIn") : t("login.signIn")}
           </button>
         </form>
 
         <p className={styles.switchLink}>
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/signup">Create one</Link>
+          {t("login.noAccount")}{" "}
+          <Link href="/auth/signup">{t("login.createOne")}</Link>
         </p>
       </div>
     </div>

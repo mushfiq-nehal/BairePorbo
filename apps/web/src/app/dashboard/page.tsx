@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import AppNavbar from "@/components/layout/app-navbar";
 import styles from "./dashboard.module.css";
 
@@ -39,12 +40,12 @@ type DashboardData = {
 const MATCH_CACHE_KEY = "bp_dashboard_matches";
 const MATCH_CACHE_TTL_MS = 60 * 60 * 1000; // 1h
 
-const greetingFor = (date = new Date()) => {
+const greetingKeyFor = (date = new Date()) => {
   const h = date.getHours();
-  if (h < 5) return "Hello";
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 5) return "dashboard.greetingHello" as const;
+  if (h < 12) return "dashboard.greetingMorning" as const;
+  if (h < 17) return "dashboard.greetingAfternoon" as const;
+  return "dashboard.greetingEvening" as const;
 };
 
 const daysRemaining = (deadline: string | null): number | null => {
@@ -73,6 +74,7 @@ const relative = (iso: string): string => {
 
 export default function DashboardPage() {
   const { signOut } = useAuth();
+  const t = useT();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -192,11 +194,10 @@ export default function DashboardPage() {
     if (closingThisWeek.length > 0) {
       return {
         kind: "urgent" as const,
-        title:
-          closingThisWeek.length === 1
-            ? "1 bookmarked scholarship closes this week"
-            : `${closingThisWeek.length} bookmarked scholarships close this week`,
-        description: "Time to finalise your applications. Open them and check what's left.",
+        titleKey: closingThisWeek.length === 1
+          ? "1 bookmarked scholarship closes this week"
+          : `${closingThisWeek.length} bookmarked scholarships close this week`,
+        descriptionKey: "Time to finalise your applications. Open them and check what's left.",
         ctaLabel: "Review now",
         ctaHref: `/scholarships/${closingThisWeek[0].id}`,
       };
@@ -205,8 +206,8 @@ export default function DashboardPage() {
     if (data.stats.readiness < 50) {
       return {
         kind: "profile" as const,
-        title: "Complete your profile to unlock better matches",
-        description: `You're ${data.stats.readiness}% there. The more we know, the more accurate the AI matches.`,
+        titleKey: "Complete your profile to unlock better matches",
+        descriptionKey: `You're ${data.stats.readiness}% there. The more we know, the more accurate the AI matches.`,
         ctaLabel: "Update profile",
         ctaHref: "/profile",
       };
@@ -215,8 +216,8 @@ export default function DashboardPage() {
     if (data.stats.bookmarksCount === 0) {
       return {
         kind: "explore" as const,
-        title: "Find your first scholarship match",
-        description: "Browse the catalog or chat with the mentor to discover where you'd qualify.",
+        titleKey: "Find your first scholarship match",
+        descriptionKey: "Browse the catalog or chat with the mentor to discover where you'd qualify.",
         ctaLabel: "Browse scholarships",
         ctaHref: "/scholarships",
       };
@@ -225,11 +226,10 @@ export default function DashboardPage() {
     if (data.stats.newScholarshipsCount > 0) {
       return {
         kind: "fresh" as const,
-        title:
-          data.stats.newScholarshipsCount === 1
-            ? "1 new scholarship added this week"
-            : `${data.stats.newScholarshipsCount} new scholarships added this week`,
-        description: "Worth a quick look — they might fit your profile.",
+        titleKey: data.stats.newScholarshipsCount === 1
+          ? "1 new scholarship added this week"
+          : `${data.stats.newScholarshipsCount} new scholarships added this week`,
+        descriptionKey: "Worth a quick look — they might fit your profile.",
         ctaLabel: "See what's new",
         ctaHref: "/scholarships",
       };
@@ -237,8 +237,8 @@ export default function DashboardPage() {
 
     return {
       kind: "default" as const,
-      title: "You're all caught up",
-      description: "Keep refining your profile and ask the mentor when something comes to mind.",
+      titleKey: "You're all caught up",
+      descriptionKey: "Keep refining your profile and ask the mentor when something comes to mind.",
       ctaLabel: "Open mentor",
       ctaHref: "/chat",
     };
@@ -248,7 +248,7 @@ export default function DashboardPage() {
     return (
       <AuthGuard>
         <div className={styles.page}>
-          <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+          <AppNavbar actions={[{ label: t("nav.signOut"), onClick: signOut }]} />
           <main className={styles.main}>
             <div className={styles.skeletonHero}>
               <div className={styles.skeletonLine} style={{ width: "60px", height: "12px" }} />
@@ -272,22 +272,22 @@ export default function DashboardPage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+        <AppNavbar actions={[{ label: t("nav.signOut"), onClick: signOut }]} />
 
         <main className={styles.main} data-mobile-tab={mobileTab}>
           {/* ── Hero: greeting + next action ── */}
           <section className={styles.heroStrip}>
             <div className={styles.heroIntro}>
-              <p className={styles.kicker}>{greetingFor()}</p>
+              <p className={styles.kicker}>{t(greetingKeyFor())}</p>
               <h1>{data.user.name}</h1>
             </div>
 
             {nextAction && (
               <div className={`${styles.actionCard} ${styles[`action_${nextAction.kind}`]}`}>
                 <div className={styles.actionBody}>
-                  <p className={styles.actionLabel}>What to do next</p>
-                  <h2>{nextAction.title}</h2>
-                  <p>{nextAction.description}</p>
+                  <p className={styles.actionLabel}>{t("dashboard.whatNext")}</p>
+                  <h2>{nextAction.titleKey}</h2>
+                  <p>{nextAction.descriptionKey}</p>
                 </div>
                 <Link href={nextAction.ctaHref} className={styles.actionCta}>
                   {nextAction.ctaLabel} →
@@ -304,22 +304,22 @@ export default function DashboardPage() {
           >
             {(
               [
-                { id: "today" as const, label: "Today" },
-                { id: "bookmarks" as const, label: "Bookmarks" },
-                { id: "profile" as const, label: "Profile" },
+                { id: "today" as const, label: t("dashboard.today") },
+                { id: "bookmarks" as const, label: t("dashboard.bookmarks") },
+                { id: "profile" as const, label: t("dashboard.profile") },
               ]
-            ).map((t) => (
+            ).map((tab) => (
               <button
-                key={t.id}
+                key={tab.id}
                 type="button"
                 role="tab"
-                aria-selected={mobileTab === t.id}
+                aria-selected={mobileTab === tab.id}
                 className={`${styles.mobileTabsButton} ${
-                  mobileTab === t.id ? styles.mobileTabsButtonActive : ""
+                  mobileTab === tab.id ? styles.mobileTabsButtonActive : ""
                 }`}
-                onClick={() => setMobileTab(t.id)}
+                onClick={() => setMobileTab(tab.id)}
               >
-                {t.label}
+                {tab.label}
               </button>
             ))}
           </nav>
@@ -330,8 +330,8 @@ export default function DashboardPage() {
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
                 <div>
-                  <p className={styles.kickerLight}>For you</p>
-                  <h3>AI scholarship picks</h3>
+                  <p className={styles.kickerLight}>{t("dashboard.forYou")}</p>
+                  <h3>{t("dashboard.aiPicks")}</h3>
                 </div>
                 <button
                   type="button"
@@ -339,26 +339,26 @@ export default function DashboardPage() {
                   className={styles.linkButton}
                   disabled={matchesLoading}
                 >
-                  {matchesLoading ? "Refreshing…" : "Refresh"}
+                  {matchesLoading ? t("dashboard.refreshing") : t("dashboard.refresh")}
                 </button>
               </div>
 
               {matchesLoading && matches.length === 0 ? (
-                <p className={styles.muted}>Analysing your profile…</p>
+                <p className={styles.muted}>{t("dashboard.analysingProfile")}</p>
               ) : matchError ? (
                 <div className={styles.matchEmpty}>
                   <p>{matchError}</p>
                   {data.stats.readiness < 30 && (
                     <Link href="/profile" className={styles.linkInline}>
-                      Update your profile to improve matches →
+                      {t("dashboard.updateProfileForMatches")}
                     </Link>
                   )}
                 </div>
               ) : matches.length === 0 ? (
                 <div className={styles.matchEmpty}>
-                  <p>No matches yet. A more complete profile gives better suggestions.</p>
+                  <p>{t("dashboard.noMatchesYet")}</p>
                   <Link href="/profile" className={styles.linkInline}>
-                    Update profile →
+                    {t("dashboard.updateProfile")}
                   </Link>
                 </div>
               ) : (
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                           <p>
                             {m.country}
                             {m.funding_type ? ` · ${m.funding_type}` : ""}
-                            {m.deadline ? ` · Deadline ${formatDeadlineShort(m.deadline)}` : ""}
+                            {m.deadline ? ` · ${t("dashboard.deadlineLabel")} ${formatDeadlineShort(m.deadline)}` : ""}
                           </p>
                         </div>
                         <span className={styles.matchArrow} aria-hidden="true">
@@ -398,24 +398,23 @@ export default function DashboardPage() {
                 <div>
                   <p className={styles.kickerLight}>
                     <span className={styles.liveDot} aria-hidden="true" />
-                    Closing soon
+                    {t("dashboard.closingSoon")}
                   </p>
-                  <h3>Bookmarks with deadlines</h3>
+                  <h3>{t("dashboard.bookmarksWithDeadlines")}</h3>
                 </div>
                 <Link href="/scholarships?sort=deadline" className={styles.linkButton}>
-                  See all
+                  {t("dashboard.seeAll")}
                 </Link>
               </div>
 
               {data.bookmarksClosingSoon.length === 0 ? (
                 <div className={styles.matchEmpty}>
                   <p>
-                    Nothing closing in the next 30 days from your bookmarks. Bookmark a few
-                    on the{" "}
+                    {t("dashboard.nothingClosingBookmarks")}{" "}
                     <Link href="/scholarships" className={styles.linkInline}>
-                      scholarships page
+                      {t("dashboard.scholarshipsPageLink")}
                     </Link>{" "}
-                    to track deadlines here.
+                    {t("dashboard.trackDeadlines")}
                   </p>
                 </div>
               ) : (
@@ -437,7 +436,7 @@ export default function DashboardPage() {
                             </p>
                           </div>
                           <span className={styles.deadlineBadge}>
-                            {d === null ? "Open" : d < 0 ? "Closed" : `${d}d left`}
+                            {d === null ? t("label.open") : d < 0 ? t("label.closed") : `${d}${t("label.dLeft")}`}
                           </span>
                         </Link>
                       </li>
@@ -454,8 +453,8 @@ export default function DashboardPage() {
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
                 <div>
-                  <p className={styles.kickerLight}>Your profile</p>
-                  <h3>{data.stats.readiness}% complete</h3>
+                  <p className={styles.kickerLight}>{t("dashboard.yourProfile")}</p>
+                  <h3>{data.stats.readiness}{t("dashboard.complete")}</h3>
                 </div>
               </div>
               <div className={styles.progressTrack} aria-hidden="true">
@@ -466,28 +465,28 @@ export default function DashboardPage() {
               </div>
               {data.stats.missingFields.length > 0 ? (
                 <p className={styles.muted}>
-                  Still missing:{" "}
+                  {t("dashboard.stillMissing")}{" "}
                   <strong>{data.stats.missingFields.slice(0, 3).join(", ")}</strong>
                   {data.stats.missingFields.length > 3
                     ? ` (+${data.stats.missingFields.length - 3} more)`
                     : ""}
                 </p>
               ) : (
-                <p className={styles.muted}>All set. Refresh AI matches to see new picks.</p>
+                <p className={styles.muted}>{t("dashboard.allSet")}</p>
               )}
               <Link href="/profile" className={styles.profileCta}>
                 {data.stats.readiness === 100
-                  ? "Edit profile"
+                  ? t("dashboard.editProfile")
                   : data.stats.readiness === 0
-                    ? "Set up your profile →"
-                    : "Complete your profile →"}
+                    ? t("dashboard.setupProfile")
+                    : t("dashboard.completeProfile")}
               </Link>
               <button
                 type="button"
                 className={styles.signOutBtn}
                 onClick={signOut}
               >
-                Sign out
+                {t("dashboard.signOut")}
               </button>
             </div>
 
@@ -495,11 +494,11 @@ export default function DashboardPage() {
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
                 <div>
-                  <p className={styles.kickerLight}>Mentor</p>
-                  <h3>Continue chatting</h3>
+                  <p className={styles.kickerLight}>{t("dashboard.mentor")}</p>
+                  <h3>{t("dashboard.continueChatting")}</h3>
                 </div>
                 <Link href="/chat" className={styles.linkButton}>
-                  Open
+                  {t("dashboard.open")}
                 </Link>
               </div>
 
@@ -509,7 +508,7 @@ export default function DashboardPage() {
                   className={styles.lastSessionItem}
                 >
                   <div>
-                    <h4>{data.lastSession.title || "Untitled chat"}</h4>
+                    <h4>{data.lastSession.title || t("dashboard.untitledChat")}</h4>
                     {data.lastSession.preview && (
                       <p className={styles.lastSessionPreview}>
                         {data.lastSession.preview}
@@ -523,9 +522,9 @@ export default function DashboardPage() {
                 </Link>
               ) : (
                 <div className={styles.matchEmpty}>
-                  <p>No chats yet. Ask the mentor anything about scholarships.</p>
+                  <p>{t("dashboard.noChatsYet")}</p>
                   <Link href="/chat" className={styles.linkInline}>
-                    Start chatting →
+                    {t("dashboard.startChatting")}
                   </Link>
                 </div>
               )}
@@ -537,8 +536,8 @@ export default function DashboardPage() {
             <section className={styles.panel} data-mobile-section="bookmarks">
               <div className={styles.panelHeader}>
                 <div>
-                  <p className={styles.kickerLight}>Saved</p>
-                  <h3>All bookmarks ({data.bookmarks.length})</h3>
+                  <p className={styles.kickerLight}>{t("dashboard.saved")}</p>
+                  <h3>{t("dashboard.allBookmarks")} ({data.bookmarks.length})</h3>
                 </div>
               </div>
 
@@ -552,7 +551,7 @@ export default function DashboardPage() {
                         {s.deadline && (
                           <>
                             <span aria-hidden="true">·</span>
-                            <span>Deadline {formatDeadlineShort(s.deadline)}</span>
+                            <span>{t("dashboard.deadlineLabel")} {formatDeadlineShort(s.deadline)}</span>
                           </>
                         )}
                       </p>

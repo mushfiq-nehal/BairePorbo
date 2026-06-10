@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useT } from "@/lib/lang-context";
 import styles from "./mobile-tab-bar.module.css";
 
 type Tab = {
@@ -55,6 +56,7 @@ const UserIcon = () => (
 export default function MobileTabBar() {
   const pathname = usePathname() ?? "/";
   const { user } = useAuth();
+  const t = useT();
 
   // Hide the tab bar on auth flow pages — they're focused, modal-like
   // experiences where extra navigation is a distraction.
@@ -67,19 +69,19 @@ export default function MobileTabBar() {
   }
 
   const tabs: Tab[] = [
-    { href: "/", label: "Home", icon: <HomeIcon /> },
+    { href: "/", label: t("tab.home"), icon: <HomeIcon /> },
     {
       href: "/scholarships",
-      label: "Scholarships",
+      label: t("nav.scholarships"),
       icon: <BookIcon />,
       matchPrefix: "/scholarships",
     },
-    { href: "/chat", label: "Mentor", icon: <MentorIcon />, matchPrefix: "/chat" },
+    { href: "/chat", label: t("tab.mentor"), icon: <MentorIcon />, matchPrefix: "/chat" },
     {
       // Logged-in users go to the dashboard. Anonymous users go to signup
       // since the dashboard is gated.
       href: user ? "/dashboard" : "/auth/signup",
-      label: user ? "Dashboard" : "Sign up",
+      label: user ? t("nav.dashboard") : t("tab.signUp"),
       icon: <UserIcon />,
       matchPrefix: user ? "/dashboard" : undefined,
     },
