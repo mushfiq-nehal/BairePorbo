@@ -106,6 +106,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BairePorbo" />
         <link rel="apple-touch-icon" href="/logo.png" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1817502704498215"
+          crossOrigin="anonymous"
+        />
         {/* Meta Pixel noscript fallback */}
         <noscript>
           <img
