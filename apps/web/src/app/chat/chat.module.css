@@ -33,7 +33,7 @@
 }
 
 .brandName {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 18px;
 }
 
@@ -251,7 +251,7 @@
 }
 
 .header h1 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: clamp(1.9rem, 3.2vw, 2.5rem);
   margin-top: 6px;
 }
@@ -383,7 +383,7 @@
 .markdownBody h4,
 .markdownBody h5,
 .markdownBody h6 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-weight: 700;
   line-height: 1.3;
   margin-top: 0.9em;

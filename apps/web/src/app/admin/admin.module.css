@@ -27,7 +27,7 @@
 }
 
 .header h1 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: clamp(1.8rem, 3vw, 2.4rem);
   color: var(--ink-900, #0f2234);
   margin: 0;
@@ -100,7 +100,7 @@
 }
 
 .statValue {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 2.4rem;
   font-weight: 700;
   color: var(--teal-500, #0f8f8d);

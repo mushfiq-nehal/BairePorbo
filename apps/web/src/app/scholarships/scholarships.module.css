@@ -29,7 +29,7 @@
 }
 
 .hero h1 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: clamp(2.1rem, 3.6vw, 2.9rem);
   margin: 12px 0 10px;
 }
@@ -187,7 +187,7 @@
 }
 
 .countNumber {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: clamp(2.6rem, 4.4vw, 3.4rem);
   font-weight: 700;
   line-height: 1;

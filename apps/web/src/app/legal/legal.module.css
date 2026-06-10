@@ -61,7 +61,7 @@
 }
 
 .hero h1 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   letter-spacing: -0.8px;
   line-height: 1.05;
@@ -141,7 +141,7 @@
 }
 
 .section h2 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 22px;
   font-weight: 700;
   color: var(--ink-900);
@@ -150,7 +150,7 @@
 }
 
 .section h3 {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 16px;
   font-weight: 700;
   color: var(--ink-900);

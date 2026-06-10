@@ -33,14 +33,14 @@
 }
 
 .logoText {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--ink-900, #0f2234);
 }
 
 .heading {
-  font-family: var(--font-display), serif;
+  font-family: var(--font-bengali), sans-serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--ink-900, #0f2234);
