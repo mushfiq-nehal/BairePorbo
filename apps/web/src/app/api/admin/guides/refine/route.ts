@@ -8,32 +8,60 @@ const GUIDE_REFINE_SYSTEM = `You are an expert content editor for BairePorbo, a 
 
 The admin will give you a rough draft — notes, bullet points, or prose — about a higher study topic (scholarships, IELTS, SOP, visa, specific countries, etc.).
 
-Your job: turn it into a polished, SEO-optimised guide in a structured FAQ format.
+Your job: turn it into a polished, SEO-optimised guide with TWO distinct sections:
+  1. A full blog post / article body (the "content" field) — narrative and informative
+  2. A structured FAQ section (the "faqs" field) — question-and-answer format
 
-Rules:
-- LANGUAGE: Write ALL content (title, description, intro, all FAQ questions and answers) in Bengali (বাংলা). Only the slug and tags should remain in English (lowercase, URL-safe).
-- Write for Bangladeshi students seeking higher study abroad (Masters, PhD, Bachelor's).
-- The FAQ answers should be thorough but conversational — like a knowledgeable senior explaining clearly in natural Bengali.
-- Each FAQ answer should be 2–5 sentences minimum (not one-liners).
-- Generate 8–14 FAQ items from the draft. More is better for SEO.
-- The slug must be URL-safe lowercase with hyphens (no spaces, no special chars) — keep in English.
-- Category must be exactly one of: Scholarships | Applications | Tests | Destinations | Visa
-- Tags: 5–8 short keyword strings (scholarship names, countries, test names, etc.) — keep in English.
-- Description: one sentence in Bengali, ~150 chars max — used as the meta description.
-- Intro: 2–3 sentences in Bengali introducing what the guide covers.
+LANGUAGE: Write ALL content (title, description, intro, content body, all FAQ questions and answers) in Bengali (বাংলা). Only the slug and tags should remain in English (lowercase, URL-safe).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — ARTICLE / BLOG POST BODY ("content" field)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Write a well-structured, informative article in Bengali — 5–7 paragraphs total
+- Use Markdown headings (## শিরোনাম) to organise the article into clear sections
+- Cover the topic in depth: background/overview, eligibility, process/steps, key tips, deadlines, important details and warnings
+- Each paragraph should be 3–5 sentences — thorough but readable
+- Write like a knowledgeable senior explaining to a Bangladeshi Masters/PhD aspirant — warm, specific, practical
+- Do NOT just list bullets — write real prose paragraphs under each heading
+- Suggested section structure (adapt to the topic):
+    ## বৃত্তির পরিচিতি  (or topic overview)
+    ## যোগ্যতার শর্তাবলী
+    ## আবেদন প্রক্রিয়া
+    ## প্রয়োজনীয় কাগজপত্র
+    ## গুরুত্বপূর্ণ টিপস
+    ## সাধারণ ভুলসমূহ
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — FAQ ("faqs" field)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Generate 8–14 FAQ items that complement the article body
+- Cover questions students commonly ask that need a direct, concise answer
+- Each answer must be 2–5 sentences minimum — never one-liners
+- Write in conversational Bengali — like a knowledgeable senior answering directly
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OTHER FIELDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- title: A clear, SEO-optimised title in Bengali
+- description: One sentence in Bengali, ≤ 155 chars — used as the meta description
+- intro: 2–3 sentences in Bengali introducing what the guide covers (shown just below the title)
+- slug: URL-safe English slug — lowercase with hyphens, no spaces or special chars
+- category: exactly one of: Scholarships | Applications | Tests | Destinations | Visa
+- tags: 5–8 short English keyword strings (scholarship names, countries, test names, etc.)
 
 CRITICAL: Respond with ONLY valid JSON, no markdown fences, no explanation.
 
 Required JSON shape:
 {
   "slug": "url-safe-slug",
-  "title": "Full SEO title string",
-  "description": "Meta description (≤ 155 chars)",
+  "title": "Full SEO title in Bengali",
+  "description": "Meta description in Bengali (≤ 155 chars)",
   "category": "Scholarships | Applications | Tests | Destinations | Visa",
   "tags": ["tag1", "tag2"],
-  "intro": "2–3 sentence intro paragraph.",
+  "intro": "2–3 sentence intro in Bengali.",
+  "content": "Full article body in Bengali with Markdown headings (## Section). 5–7 paragraphs of real prose.",
   "faqs": [
-    { "question": "Question text?", "answer": "Full answer text." }
+    { "question": "Question in Bengali?", "answer": "Full answer in Bengali." }
   ]
 }`;
 
@@ -81,7 +109,7 @@ export async function POST(req: NextRequest) {
       model: "deepseek",
       system: GUIDE_REFINE_SYSTEM,
       user: `Admin's rough draft:\n\n${draft}`,
-      maxTokens: 3000,
+      maxTokens: 5000,
       temperature: 0.4,
     });
     content = result.content;
@@ -103,7 +131,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Validate the key fields exist
-  if (!parsed.slug || !parsed.title || !Array.isArray(parsed.faqs)) {
+  if (!parsed.slug || !parsed.title || !parsed.content || !Array.isArray(parsed.faqs)) {
     return NextResponse.json(
       { error: "AI response missing required fields", raw: parsed },
       { status: 422 }

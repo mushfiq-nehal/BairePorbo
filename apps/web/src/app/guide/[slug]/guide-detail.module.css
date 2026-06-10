@@ -122,6 +122,65 @@
   max-height: 420px;
 }
 
+/* ── Article body (blog post content, rendered before FAQs) ── */
+.articleBody {
+  margin-bottom: 3rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1.5px solid var(--sand-200);
+}
+
+.articleBody h2 {
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink-900);
+  margin: 2rem 0 0.75rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 2px solid #e0f5f4;
+}
+
+.articleBody h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-800);
+  margin: 1.5rem 0 0.5rem;
+}
+
+.articleBody p {
+  font-size: 0.9375rem;
+  color: var(--ink-700);
+  line-height: 1.85;
+  margin-bottom: 1rem;
+}
+
+.articleBody ul,
+.articleBody ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.articleBody li {
+  font-size: 0.9375rem;
+  color: var(--ink-700);
+  line-height: 1.75;
+  margin-bottom: 0.35rem;
+}
+
+.articleBody strong {
+  color: var(--ink-900);
+  font-weight: 700;
+}
+
+.articleBody a {
+  color: var(--teal-500);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.articleBody a:hover {
+  color: var(--teal-700);
+}
+
 /* ── FAQ section heading ── */
 .faqHeader {
   display: flex;

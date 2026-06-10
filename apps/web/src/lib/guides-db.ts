@@ -9,6 +9,7 @@ type DbGuideRow = {
   category: string;
   tags: string[] | null;
   intro: string;
+  content?: string | null;
   faqs: unknown;
   published_at: string | null;
   updated_at: string | null;
@@ -24,6 +25,7 @@ function mapDbGuide(g: DbGuideRow): Guide {
     category: g.category as Guide["category"],
     tags: g.tags ?? [],
     intro: g.intro,
+    content: g.content ?? undefined,
     faqs: Array.isArray(g.faqs) ? (g.faqs as Guide["faqs"]) : [],
     publishedAt: g.published_at ?? g.updated_at ?? g.created_at ?? "",
     updatedAt: g.updated_at ?? "",
@@ -37,7 +39,7 @@ export async function fetchPublishedDbGuides(): Promise<Guide[]> {
     const { data } = await db
       .from("guides")
       .select(
-        "slug, title, description, category, tags, intro, faqs, published_at, updated_at, cover_image_url"
+        "slug, title, description, category, tags, intro, content, faqs, published_at, updated_at, cover_image_url"
       )
       .eq("status", "published")
       .order("published_at", { ascending: false });

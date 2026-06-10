@@ -14,6 +14,7 @@ type GuideForm = {
   category: string;
   tags: string[];
   intro: string;
+  content: string;
   faqs: FAQ[];
   status: "draft" | "published" | "archived";
   cover_image_url: string;
@@ -49,6 +50,7 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
           category: g.category ?? "Scholarships",
           tags: g.tags ?? [],
           intro: g.intro ?? "",
+          content: g.content ?? "",
           faqs: Array.isArray(g.faqs) ? g.faqs : [],
           status: g.status ?? "draft",
           cover_image_url: g.cover_image_url ?? "",
@@ -99,6 +101,7 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
           category: guide.category,
           tags: guide.tags,
           intro: guide.intro,
+          content: guide.content,
           faqs: guide.faqs,
           status: newStatus ?? guide.status,
         }),
@@ -229,11 +232,20 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
             />
           </div>
           <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-            <label>Intro paragraph</label>
+            <label>Intro paragraph <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(2–3 sentences shown below the title)</span></label>
             <textarea
               rows={3}
               value={guide.intro}
               onChange={(e) => setGuide({ ...guide, intro: e.target.value })}
+            />
+          </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>Article body <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(Markdown — shown before the FAQs)</span></label>
+            <textarea
+              rows={16}
+              value={guide.content}
+              onChange={(e) => setGuide({ ...guide, content: e.target.value })}
+              style={{ fontFamily: "monospace", fontSize: 13 }}
             />
           </div>
           <div className={styles.field} style={{ gridColumn: "1 / -1" }}>

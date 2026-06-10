@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { slug, title, description, category, tags, intro, faqs, status, cover_image_url } = body as Record<string, unknown>;
+  const { slug, title, description, category, tags, intro, content, faqs, status, cover_image_url } = body as Record<string, unknown>;
 
   if (!slug || !title) {
     return NextResponse.json({ error: "slug and title are required" }, { status: 400 });
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
       category: category ?? "Scholarships",
       tags: tags ?? [],
       intro: intro ?? "",
+      content: content ?? "",
       faqs: faqs ?? [],
       status: status ?? "draft",
       cover_image_url: cover_image_url ?? null,

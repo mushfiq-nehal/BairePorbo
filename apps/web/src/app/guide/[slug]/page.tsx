@@ -6,6 +6,8 @@ import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { getGuideBySlug, getAllSlugs } from "../data/index";
 import { fetchPublishedDbGuides, fetchPublishedGuideBySlug, mergeGuides } from "@/lib/guides-db";
 import type { Guide } from "../data/types";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
 
@@ -180,12 +182,21 @@ export default async function GuideDetailPage({ params }: Props) {
                 </div>
               )}
 
+              {/* Article body — rendered before FAQs */}
+              {guide.content && (
+                <div className={styles.articleBody}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {guide.content}
+                  </ReactMarkdown>
+                </div>
+              )}
+
               {/* FAQ count indicator */}
               <div className={styles.faqHeader}>
                 <h2 className={styles.faqSectionTitle}>
-                  Frequently Asked Questions
+                  সচরাচর জিজ্ঞাসা
                 </h2>
-                <span className={styles.faqCount}>{guide.faqs.length} questions</span>
+                <span className={styles.faqCount}>{guide.faqs.length}টি প্রশ্ন</span>
               </div>
 
               {/* Expandable FAQ Accordion */}

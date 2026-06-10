@@ -14,6 +14,8 @@ export type Guide = {
   publishedAt: string;
   updatedAt: string;
   intro: string;
+  /** Full article/blog post body (Markdown). Rendered before the FAQ section. Optional for static seed guides. */
+  content?: string;
   faqs: FAQ[];
   /** Optional hero image URL — shown only on the guide detail page, not on listing cards */
   coverImageUrl?: string;
