@@ -148,7 +148,7 @@
 }
 
 .heroIntro h1 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 1.05;
   letter-spacing: -1px;
@@ -199,7 +199,7 @@
 }
 
 .actionCard h2 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(1.2rem, 2.4vw, 1.6rem);
   line-height: 1.2;
   letter-spacing: -0.4px;
@@ -291,7 +291,7 @@
 }
 
 .panelHeader h3 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--ink-900);

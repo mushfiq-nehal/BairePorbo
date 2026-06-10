@@ -74,7 +74,7 @@
 }
 
 .articleTitle {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(1.6rem, 4vw, 2.25rem);
   font-weight: 700;
   line-height: 1.2;

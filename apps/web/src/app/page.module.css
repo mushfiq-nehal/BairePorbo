@@ -67,7 +67,7 @@
 }
 
 .heroLeft h1 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(2.2rem, 4.3vw, 3.4rem);
   line-height: 1.05;
   letter-spacing: -1px;
@@ -258,7 +258,7 @@
 
 .statValue {
   display: block;
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-weight: 700;
   font-size: 22px;
   letter-spacing: -0.5px;
@@ -490,7 +490,7 @@
 }
 
 .mentorCopy h2 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(1.9rem, 3.6vw, 2.6rem);
   line-height: 1.1;
   letter-spacing: -0.5px;
@@ -660,7 +660,7 @@
 }
 
 .closingHeader h2 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(1.7rem, 3vw, 2.3rem);
   line-height: 1.1;
   letter-spacing: -0.5px;
@@ -1308,7 +1308,7 @@
 }
 
 .guideTeaserHeader h2 {
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: clamp(1.6rem, 3vw, 2.2rem);
   line-height: 1.15;
   letter-spacing: -0.5px;

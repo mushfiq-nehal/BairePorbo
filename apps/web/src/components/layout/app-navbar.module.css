@@ -12,7 +12,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-family: var(--font-bengali), sans-serif;
+  font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: 20px;
   letter-spacing: -0.5px;
 }
