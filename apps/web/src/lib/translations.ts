@@ -98,7 +98,7 @@ export const translations = {
 
   // ── Scholarships page ─────────────────────────────────────────────────────
   "scholarships.kicker": { en: "Curated and explained", bn: "বাছাই করা ও ডিতেইলস সহ" },
-  "scholarships.heroTitle": { en: "Scholarships filtered for Bangladeshi applicants", bn: "বাংলাদেশী শিক্ষার্থীদের জন্য বাছাই করা Scholarships" },
+  "scholarships.heroTitle": { en: "Scholarships filtered for Bangladeshi applicants", bn: "বাংলাদেশী শিক্ষার্থীদের জন্য বাছাই করা স্কলারশিপ" },
   "scholarships.heroSubtitle": { en: "Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.", bn: "Smart filter ব্যবহার করে আপনার GPA, Degree level ও funding expectations-এর সাথে মানানসই স্কলারশিপ খুঁজুন।" },
   "scholarships.searchSnapshot": { en: "Search snapshot", bn: "Search Snapshot" },
   "scholarships.loading": { en: "Loading scholarships…", bn: "Scholarship লোড হচ্ছে…" },

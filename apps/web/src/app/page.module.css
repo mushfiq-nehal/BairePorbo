@@ -68,7 +68,7 @@
 
 .heroLeft h1 {
   font-family: var(--font-bengali), sans-serif;
-  font-size: clamp(2.4rem, 4.6vw, 3.6rem);
+  font-size: clamp(2.2rem, 4.3vw, 3.4rem);
   line-height: 1.05;
   letter-spacing: -1px;
   color: var(--ink-900);
@@ -1095,7 +1095,7 @@
 
   /* Hero text tighter on small screens */
   .heroLeft h1 {
-    font-size: clamp(1.6rem, 6.5vw, 2.1rem);
+    font-size: clamp(1.45rem, 6.2vw, 1.95rem);
     letter-spacing: -0.4px;
     line-height: 1.1;
     margin: 4px 0 6px;
