@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import sharp from "sharp";
 
 async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
   const supabase = createClient(cookieStore);
@@ -27,16 +28,18 @@ export async function POST(
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
-  const ext = file.name.split(".").pop() ?? "jpg";
-  const path = `${id}/thumbnail.${ext}`;
+  const path = `${id}/thumbnail.webp`;
 
   const arrayBuffer = await file.arrayBuffer();
-  const buffer = new Uint8Array(arrayBuffer);
+  const compressed = await sharp(Buffer.from(arrayBuffer))
+    .resize({ width: 640, withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer();
 
   const { error: uploadErr } = await auth.supabase.storage
     .from("scholarship-thumbnails")
-    .upload(path, buffer, {
-      contentType: file.type,
+    .upload(path, compressed, {
+      contentType: "image/webp",
       upsert: true,
     });
 
@@ -46,7 +49,7 @@ export async function POST(
     .from("scholarship-thumbnails")
     .getPublicUrl(path);
 
-  const publicUrl = `${data.publicUrl}?v=${Date.now()}`;
+  const publicUrl = data.publicUrl;
 
   // Save thumbnail URL to scholarship record
   const { error: updateErr } = await auth.supabase

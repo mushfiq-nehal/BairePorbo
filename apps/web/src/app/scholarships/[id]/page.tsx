@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -200,10 +201,14 @@ export default function ScholarshipDetailPage() {
             </Link>
 
             {scholarship.thumbnail_url && (
-              <img
+              <Image
                 src={scholarship.thumbnail_url}
                 alt=""
                 className={styles.heroImage}
+                width={640}
+                height={360}
+                priority
+                sizes="(max-width: 768px) 100vw, 640px"
               />
             )}
             <p className={styles.kicker}>Scholarship detail</p>

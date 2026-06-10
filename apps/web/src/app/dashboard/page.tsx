@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import AuthGuard from "@/components/auth/auth-guard";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
@@ -368,8 +369,14 @@ export default function DashboardPage() {
                       <Link href={`/scholarships/${m.id}`} className={styles.matchItem}>
                         <div className={styles.matchThumb}>
                           {m.thumbnail_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={m.thumbnail_url} alt="" />
+                            <Image
+                              src={m.thumbnail_url}
+                              alt=""
+                              width={56}
+                              height={56}
+                              loading="lazy"
+                              sizes="56px"
+                            />
                           ) : (
                             <span aria-hidden="true">🎓</span>
                           )}

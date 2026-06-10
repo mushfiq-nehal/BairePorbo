@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -534,7 +535,15 @@ function ScholarshipsContent() {
 
                   {s.thumbnail_url ? (
                     <div className={styles.thumbWrap}>
-                      <img src={s.thumbnail_url} alt="" className={styles.cardThumb} />
+                      <Image
+                        src={s.thumbnail_url}
+                        alt=""
+                        className={styles.cardThumb}
+                        width={640}
+                        height={360}
+                        loading="lazy"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      />
                       {s.is_flagship && (
                         <span className={styles.flagshipBadge} aria-label={t("scholarships.featured")}>
                           {t("scholarships.featured")}

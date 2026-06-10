@@ -25,9 +25,9 @@ export const translations = {
   "tab.signUp": { en: "Sign up", bn: "সাইন আপ" },
 
   // ── Homepage — Hero ──────────────────────────────────────────────────────
-  "home.kicker": { en: "AI scholarship compass for Bangladesh", bn: "বাংলাদেশের জন্য AI Scholarship কম্পাস" },
-  "home.heroTitle": { en: "Find scholarships that fit your story, not just your grades.", bn: "তোমার গল্পের সাথে মানানসই scholarship খুঁজে নাও, শুধু grades দিয়ে নয়।" },
-  "home.heroCopy": { en: "BairePorbo guides students through higher-study decisions with explainable AI, localized advice, and a curated scholarship map.", bn: "BairePorbo শিক্ষার্থীদের উচ্চশিক্ষার সিদ্ধান্তে সাহায্য করে AI ব্যাখ্যা, স্থানীয় পরামর্শ ও একটি curated scholarship তালিকার মাধ্যমে।" },
+  "home.kicker": { en: "AI scholarship compass for Bangladesh", bn: "বাংলাদেশের জন্য AI Scholarship Compass" },
+  "home.heroTitle": { en: "Find scholarships that fit your story, not just your grades.", bn: "এমন স্কলারশিপ খুঁজুন যা আপনার গল্পের সাথে মানানসই, CGPA এর সাথে নয়।" },
+  "home.heroCopy": { en: "BairePorbo guides students through higher-study decisions with explainable AI, localized advice, and a curated scholarship map.", bn: "BairePorbo — Explainable AI, localized advice আর curated scholarship map দিয়ে তোমার উচ্চশিক্ষার সিদ্ধান্তকে সহজ করে।" },
   "home.searchPlaceholder": { en: "Search by country, field, or scholarship name…", bn: "দেশ, বিষয় বা scholarship নাম দিয়ে খুঁজুন…" },
   "home.searchButton": { en: "Search", bn: "খুঁজুন" },
   "home.searchAriaLabel": { en: "Search scholarships", bn: "Scholarship খুঁজুন" },
@@ -97,16 +97,16 @@ export const translations = {
   "label.dLeft": { en: "d left", bn: "দিন বাকি" },
 
   // ── Scholarships page ─────────────────────────────────────────────────────
-  "scholarships.kicker": { en: "Curated and explained", bn: "বাছাই করা ও ব্যাখ্যা সহ" },
-  "scholarships.heroTitle": { en: "Scholarships filtered for Bangladeshi applicants", bn: "বাংলাদেশী আবেদনকারীদের জন্য বাছাই করা Scholarships" },
-  "scholarships.heroSubtitle": { en: "Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.", bn: "Smart filter ব্যবহার করে আপনার GPA, degree level ও funding expectations-এর সাথে মানানসই সুযোগ খুঁজুন।" },
+  "scholarships.kicker": { en: "Curated and explained", bn: "বাছাই করা ও ডিতেইলস সহ" },
+  "scholarships.heroTitle": { en: "Scholarships filtered for Bangladeshi applicants", bn: "বাংলাদেশী শিক্ষার্থীদের জন্য বাছাই করা Scholarships" },
+  "scholarships.heroSubtitle": { en: "Use smart filters to surface opportunities that match your GPA, degree level, and funding expectations.", bn: "Smart filter ব্যবহার করে আপনার GPA, Degree level ও funding expectations-এর সাথে মানানসই স্কলারশিপ খুঁজুন।" },
   "scholarships.searchSnapshot": { en: "Search snapshot", bn: "Search Snapshot" },
   "scholarships.loading": { en: "Loading scholarships…", bn: "Scholarship লোড হচ্ছে…" },
   "scholarships.noLive": { en: "No live scholarships to apply yet.", bn: "এখনো কোনো live scholarship নেই।" },
   "scholarships.readyToApply": { en: "ready to apply", bn: "apply করার জন্য প্রস্তুত" },
   "scholarships.liveScholarship": { en: "live scholarship", bn: "live scholarship" },
   "scholarships.liveScholarships": { en: "live scholarships", bn: "live scholarships" },
-  "scholarships.closingIn60": { en: "closing within 60 days — don't miss out", bn: "৬০ দিনের মধ্যে শেষ হচ্ছে — মিস করবেন না" },
+  "scholarships.closingIn60": { en: "closing within 60 days — don't miss out", bn: "টি স্কলারশিপ ৬০ দিনের মধ্যে শেষ হচ্ছে — মিস করবেন না" },
   "scholarships.nonePublished": { en: "No scholarships published yet. Check back soon!", bn: "এখনো কোনো scholarship প্রকাশিত হয়নি। শীঘ্রই আসছে!" },
   "scholarships.searchPlaceholder": { en: "Search scholarships…", bn: "Scholarship খুঁজুন…" },
   "scholarships.searchAriaLabel": { en: "Search scholarships", bn: "Scholarship খুঁজুন" },
@@ -176,7 +176,7 @@ export const translations = {
   "chat.noPastConversations": { en: "No past conversations yet.", bn: "এখনো কোনো পুরনো কথোপকথন নেই।" },
   "chat.signOut": { en: "Sign out", bn: "সাইন আউট" },
   "chat.signUpFree": { en: "Sign up free", bn: "বিনামূল্যে সাইন আপ" },
-  "chat.suggestedPrompts": { en: "Suggested prompts", bn: "পরামর্শকৃত প্রশ্ন" },
+  "chat.suggestedPrompts": { en: "Suggested prompts", bn: "প্রশ্ন সাজেশন" },
   "chat.askMentor": { en: "Ask BairePorbo Mentor", bn: "BairePorbo Mentor-কে জিজ্ঞেস করুন" },
   "chat.askAnything": { en: "Ask anything…", bn: "যেকোনো কিছু জিজ্ঞেস করুন…" },
   "chat.send": { en: "Send", bn: "পাঠান" },
@@ -279,7 +279,7 @@ export const translations = {
   "profile.saveChanges": { en: "Save changes", bn: "পরিবর্তন সংরক্ষণ করুন" },
 
   // ── Guide page ────────────────────────────────────────────────────────────
-  "guide.kicker": { en: "Knowledge hub", bn: "জ্ঞান কেন্দ্র" },
+  "guide.kicker": { en: "Knowledge hub", bn: " গাইডলাইন সেকশন" },
   "guide.title": { en: "Study Abroad Guides", bn: "বিদেশে পড়াশোনার গাইড" },
   "guide.subtitle": { en: "Expert answers to the questions Bangladeshi students ask most — scholarships, language tests, applications, and destinations.", bn: "বাংলাদেশী শিক্ষার্থীরা সবচেয়ে বেশি যে প্রশ্নগুলো করেন তার বিশেষজ্ঞ উত্তর — scholarships, language tests, applications, ও destinations।" },
   "guide.guidesPublished": { en: "guides published", bn: "টি গাইড প্রকাশিত" },
