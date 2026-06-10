@@ -373,6 +373,8 @@ export default function Home() {
             </div>
             <div className={styles.footerCol}>
               <h4>{t("footer.legal")}</h4>
+              <Link href="/legal/about">{t("footer.aboutUs")}</Link>
+              <Link href="/legal/contact">{t("footer.contactUs")}</Link>
               <Link href="/legal/privacy">{t("footer.privacyPolicy")}</Link>
               <Link href="/legal/terms">{t("footer.termsOfService")}</Link>
             </div>

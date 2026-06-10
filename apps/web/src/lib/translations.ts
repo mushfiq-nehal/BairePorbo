@@ -79,6 +79,8 @@ export const translations = {
   "footer.account": { en: "Account", bn: "একাউন্ট" },
   "footer.createAccount": { en: "Create account", bn: "একাউন্ট তৈরি করুন" },
   "footer.legal": { en: "Legal", bn: "Legal" },
+  "footer.aboutUs": { en: "About us", bn: "আমাদের সম্পর্কে" },
+  "footer.contactUs": { en: "Contact us", bn: "যোগাযোগ করুন" },
   "footer.privacyPolicy": { en: "Privacy policy", bn: "Privacy Policy" },
   "footer.termsOfService": { en: "Terms of service", bn: "Terms of Service" },
   "footer.connectSupport": { en: "Connect & Support", bn: "যোগাযোগ ও সহায়তা" },

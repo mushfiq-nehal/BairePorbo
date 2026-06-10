@@ -14,7 +14,7 @@ export type LegalSection = {
 type LegalLayoutProps = {
   kicker: string;
   title: string;
-  lastUpdated: string;
+  lastUpdated?: string;
   intro: React.ReactNode;
   sections: LegalSection[];
   contact?: React.ReactNode;
@@ -49,7 +49,9 @@ export default function LegalLayout({
         <header className={styles.hero}>
           <p className={styles.kicker}>{kicker}</p>
           <h1>{title}</h1>
-          <p className={styles.lastUpdated}>Last updated: {lastUpdated}</p>
+          {lastUpdated && (
+            <p className={styles.lastUpdated}>Last updated: {lastUpdated}</p>
+          )}
           <div className={styles.disclaimer}>{intro}</div>
         </header>
 
