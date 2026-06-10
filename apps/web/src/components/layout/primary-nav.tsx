@@ -20,10 +20,11 @@ export default function PrimaryNav({ className, orientation = "horizontal", onNa
   const NAV_LINKS = [
     { label: t("nav.home"), href: "/" },
     { label: t("nav.scholarships"), href: "/scholarships" },
+    { label: t("nav.guideline"), href: "/guide", desktopOnly: true },
     { label: t("nav.dashboard"), href: "/dashboard" },
     { label: t("nav.aiMentor"), href: "/chat" },
     ...(role === "admin" ? [{ label: t("nav.admin"), href: "/admin" }] : []),
-  ];
+  ].filter((link) => !(link.desktopOnly && orientation === "vertical"));
 
   return (
     <nav

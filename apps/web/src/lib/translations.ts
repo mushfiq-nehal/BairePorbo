@@ -7,6 +7,7 @@ export const translations = {
   // ── Navigation ───────────────────────────────────────────────────────────
   "nav.home": { en: "Home", bn: "হোম" },
   "nav.scholarships": { en: "Scholarships", bn: "স্কলারশিপ" },
+  "nav.guideline": { en: "Guideline", bn: "গাইডলাইন" },
   "nav.dashboard": { en: "Dashboard", bn: "ড্যাশবোর্ড" },
   "nav.aiMentor": { en: "AI Mentor", bn: "এআই মেন্টর" },
   "nav.admin": { en: "Admin", bn: "এডমিন" },

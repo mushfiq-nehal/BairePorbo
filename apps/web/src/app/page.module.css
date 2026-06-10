@@ -1236,21 +1236,13 @@
     grid-template-columns: 1fr;
   }
 
-  /* Mobile section order: hero → closing-soon → workflow → mentor.
-     Real scholarships before workflow/marketing builds trust faster. */
+  /* Mobile section order: hero → closing-soon → workflow */
   .hero { order: 1; }
   .closingSection { order: 2; }
   .workflowRow { order: 3; }
-  .mentorShowcase { order: 4; }
 
-  /* Mentor showcase: drop the annotation pills (they overlap on mobile),
-     mock card stays as a single bubble preview */
-  .mentorMockAnnotation {
+  .mentorShowcase {
     display: none;
-  }
-
-  .mentorMock {
-    padding: 18px;
   }
 
   .footerInner {
