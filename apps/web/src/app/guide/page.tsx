@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
+import SharedFooter from "@/components/layout/shared-footer";
 import { fetchPublishedDbGuides, mergeGuides } from "@/lib/guides-db";
 import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
@@ -29,6 +30,7 @@ export default async function GuidePage() {
     <div className={styles.page}>
       <NavbarWithAuth />
       <GuidePageClient guides={allGuides} />
+      <SharedFooter />
     </div>
   );
 }

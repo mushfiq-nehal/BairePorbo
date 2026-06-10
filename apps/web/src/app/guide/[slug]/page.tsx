@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
+import SharedFooter from "@/components/layout/shared-footer";
 import { getGuideBySlug, getAllSlugs } from "../data/index";
 import { fetchPublishedDbGuides, fetchPublishedGuideBySlug, mergeGuides } from "@/lib/guides-db";
-import type { Guide } from "../data/types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
@@ -265,6 +265,7 @@ export default async function GuideDetailPage({ params }: Props) {
             </aside>
           </div>
         </main>
+        <SharedFooter />
       </div>
     </>
   );

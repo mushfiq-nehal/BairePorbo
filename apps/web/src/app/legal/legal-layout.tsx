@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
+import SharedFooter from "@/components/layout/shared-footer";
 import styles from "./legal.module.css";
 
 export type LegalSection = {
@@ -75,6 +76,7 @@ export default function LegalLayout({
           {contact && <div className={styles.contactCard}>{contact}</div>}
         </article>
       </main>
+      <SharedFooter />
     </div>
   );
 }
