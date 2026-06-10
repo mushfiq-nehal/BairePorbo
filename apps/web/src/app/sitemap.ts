@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { createServiceClient } from "@/utils/supabase/server";
 import { getAllSlugs } from "@/app/guide/data/index";
+import { fetchPublishedDbGuides } from "@/lib/guides-db";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -45,7 +46,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Dynamic scholarship pages — fetch all published IDs from Supabase
   try {
     const supabase = createServiceClient();
     const { data: scholarships } = await supabase
@@ -60,9 +60,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticRoutes, ...scholarshipRoutes];
+    const dbGuides = await fetchPublishedDbGuides();
+    const staticSlugs = new Set(getAllSlugs());
+    const dbGuideRoutes: MetadataRoute.Sitemap = dbGuides
+      .filter((g) => !staticSlugs.has(g.slug))
+      .map((g) => ({
+        url: `${BASE_URL}/guide/${g.slug}`,
+        lastModified: g.updatedAt ? new Date(g.updatedAt) : new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.8,
+      }));
+
+    return [...staticRoutes, ...dbGuideRoutes, ...scholarshipRoutes];
   } catch {
-    // If DB is unreachable during build, return only static routes
     return staticRoutes;
   }
 }

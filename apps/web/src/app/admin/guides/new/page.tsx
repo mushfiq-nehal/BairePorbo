@@ -39,6 +39,17 @@ export default function NewGuidePage() {
   // FAQ inline editing
   const [editingFaq, setEditingFaq] = useState<number | null>(null);
 
+  // Cover image upload
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  const onCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setCoverFile(f);
+    setCoverPreview(URL.createObjectURL(f));
+  };
+
   const handleRefine = async () => {
     if (draft.trim().length < 30) {
       setRefineError("Please write at least a few sentences as a draft.");
@@ -76,6 +87,7 @@ export default function NewGuidePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...guide,
+          cover_image_url: null,
           status: publish ? "published" : "draft",
         }),
       });
@@ -84,9 +96,23 @@ export default function NewGuidePage() {
         setSaveError(json.error ?? "Failed to save guide.");
         return;
       }
+
+      if (coverFile && json.guide?.id) {
+        const fd = new FormData();
+        fd.append("file", coverFile);
+        const upRes = await fetch(`/api/admin/guides/${json.guide.id}/cover`, {
+          method: "POST",
+          body: fd,
+        });
+        if (!upRes.ok) {
+          const upJson = await upRes.json().catch(() => ({}));
+          setSaveError(upJson.error ?? "Guide saved but cover upload failed.");
+          return;
+        }
+      }
+
       setStep("done");
       if (publish) {
-        // redirect to the live page after a short delay
         setTimeout(() => router.push(`/guide/${guide.slug}`), 1200);
       } else {
         setTimeout(() => router.push("/admin/guides"), 1200);
@@ -300,30 +326,23 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                 />
               </div>
               <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-                <label>Cover image URL <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(optional — shown on detail page only)</span></label>
-                <input
-                  type="url"
-                  placeholder="https://example.com/image.jpg"
-                  value={guide.cover_image_url}
-                  onChange={(e) => setGuide({ ...guide, cover_image_url: e.target.value })}
-                />
-                {guide.cover_image_url && (
-                  <div style={{ marginTop: 8 }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={guide.cover_image_url}
-                      alt="Cover preview"
-                      style={{
-                        width: "100%",
-                        maxHeight: 200,
-                        objectFit: "cover",
-                        borderRadius: 10,
-                        border: "1px solid var(--sand-200)",
-                      }}
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                  </div>
-                )}
+                <label>Cover image <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(optional — shown on detail page only)</span></label>
+                <div className={styles.uploadArea}>
+                  {coverPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={coverPreview} alt="Cover preview" className={styles.thumbPreview} />
+                  ) : (
+                    <div className={styles.uploadPlaceholder}>
+                      <span>🖼</span>
+                      <span>No image selected</span>
+                    </div>
+                  )}
+                  <label className={styles.uploadLabel}>
+                    Choose image
+                    <input type="file" accept="image/*" onChange={onCoverFile} style={{ display: "none" }} />
+                  </label>
+                  <p className={styles.uploadHint}>PNG, JPG, WebP — recommended 1200×630px</p>
+                </div>
               </div>
             </div>
           </div>

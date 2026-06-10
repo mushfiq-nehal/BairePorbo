@@ -8,7 +8,8 @@ import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
 import { createClient } from "@/utils/supabase/client";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
-import { guides } from "./guide/data/index";
+import { guides as staticGuides } from "./guide/data/index";
+import type { Guide } from "./guide/data/types";
 import styles from "./page.module.css";
 
 type ClosingScholarship = {
@@ -27,9 +28,36 @@ export default function Home() {
   const [stats, setStats] = useState({ scholarships: 0, countries: 0 });
   const [closingSoon, setClosingSoon] = useState<ClosingScholarship[]>([]);
   const [quickTags, setQuickTags] = useState<string[]>([]);
+  const [featuredGuides, setFeaturedGuides] = useState<Guide[]>(staticGuides.slice(0, 3));
 
   useEffect(() => {
     const supabase = createClient();
+    supabase
+      .from("guides")
+      .select("slug, title, description, category, tags, intro, faqs, published_at, updated_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .then(({ data }) => {
+        if (!data?.length) return;
+        const dbGuides: Guide[] = data.map((g) => ({
+          slug: g.slug,
+          title: g.title,
+          description: g.description,
+          category: g.category as Guide["category"],
+          tags: g.tags ?? [],
+          intro: g.intro,
+          faqs: Array.isArray(g.faqs) ? g.faqs : [],
+          publishedAt: g.published_at ?? g.updated_at ?? "",
+          updatedAt: g.updated_at ?? "",
+        }));
+        const dbSlugs = new Set(dbGuides.map((g) => g.slug));
+        const merged = [
+          ...dbGuides,
+          ...staticGuides.filter((g) => !dbSlugs.has(g.slug)),
+        ];
+        setFeaturedGuides(merged.slice(0, 3));
+      });
+
     supabase
       .from("scholarships")
       .select("id, title, country, deadline")
@@ -290,7 +318,7 @@ export default function Home() {
             </Link>
           </div>
           <div className={styles.guideTeaserGrid}>
-            {guides.slice(0, 3).map((guide) => (
+            {featuredGuides.map((guide) => (
               <Link
                 key={guide.slug}
                 href={`/guide/${guide.slug}`}

@@ -1,0 +1,398 @@
+"use client";
+
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import styles from "../../admin.module.css";
+
+type FAQ = { question: string; answer: string };
+
+type GuideForm = {
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  intro: string;
+  faqs: FAQ[];
+  status: "draft" | "published" | "archived";
+  cover_image_url: string;
+};
+
+const CATEGORIES = ["Scholarships", "Applications", "Tests", "Destinations", "Visa"];
+
+export default function EditGuidePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
+
+  const [guide, setGuide] = useState<GuideForm | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [editingFaq, setEditingFaq] = useState<number | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`/api/admin/guides/${id}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.error) {
+          setError(json.error);
+          return;
+        }
+        const g = json.guide;
+        setGuide({
+          slug: g.slug,
+          title: g.title,
+          description: g.description ?? "",
+          category: g.category ?? "Scholarships",
+          tags: g.tags ?? [],
+          intro: g.intro ?? "",
+          faqs: Array.isArray(g.faqs) ? g.faqs : [],
+          status: g.status ?? "draft",
+          cover_image_url: g.cover_image_url ?? "",
+        });
+        if (g.cover_image_url) setCoverPreview(g.cover_image_url);
+      })
+      .catch((err) => setError(String(err)))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const onCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setCoverFile(f);
+    setCoverPreview(URL.createObjectURL(f));
+  };
+
+  const updateFaq = (index: number, field: "question" | "answer", value: string) => {
+    if (!guide) return;
+    const updated = [...guide.faqs];
+    updated[index] = { ...updated[index], [field]: value };
+    setGuide({ ...guide, faqs: updated });
+  };
+
+  const removeFaq = (index: number) => {
+    if (!guide) return;
+    setGuide({ ...guide, faqs: guide.faqs.filter((_, i) => i !== index) });
+  };
+
+  const addFaq = () => {
+    if (!guide) return;
+    setGuide({ ...guide, faqs: [...guide.faqs, { question: "", answer: "" }] });
+    setEditingFaq(guide.faqs.length);
+  };
+
+  const handleSave = async (newStatus?: GuideForm["status"]) => {
+    if (!guide) return;
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/admin/guides/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: guide.slug,
+          title: guide.title,
+          description: guide.description,
+          category: guide.category,
+          tags: guide.tags,
+          intro: guide.intro,
+          faqs: guide.faqs,
+          status: newStatus ?? guide.status,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setError(json.error ?? "Failed to save guide.");
+        return;
+      }
+
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append("file", coverFile);
+        const upRes = await fetch(`/api/admin/guides/${id}/cover`, { method: "POST", body: fd });
+        if (!upRes.ok) {
+          const upJson = await upRes.json().catch(() => ({}));
+          setError(upJson.error ?? "Guide saved but cover upload failed.");
+          return;
+        }
+      }
+
+      router.push("/admin/guides");
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.emptyState}>
+          <span>Loading…</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!guide) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.emptyState}>
+          <p>{error || "Guide not found."}</p>
+          <Link href="/admin/guides" className={styles.ghostBtn}>
+            ← Back
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div>
+          <p className={styles.kicker}>Admin → Guides</p>
+          <h1>Edit Guide</h1>
+          <p className={styles.sub}>Update content, cover image, and publish status</p>
+        </div>
+        <Link href="/admin/guides" className={styles.ghostBtn}>
+          ← Back
+        </Link>
+      </header>
+
+      <div className={styles.formCard}>
+        <div className={styles.fieldGrid}>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>Title</label>
+            <input
+              type="text"
+              value={guide.title}
+              onChange={(e) => setGuide({ ...guide, title: e.target.value })}
+            />
+          </div>
+          <div className={styles.field}>
+            <label>Slug (URL path)</label>
+            <input
+              type="text"
+              value={guide.slug}
+              onChange={(e) =>
+                setGuide({
+                  ...guide,
+                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+                })
+              }
+            />
+          </div>
+          <div className={styles.field}>
+            <label>Category</label>
+            <select
+              value={guide.category}
+              onChange={(e) => setGuide({ ...guide, category: e.target.value })}
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>Meta description (≤155 chars)</label>
+            <input
+              type="text"
+              value={guide.description}
+              maxLength={160}
+              onChange={(e) => setGuide({ ...guide, description: e.target.value })}
+            />
+            <span style={{ fontSize: 11, color: "var(--ink-500)" }}>
+              {guide.description.length} / 155 chars
+            </span>
+          </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>Tags (comma-separated)</label>
+            <input
+              type="text"
+              value={guide.tags.join(", ")}
+              onChange={(e) =>
+                setGuide({
+                  ...guide,
+                  tags: e.target.value
+                    .split(",")
+                    .map((t) => t.trim())
+                    .filter(Boolean),
+                })
+              }
+            />
+          </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>Intro paragraph</label>
+            <textarea
+              rows={3}
+              value={guide.intro}
+              onChange={(e) => setGuide({ ...guide, intro: e.target.value })}
+            />
+          </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>
+              Cover image{" "}
+              <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>
+                (optional — shown on detail page only)
+              </span>
+            </label>
+            <div className={styles.uploadArea}>
+              {coverPreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={coverPreview} alt="Cover preview" className={styles.thumbPreview} />
+              ) : (
+                <div className={styles.uploadPlaceholder}>
+                  <span>🖼</span>
+                  <span>No image selected</span>
+                </div>
+              )}
+              <label className={styles.uploadLabel}>
+                Choose image
+                <input type="file" accept="image/*" onChange={onCoverFile} style={{ display: "none" }} />
+              </label>
+              <p className={styles.uploadHint}>PNG, JPG, WebP — recommended 1200×630px</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.formCard}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ fontWeight: 700, fontSize: 15 }}>FAQs ({guide.faqs.length})</p>
+          <button type="button" className={styles.ghostBtn} onClick={addFaq}>
+            + Add FAQ
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {guide.faqs.map((faq, i) => (
+            <div
+              key={i}
+              style={{
+                border: "1px solid var(--sand-200)",
+                borderRadius: 12,
+                overflow: "hidden",
+              }}
+            >
+              <button
+                type="button"
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  background: editingFaq === i ? "var(--sand-100)" : "#fafafa",
+                  border: "none",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 12,
+                  fontFamily: "inherit",
+                }}
+                onClick={() => setEditingFaq(editingFaq === i ? null : i)}
+              >
+                <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>
+                  {faq.question || (
+                    <em style={{ color: "var(--ink-500)", fontStyle: "normal" }}>New question…</em>
+                  )}
+                </span>
+                <span style={{ fontSize: 18, color: "var(--teal-500)", flexShrink: 0 }}>
+                  {editingFaq === i ? "−" : "+"}
+                </span>
+              </button>
+              {editingFaq === i && (
+                <div style={{ padding: "12px 16px 16px", display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div className={styles.field}>
+                    <label>Question</label>
+                    <input
+                      type="text"
+                      value={faq.question}
+                      onChange={(e) => updateFaq(i, "question", e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field}>
+                    <label>Answer</label>
+                    <textarea
+                      rows={4}
+                      value={faq.answer}
+                      onChange={(e) => updateFaq(i, "answer", e.target.value)}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.archiveBtn}
+                    style={{
+                      alignSelf: "flex-end",
+                      fontSize: 12,
+                      padding: "5px 12px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(220,53,69,0.3)",
+                      color: "#c0392b",
+                      background: "transparent",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => {
+                      removeFaq(i);
+                      setEditingFaq(null);
+                    }}
+                  >
+                    Remove FAQ
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && <p className={styles.error}>{error}</p>}
+
+      <div className={styles.formActions}>
+        {guide.status === "published" && (
+          <a
+            href={`/guide/${guide.slug}`}
+            target="_blank"
+            rel="noopener"
+            className={styles.ghostBtn}
+          >
+            View live ↗
+          </a>
+        )}
+        {guide.status !== "published" && (
+          <button
+            type="button"
+            className={styles.ghostBtn}
+            onClick={() => handleSave("draft")}
+            disabled={saving}
+          >
+            {saving ? "Saving…" : "Save as draft"}
+          </button>
+        )}
+        <button
+          type="button"
+          className={styles.enrichBtn}
+          onClick={() => handleSave(guide.status === "published" ? guide.status : "published")}
+          disabled={saving || !guide.title || !guide.slug}
+        >
+          {saving ? (
+            <>
+              <span className={styles.spinner} />
+              Saving…
+            </>
+          ) : guide.status === "published" ? (
+            "Save changes"
+          ) : (
+            "🚀 Publish guide"
+          )}
+        </button>
+      </div>
+    </div>
+  );
+}

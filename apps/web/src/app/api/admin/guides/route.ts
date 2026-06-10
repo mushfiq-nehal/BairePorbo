@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { revalidateGuidePages } from "@/lib/revalidate-guides";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -67,6 +68,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Slug "${slug}" is already taken.` }, { status: 409 });
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (status === "published" && data?.slug) {
+    revalidateGuidePages(data.slug);
   }
 
   return NextResponse.json({ guide: data }, { status: 201 });

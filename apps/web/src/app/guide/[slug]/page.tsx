@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
-import { getGuideBySlug, getAllSlugs, guides } from "../data/index";
-import { createServiceClient } from "@/utils/supabase/server";
+import { getGuideBySlug, getAllSlugs } from "../data/index";
+import { fetchPublishedDbGuides, fetchPublishedGuideBySlug, mergeGuides } from "@/lib/guides-db";
 import type { Guide } from "../data/types";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
@@ -23,7 +23,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const guide = getGuideBySlug(slug);
+  const guide = (await fetchPublishedGuideBySlug(slug)) ?? getGuideBySlug(slug);
   if (!guide) return {};
 
   const BASE = "https://baireporbo.app";
@@ -53,39 +53,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function GuideDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  // Try DB first (for admin-created guides), then fall back to static files
-  let guide: Guide | undefined;
-  try {
-    const db = createServiceClient();
-    const { data } = await db
-      .from("guides")
-      .select("*")
-      .eq("slug", slug)
-      .eq("status", "published")
-      .maybeSingle();
-    if (data) {
-      guide = {
-        slug: data.slug,
-        title: data.title,
-        description: data.description,
-        category: data.category as Guide["category"],
-        tags: data.tags ?? [],
-        intro: data.intro,
-        faqs: Array.isArray(data.faqs) ? data.faqs : [],
-        publishedAt: data.published_at ?? data.created_at ?? "",
-        updatedAt: data.updated_at ?? "",
-        coverImageUrl: data.cover_image_url ?? undefined,
-      };
-    }
-  } catch {
-    // DB unavailable
-  }
-
-  if (!guide) guide = getGuideBySlug(slug);
+  const guide = (await fetchPublishedGuideBySlug(slug)) ?? getGuideBySlug(slug);
   if (!guide) notFound();
 
   /* Related guides: same category, exclude current */
-  const related = guides
+  const related = mergeGuides(await fetchPublishedDbGuides())
     .filter((g) => g.slug !== guide.slug && g.category === guide.category)
     .slice(0, 3);
 

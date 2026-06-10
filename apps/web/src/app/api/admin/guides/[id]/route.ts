@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
+import { revalidateGuidePages } from "@/lib/revalidate-guides";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
@@ -14,6 +15,21 @@ async function requireAdmin() {
 }
 
 interface RouteParams { params: Promise<{ id: string }> }
+
+/** GET /api/admin/guides/[id] — fetch a single guide for editing */
+export async function GET(_req: NextRequest, { params }: RouteParams) {
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const db = createServiceClient();
+  const { data, error } = await db.from("guides").select("*").eq("id", id).maybeSingle();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!data) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+
+  return NextResponse.json({ guide: data });
+}
 
 /** PATCH /api/admin/guides/[id] — update fields */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
@@ -42,6 +58,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
 
+  revalidateGuidePages(data.slug);
+
   return NextResponse.json({ guide: data });
 }
 
@@ -52,8 +70,13 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
   const { id } = await params;
   const db = createServiceClient();
+
+  const { data: existing } = await db.from("guides").select("slug").eq("id", id).maybeSingle();
+
   const { error } = await db.from("guides").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  if (existing?.slug) revalidateGuidePages(existing.slug);
 
   return NextResponse.json({ ok: true });
 }
