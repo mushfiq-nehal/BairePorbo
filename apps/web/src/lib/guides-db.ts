@@ -1,4 +1,4 @@
-import { createServiceClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
 import type { Guide } from "@/app/guide/data/types";
 import { guides as staticGuides } from "@/app/guide/data/index";
 
@@ -35,15 +35,14 @@ function mapDbGuide(g: DbGuideRow): Guide {
 
 export async function fetchPublishedDbGuides(): Promise<Guide[]> {
   try {
-    const db = createServiceClient();
-    const { data } = await db
-      .from("guides")
-      .select(
-        "slug, title, description, category, tags, intro, content, faqs, published_at, updated_at, cover_image_url"
-      )
-      .eq("status", "published")
-      .order("published_at", { ascending: false });
-    return (data ?? []).map(mapDbGuide);
+    const rows = await sql`
+      SELECT slug, title, description, category, tags, intro, content, faqs,
+             published_at, updated_at, cover_image_url
+      FROM guides
+      WHERE status = 'published'
+      ORDER BY published_at DESC
+    `;
+    return (rows as DbGuideRow[]).map(mapDbGuide);
   } catch {
     return [];
   }
@@ -51,14 +50,12 @@ export async function fetchPublishedDbGuides(): Promise<Guide[]> {
 
 export async function fetchPublishedGuideBySlug(slug: string): Promise<Guide | undefined> {
   try {
-    const db = createServiceClient();
-    const { data } = await db
-      .from("guides")
-      .select("*")
-      .eq("slug", slug)
-      .eq("status", "published")
-      .maybeSingle();
-    return data ? mapDbGuide(data) : undefined;
+    const rows = await sql`
+      SELECT * FROM guides
+      WHERE slug = ${slug} AND status = 'published'
+      LIMIT 1
+    `;
+    return rows[0] ? mapDbGuide(rows[0] as DbGuideRow) : undefined;
   } catch {
     return undefined;
   }

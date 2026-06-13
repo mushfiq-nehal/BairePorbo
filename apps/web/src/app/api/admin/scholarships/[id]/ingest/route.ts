@@ -1,20 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient, createServiceClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
+import { requireAdmin } from "@/utils/api-auth";
 import { generateEmbedding, logRequest } from "@/lib/nim";
-
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
 
 type ScholarshipRecord = {
   id: string;
@@ -48,57 +35,42 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "NIM API key not configured" }, { status: 500 });
 
   const { id } = await params;
-  const { data: scholarship, error } = await auth.supabase
-    .from("scholarships")
-    .select("id, title, country, degree_level, funding_type, deadline, official_url, raw_description, ai_summary, eligibility_summary, tips, tags")
-    .eq("id", id)
-    .single();
-
-  if (error || !scholarship) {
-    return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
-  }
-
-  const record = scholarship as ScholarshipRecord;
+  const rows = await sql`
+    SELECT id, title, country, degree_level, funding_type, deadline, official_url,
+           raw_description, ai_summary, eligibility_summary, tips, tags
+    FROM scholarships WHERE id = ${id} LIMIT 1
+  `;
+  const scholarship = rows[0] as ScholarshipRecord | undefined;
+  if (!scholarship) return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
 
   const header = [
-    `Title: ${record.title}`,
-    `Country: ${record.country}`,
-    `Degree level: ${record.degree_level ?? "Not specified"}`,
-    `Funding type: ${record.funding_type ?? "Not specified"}`,
-    `Deadline: ${record.deadline ?? "Open"}`,
-    `Official URL: ${record.official_url ?? "Not specified"}`,
+    `Title: ${scholarship.title}`,
+    `Country: ${scholarship.country}`,
+    `Degree level: ${scholarship.degree_level ?? "Not specified"}`,
+    `Funding type: ${scholarship.funding_type ?? "Not specified"}`,
+    `Deadline: ${scholarship.deadline ?? "Open"}`,
+    `Official URL: ${scholarship.official_url ?? "Not specified"}`,
   ].join("\n");
 
   const sections = [
-    record.raw_description ? `Description:\n${record.raw_description}` : null,
-    record.ai_summary ? `AI Summary:\n${record.ai_summary}` : null,
-    record.eligibility_summary ? `Eligibility:\n${record.eligibility_summary}` : null,
-    record.tips ? `Tips:\n${record.tips}` : null,
-    record.tags && record.tags.length ? `Tags: ${record.tags.join(", ")}` : null,
+    scholarship.raw_description ? `Description:\n${scholarship.raw_description}` : null,
+    scholarship.ai_summary ? `AI Summary:\n${scholarship.ai_summary}` : null,
+    scholarship.eligibility_summary ? `Eligibility:\n${scholarship.eligibility_summary}` : null,
+    scholarship.tips ? `Tips:\n${scholarship.tips}` : null,
+    scholarship.tags?.length ? `Tags: ${scholarship.tags.join(", ")}` : null,
   ].filter(Boolean) as string[];
 
   const content = [header, ...sections].join("\n\n");
   const chunks = chunkText(content);
 
-  const service = createServiceClient();
-  const db = service ?? auth.supabase;
-
-  const { error: deleteError } = await db
-    .from("ScholarshipDoc")
-    .delete()
-    .eq("scholarship_id", record.id);
-
-  if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 });
-  }
+  await sql`DELETE FROM "ScholarshipDoc" WHERE scholarship_id = ${scholarship.id}`;
 
   const embeddings: { content: string; embedding: number[] }[] = [];
   for (const chunk of chunks) {
@@ -106,25 +78,18 @@ export async function POST(
     embeddings.push({ content: chunk, embedding });
   }
 
-  const payload = embeddings.map((item, index) => ({
-    content: item.content,
-    embedding: item.embedding,
-    scholarship_id: record.id,
-    metadata: {
-      index,
-      title: record.title,
-      country: record.country,
-    },
-  }));
-
-  const { error: insertError } = await db
-    .from("ScholarshipDoc")
-    .insert(payload);
-
-  if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  for (let i = 0; i < embeddings.length; i++) {
+    await sql`
+      INSERT INTO "ScholarshipDoc" (content, embedding, scholarship_id, metadata)
+      VALUES (
+        ${embeddings[i].content},
+        ${JSON.stringify(embeddings[i].embedding)}::vector,
+        ${scholarship.id},
+        ${JSON.stringify({ index: i, title: scholarship.title, country: scholarship.country })}::jsonb
+      )
+    `;
   }
 
-  logRequest("rag.ingest.complete", { scholarshipId: record.id, chunks: chunks.length });
+  logRequest("rag.ingest.complete", { scholarshipId: scholarship.id, chunks: chunks.length });
   return NextResponse.json({ chunks: chunks.length });
 }

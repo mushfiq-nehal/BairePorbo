@@ -1,36 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { sql } from "@/utils/db";
 
-// DELETE /api/chat/sessions/[sessionId] — delete a session and its messages
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const db = createServiceClient();
+  const { userId } = await auth();
   const anonKey = req.headers.get("x-anon-key");
   const { sessionId } = await params;
 
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user && !anonKey) {
+  if (!userId && !anonKey) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: session, error: sessionError } = await db
-    .from("chat_sessions")
-    .select("user_id, anon_key")
-    .eq("id", sessionId)
-    .single();
+  const rows = await sql`
+    SELECT user_id, anon_key FROM chat_sessions WHERE id = ${sessionId} LIMIT 1
+  `;
+  const session = rows[0];
 
-  if (sessionError || !session) {
+  if (!session) {
     return NextResponse.json({ error: "Session not found" }, { status: 404 });
   }
 
   if (session.user_id) {
-    if (!user || user.id !== session.user_id) {
+    if (!userId || userId !== session.user_id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
   } else {
@@ -39,23 +33,8 @@ export async function DELETE(
     }
   }
 
-  const { error: messagesError } = await db
-    .from("chat_messages")
-    .delete()
-    .eq("session_id", sessionId);
-
-  if (messagesError) {
-    return NextResponse.json({ error: messagesError.message }, { status: 500 });
-  }
-
-  const { error: sessionDeleteError } = await db
-    .from("chat_sessions")
-    .delete()
-    .eq("id", sessionId);
-
-  if (sessionDeleteError) {
-    return NextResponse.json({ error: sessionDeleteError.message }, { status: 500 });
-  }
+  await sql`DELETE FROM chat_messages WHERE session_id = ${sessionId}`;
+  await sql`DELETE FROM chat_sessions WHERE id = ${sessionId}`;
 
   return NextResponse.json({ ok: true });
 }

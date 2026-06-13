@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { sql } from "@/utils/db";
+import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
 
@@ -20,28 +20,15 @@ Required JSON shape:
   "thumbnail_prompt": "A photorealistic image prompt for generating a thumbnail: describe the university architecture or landmark in the host country, time of day, mood, colors matching the scholarship prestige. Make it specific and vivid. Do not include text or people."
 }`;
 
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
-
-
-// POST /api/admin/scholarships/[id]/enrich — AI enrichment
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = getClientIp(req);
-  const rate = await checkRateLimit(`admin:${auth.user.id}:enrich`, { limit: 6, windowMs: 10 * 60_000 });
+  const rate = await checkRateLimit(`admin:${auth.userId}:enrich`, { limit: 6, windowMs: 10 * 60_000 });
   if (!rate.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Please retry shortly." },
@@ -49,27 +36,19 @@ export async function POST(
     );
   }
 
-  // Optional model choice from request body
   let model: ModelChoice = "deepseek";
   try {
     const body = await req.json();
     if (VALID_MODELS.includes(body?.model)) model = body.model;
   } catch {
-    // no body / invalid — keep default
+    // keep default
   }
 
   const { id } = await params;
+  const rows = await sql`SELECT * FROM scholarships WHERE id = ${id} LIMIT 1`;
+  const scholarship = rows[0];
 
-  // Fetch the scholarship to enrich
-  const { data: scholarship, error: fetchErr } = await auth.supabase
-    .from("scholarships")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (fetchErr || !scholarship) {
-    return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
-  }
+  if (!scholarship) return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
 
   const userPrompt = `
 Scholarship details to enrich:
@@ -103,32 +82,27 @@ ${scholarship.raw_description ?? "No description provided"}
 
   let enriched: Record<string, unknown>;
   try {
-    // Strip potential markdown fences
     const cleaned = raw.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
     enriched = JSON.parse(cleaned);
   } catch {
-    return NextResponse.json(
-      { error: "AI returned invalid JSON", raw },
-      { status: 422 }
-    );
+    return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 422 });
   }
 
-  // Persist enriched fields
-  const { data: updated, error: updateErr } = await auth.supabase
-    .from("scholarships")
-    .update({
-      eligibility_summary: enriched.eligibility_summary,
-      competitiveness: enriched.competitiveness,
-      tips: enriched.tips,
-      tags: enriched.tags,
-      ai_summary: enriched.ai_summary,
-      thumbnail_prompt: enriched.thumbnail_prompt,
-    })
-    .eq("id", id)
-    .select()
-    .single();
+  const updated = await sql`
+    UPDATE scholarships SET
+      eligibility_summary = ${enriched.eligibility_summary as string},
+      competitiveness     = ${enriched.competitiveness as string},
+      tips                = ${enriched.tips as string},
+      tags                = ${JSON.stringify(enriched.tags)}::jsonb,
+      ai_summary          = ${enriched.ai_summary as string},
+      thumbnail_prompt    = ${enriched.thumbnail_prompt as string},
+      updated_at          = NOW()
+    WHERE id = ${id}
+    RETURNING *
+  `;
 
-  if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
-
-  return NextResponse.json({ scholarship: updated, enriched });
+  return NextResponse.json({ scholarship: updated[0], enriched });
 }
+
+// Re-export unused import to satisfy TypeScript
+export { parseJsonFromCompletion };

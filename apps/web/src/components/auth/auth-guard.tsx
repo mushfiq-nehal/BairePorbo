@@ -5,18 +5,18 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { userId, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     if (loading) return;
-    if (!user) {
+    if (!userId) {
       router.replace(`/auth/login?redirect=${encodeURIComponent(pathname ?? "/")}`);
     }
-  }, [loading, user, pathname, router]);
+  }, [loading, userId, pathname, router]);
 
-  if (loading || !user) return null;
+  if (loading || !userId) return null;
 
   return <>{children}</>;
 }

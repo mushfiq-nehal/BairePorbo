@@ -1,78 +1,75 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { sql } from "@/utils/db";
+import { requireAdmin } from "@/utils/api-auth";
 
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
-
-// GET /api/admin/scholarships/[id] — fetch single scholarship
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { data, error } = await auth.supabase
-    .from("scholarships")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const rows = await sql`SELECT * FROM scholarships WHERE id = ${id} LIMIT 1`;
+  if (!rows[0]) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ scholarship: data });
+  return NextResponse.json({ scholarship: rows[0] });
 }
 
-// PATCH /api/admin/scholarships/[id] — update fields or status
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   let body: Record<string, unknown>;
-  try { body = await req.json(); } catch {
+  try {
+    body = await req.json();
+  } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { data, error } = await auth.supabase
-    .from("scholarships")
-    .update(body)
-    .eq("id", id)
-    .select()
-    .single();
+  // Build SET clause dynamically from allowed fields
+  const allowed = [
+    "title", "country", "degree_level", "funding_type", "deadline",
+    "official_url", "raw_description", "status", "is_flagship",
+    "ai_summary", "eligibility_summary", "competitiveness", "tips",
+    "tags", "thumbnail_url", "thumbnail_prompt",
+  ];
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ scholarship: data });
+  const updates = Object.fromEntries(
+    Object.entries(body).filter(([k]) => allowed.includes(k))
+  );
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  // Build parameterised SET pairs
+  const setClauses = Object.keys(updates)
+    .map((key, i) => `${key} = $${i + 2}`)
+    .join(", ");
+
+  const values = [id, ...Object.values(updates)];
+  const rows = await sql(
+    `UPDATE scholarships SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    values,
+  );
+
+  return NextResponse.json({ scholarship: rows[0] });
 }
 
-// DELETE /api/admin/scholarships/[id] — archive
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const { error } = await auth.supabase
-    .from("scholarships")
-    .update({ status: "archived" })
-    .eq("id", id);
+  await sql`UPDATE scholarships SET status = 'archived', updated_at = NOW() WHERE id = ${id}`;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }

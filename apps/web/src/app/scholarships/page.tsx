@@ -4,7 +4,6 @@ import { Suspense, useEffect, useMemo, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
@@ -148,7 +147,7 @@ function parseDeadlineDate(d: string): Date | null {
 
 // ── Main page ────────────────────────────────────────────────────────────────
 function ScholarshipsContent() {
-  const { user, signOut } = useAuth();
+  const { userId, signOut } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useT();
@@ -165,16 +164,13 @@ function ScholarshipsContent() {
   const [displayCount, setDisplayCount] = useState(0);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("scholarships")
-      .select("id, title, country, funding_type, deadline, degree_level, tags, thumbnail_url, competitiveness, is_flagship")
-      .eq("status", "published")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
+    fetch("/api/scholarships")
+      .then((r) => r.json())
+      .then(({ scholarships: data }: { scholarships: Scholarship[] }) => {
         setScholarships(data ?? []);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -185,7 +181,7 @@ function ScholarshipsContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setBookmarkedIds([]);
       return;
     }
@@ -196,7 +192,7 @@ function ScholarshipsContent() {
         setBookmarkedIds(ids);
       })
       .catch(() => setBookmarkedIds([]));
-  }, [user]);
+  }, [userId]);
 
   // Derive filter options from real data
   const countries = useMemo(() => [...new Set(scholarships.map((s) => s.country))].sort(), [scholarships]);
@@ -309,7 +305,7 @@ function ScholarshipsContent() {
   }, [filtered.length, displayCount]);
 
   const toggleBookmark = async (id: string) => {
-    if (!user) {
+    if (!userId) {
       router.push("/auth/login");
       return;
     }
@@ -332,10 +328,10 @@ function ScholarshipsContent() {
   };
 
   const actions: NavAction[] = [
-    user
+    userId
       ? { label: t("nav.signOut"), onClick: signOut }
       : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" },
-    !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
+    !userId ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
   ].filter(Boolean) as NavAction[];
 
   return (

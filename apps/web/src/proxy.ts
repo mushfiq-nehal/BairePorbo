@@ -1,23 +1,11 @@
-import { type NextRequest } from "next/server";
-import { createClient } from "@/utils/supabase/middleware";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
-export async function proxy(request: NextRequest) {
-  const { supabase, supabaseResponse } = createClient(request);
-
-  // Refresh the auth session so cookies stay valid
-  await supabase.auth.getUser();
-
-  return supabaseResponse;
-}
+export default clerkMiddleware();
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths EXCEPT static files and Next.js internals:
-     * - _next/static (static files)
-     * - _next/image (image optimization)
-     * - favicon.ico, sitemap.xml, robots.txt
-     */
+    "/(api|trpc)(.*)",
+    "/__clerk/:path*",
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

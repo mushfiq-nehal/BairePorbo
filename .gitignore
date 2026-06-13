@@ -1,0 +1,8 @@
+# User data exports — never commit
+*.csv
+users.csv
+user_data.csv
+
+# Node modules from migration scripts
+node_modules/
+package-lock.json

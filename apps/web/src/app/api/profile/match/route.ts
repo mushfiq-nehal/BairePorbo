@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient, createServiceClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
+import { getUser } from "@/utils/api-auth";
 import { generateEmbedding } from "@/lib/nim";
 
 type DocMatch = {
@@ -14,59 +14,29 @@ const MATCH_THRESHOLD = 0.4;
 const MATCH_COUNT_PER_QUERY = 12;
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await getUser();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "NVIDIA_API_KEY is not configured" }, { status: 500 });
-  }
+  if (!apiKey) return NextResponse.json({ error: "NVIDIA_API_KEY is not configured" }, { status: 500 });
 
-  const { data: profile, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const rows = await sql`SELECT * FROM profiles WHERE id = ${auth.userId} LIMIT 1`;
+  const profile = rows[0];
 
-  if (error || !profile) {
-    return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-  }
+  if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
   if (!profile.target_degree && !profile.preferred_countries && !profile.cgpa) {
     return NextResponse.json(
-      {
-        error:
-          "Profile is too sparse for matching. Please fill out degree, countries, or CGPA.",
-      },
+      { error: "Profile is too sparse for matching. Please fill out degree, countries, or CGPA." },
       { status: 400 },
     );
   }
 
-  // Service client used for the vector RPC (bypasses RLS on ScholarshipDoc).
-  let service: ReturnType<typeof createServiceClient>;
-  try {
-    service = createServiceClient();
-  } catch {
-    return NextResponse.json(
-      { error: "Server misconfiguration: service key missing" },
-      { status: 500 },
-    );
-  }
-
-  // Split preferred_countries on comma. If the user provided multiple, we
-  // run one query per country so each country's embedding is focused and
-  // doesn't get diluted by averaging.
-  const countries = (profile.preferred_countries ?? "")
+  const countries = (String(profile.preferred_countries ?? ""))
     .split(",")
     .map((c: string) => c.trim())
     .filter(Boolean);
 
-  // Build a query string for a single country (or no country if none provided).
   const buildQuery = (country: string | null): string =>
     [
       `I am looking for a ${profile.target_degree || "higher education"} scholarship.`,
@@ -87,65 +57,42 @@ export async function GET() {
       .filter(Boolean)
       .join(" ");
 
-  // Decide how many queries to run.
   const queries: string[] =
-    countries.length === 0
-      ? [buildQuery(null)]
-      : countries.map((c: string) => buildQuery(c));
+    countries.length === 0 ? [buildQuery(null)] : countries.map((c: string) => buildQuery(c));
 
   try {
-    // Embed all queries in parallel and run vector matches in parallel.
     const allMatches: DocMatch[] = [];
     await Promise.all(
       queries.map(async (q) => {
         const embedding = await generateEmbedding(q, apiKey, "query");
-        const { data: matches, error: rpcError } = await service.rpc(
-          "match_scholarship_docs",
-          {
-            query_embedding: embedding,
-            match_threshold: MATCH_THRESHOLD,
-            match_count: MATCH_COUNT_PER_QUERY,
-          },
-        );
-        if (rpcError) throw rpcError;
-        for (const row of (matches ?? []) as DocMatch[]) {
-          allMatches.push(row);
-        }
+        const matches = await sql`
+          SELECT id, scholarship_id, content, similarity
+          FROM match_scholarship_docs(${JSON.stringify(embedding)}::vector, ${MATCH_THRESHOLD}, ${MATCH_COUNT_PER_QUERY})
+        ` as DocMatch[];
+        for (const row of matches) allMatches.push(row);
       }),
     );
 
-    // Dedupe by scholarship_id, keeping the best similarity score across queries.
     const bestById = new Map<string, DocMatch>();
     for (const row of allMatches) {
       if (!row.scholarship_id) continue;
       const prev = bestById.get(row.scholarship_id);
-      if (!prev || row.similarity > prev.similarity) {
-        bestById.set(row.scholarship_id, row);
-      }
+      if (!prev || row.similarity > prev.similarity) bestById.set(row.scholarship_id, row);
     }
 
     const ranked = [...bestById.values()].sort((a, b) => b.similarity - a.similarity);
     const scholarshipIds = ranked.map((r) => r.scholarship_id);
 
-    if (scholarshipIds.length === 0) {
-      return NextResponse.json({ matches: [] });
-    }
+    if (scholarshipIds.length === 0) return NextResponse.json({ matches: [] });
 
-    const { data: scholarships, error: scholarshipsError } = await service
-      .from("scholarships")
-      .select(
-        "id, title, country, degree_level, funding_type, deadline, tags, competitiveness, thumbnail_url",
-      )
-      .in("id", scholarshipIds)
-      .eq("status", "published");
+    const scholarships = await sql`
+      SELECT id, title, country, degree_level, funding_type, deadline, tags, competitiveness, thumbnail_url
+      FROM scholarships
+      WHERE id = ANY(${scholarshipIds}::uuid[]) AND status = 'published'
+    `;
 
-    if (scholarshipsError) throw scholarshipsError;
-
-    // Preserve the similarity-ranked order and drop any scholarships that
-    // were filtered out by the published-status check.
-    const published = scholarships ?? [];
     const ordered = scholarshipIds
-      .map((sid) => published.find((s) => s.id === sid))
+      .map((sid) => scholarships.find((s) => s.id === sid))
       .filter((s): s is NonNullable<typeof s> => Boolean(s));
 
     return NextResponse.json({ matches: ordered });

@@ -1,28 +1,9 @@
-/**
- * Postgres-backed prompt cache.
- *
- * Caches assistant responses keyed by:
- *   sha256(system_prompt_version + model + normalized_user_msg)
- *
- * Notes on what is INTENTIONALLY excluded from the key:
- *  - RAG context: embeddings from shared inference endpoints are not perfectly
- *    deterministic, and similarity-ordered match results can flip order on
- *    ties. Either produces a different concatenated context across otherwise
- *    identical calls, which would make cache hits effectively impossible.
- *    Corpus drift is handled by the 24h TTL and `SYSTEM_PROMPT_VERSION`
- *    (bump it if the corpus or prompt shape changes meaningfully).
- *  - Conversation history: the route only invokes the cache when there is
- *    exactly one user-role turn, so by definition the question is fresh.
- */
-
 import { createHash } from "crypto";
-import { createServiceClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
 
 const CACHE_TTL_HOURS = Number(process.env.PROMPT_CACHE_TTL_HOURS ?? 24);
 const CACHE_DISABLED = process.env.PROMPT_CACHE_DISABLED === "1";
 
-// Bump this any time the system prompt or shape changes so old entries
-// invalidate naturally instead of needing a manual flush.
 export const SYSTEM_PROMPT_VERSION = "v2";
 
 const normalize = (text: string) => text.trim().toLowerCase().replace(/\s+/g, " ");
@@ -30,11 +11,6 @@ const normalize = (text: string) => text.trim().toLowerCase().replace(/\s+/g, " 
 export type CacheKeyInput = {
   model: string;
   userMessage: string;
-  /**
-   * Optional scholarship-specific context. When present (e.g. from the
-   * per-scholarship AI panel), it is hashed into the key so that the same
-   * question asked on different scholarship pages never collides in the cache.
-   */
   systemContext?: string;
 };
 
@@ -43,8 +19,6 @@ export const buildCacheKey = ({ model, userMessage, systemContext }: CacheKeyInp
     SYSTEM_PROMPT_VERSION,
     model,
     normalize(userMessage),
-    // Include a hash of the scholarship context so identical questions on
-    // different scholarship pages produce different cache keys.
     systemContext ? createHash("sha256").update(systemContext.trim()).digest("hex").slice(0, 16) : "",
   ].join("|");
   return createHash("sha256").update(payload).digest("hex");
@@ -56,40 +30,27 @@ export type CacheLookup = {
   response?: string;
 };
 
-export const lookupPromptCache = async (
-  input: CacheKeyInput,
-): Promise<CacheLookup> => {
+export const lookupPromptCache = async (input: CacheKeyInput): Promise<CacheLookup> => {
   const cacheKey = buildCacheKey(input);
 
-  if (CACHE_DISABLED) {
-    return { cacheKey, hit: false };
-  }
+  if (CACHE_DISABLED) return { cacheKey, hit: false };
 
   try {
-    const db = createServiceClient();
-    const { data, error } = await db
-      .from("prompt_cache")
-      .select("response, expires_at")
-      .eq("cache_key", cacheKey)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle();
+    const rows = await sql`
+      SELECT response, expires_at FROM prompt_cache
+      WHERE cache_key = ${cacheKey} AND expires_at > NOW()
+      LIMIT 1
+    `;
 
-    if (error) {
-      // Most common cause: migration 012 hasn't been applied (table missing).
-      console.warn("[prompt-cache] lookup error:", error.message);
-      return { cacheKey, hit: false };
-    }
-
-    if (!data?.response) {
+    if (!rows[0]?.response) {
       console.info("[prompt-cache] miss", { cacheKey: cacheKey.slice(0, 12) });
       return { cacheKey, hit: false };
     }
 
     console.info("[prompt-cache] hit", { cacheKey: cacheKey.slice(0, 12) });
-    // Fire-and-forget hit counter bump.
-    db.rpc("bump_prompt_cache_hit", { p_cache_key: cacheKey }).then(() => {});
+    sql`SELECT bump_prompt_cache_hit(${cacheKey})`.catch(() => {});
 
-    return { cacheKey, hit: true, response: data.response };
+    return { cacheKey, hit: true, response: rows[0].response as string };
   } catch (err) {
     console.warn("[prompt-cache] lookup threw:", err);
     return { cacheKey, hit: false };
@@ -106,25 +67,18 @@ export const writePromptCache = async (
   if (!response.trim()) return;
 
   try {
-    const db = createServiceClient();
     const expiresAt = new Date(Date.now() + CACHE_TTL_HOURS * 60 * 60_000).toISOString();
-    const { error } = await db.from("prompt_cache").upsert(
-      {
-        cache_key: cacheKey,
-        model,
-        user_message: userMessage.slice(0, 4000),
-        response,
-        expires_at: expiresAt,
-      },
-      { onConflict: "cache_key" },
-    );
-    if (error) {
-      console.warn("[prompt-cache] write error:", error.message);
-    } else {
-      console.info("[prompt-cache] write ok", { cacheKey: cacheKey.slice(0, 12) });
-    }
+    await sql`
+      INSERT INTO prompt_cache (cache_key, model, user_message, response, expires_at)
+      VALUES (${cacheKey}, ${model}, ${userMessage.slice(0, 4000)}, ${response}, ${expiresAt})
+      ON CONFLICT (cache_key) DO UPDATE SET
+        response    = EXCLUDED.response,
+        expires_at  = EXCLUDED.expires_at,
+        model       = EXCLUDED.model,
+        user_message = EXCLUDED.user_message
+    `;
+    console.info("[prompt-cache] write ok", { cacheKey: cacheKey.slice(0, 12) });
   } catch (err) {
-    // Caching is best-effort — never let it block the request path.
     console.warn("[prompt-cache] write threw:", err);
   }
 };

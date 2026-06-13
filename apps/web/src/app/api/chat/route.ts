@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { sql } from "@/utils/db";
 import { generateEmbedding, getClientIp, logRequest } from "@/lib/nim";
 import { fetchOpenRouterChatWithFallback } from "@/lib/openrouter";
 import { checkChatRateLimit, formatResetWindow, type ChatTier } from "@/lib/rate-limit";
@@ -95,23 +95,15 @@ export async function POST(req: NextRequest) {
 
   const trimmedMessages = userMessages.slice(-MAX_HISTORY);
   const sessionId = body.sessionId ?? null;
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const db = createServiceClient();
   const anonKey = req.headers.get("x-anon-key");
-  const { data: { user } } = await supabase.auth.getUser();
+  const { userId } = await auth();
 
-  // ── Identify caller and tier ──
   let tier: ChatTier = "anonymous";
   let callerId: string;
-  if (user) {
-    const { data: profile } = await db
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    tier = profile?.role === "admin" ? "admin" : "user";
-    callerId = user.id;
+  if (userId) {
+    const rows = await sql`SELECT role FROM profiles WHERE id = ${userId} LIMIT 1`;
+    tier = rows[0]?.role === "admin" ? "admin" : "user";
+    callerId = userId;
   } else if (anonKey) {
     callerId = `anon:${anonKey}`;
   } else {
@@ -140,18 +132,17 @@ export async function POST(req: NextRequest) {
 
   // ── Verify session ownership when a sessionId is supplied ──
   if (sessionId) {
-    const { data: session } = await db
-      .from("chat_sessions")
-      .select("user_id, anon_key")
-      .eq("id", sessionId)
-      .single();
+    const rows = await sql`
+      SELECT user_id, anon_key FROM chat_sessions WHERE id = ${sessionId} LIMIT 1
+    `;
+    const session = rows[0];
 
     if (!session) {
       return NextResponse.json({ error: "Session not found." }, { status: 404 });
     }
 
     if (session.user_id) {
-      if (!user || user.id !== session.user_id)
+      if (!userId || userId !== session.user_id)
         return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     } else {
       if (session.anon_key !== anonKey)
@@ -159,28 +150,23 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Persist the user message to DB (fire-and-forget, don't block the stream)
   if (sessionId && body.userMessage) {
-    db
-      .from("chat_messages")
-      .insert({ session_id: sessionId, role: "user", content: body.userMessage })
-      .then(({ error }) => {
-        if (error) console.error("[chat] failed to save user message:", error.message);
-      });
+    sql`
+      INSERT INTO chat_messages (session_id, role, content)
+      VALUES (${sessionId}, 'user', ${body.userMessage})
+    `.catch((err: unknown) => console.error("[chat] failed to save user message:", err));
   }
 
   // ── RAG context ──
   let contextBlock = "";
   const lastUserMessage = [...trimmedMessages].reverse().find((m) => m.role === "user");
-  try {
-    if (lastUserMessage?.content) {
-      const embedding = await generateEmbedding(lastUserMessage.content, apiKey, "query");
-      const { data } = await db.rpc("match_scholarship_docs", {
-        query_embedding: embedding,
-        match_threshold: 0.7,
-        match_count: 5,
-      });
-      const matches = (data ?? []) as { content: string; similarity: number }[];
+    try {
+      if (lastUserMessage?.content) {
+        const embedding = await generateEmbedding(lastUserMessage.content, apiKey, "query");
+        const matches = await sql`
+          SELECT content, similarity
+          FROM match_scholarship_docs(${JSON.stringify(embedding)}::vector, 0.7, 5)
+        ` as { content: string; similarity: number }[];
       if (matches.length) {
         const formatted = matches
           .map((match, index) => `Source ${index + 1}: ${match.content}`)
@@ -221,7 +207,6 @@ export async function POST(req: NextRequest) {
         modelLabel: primaryModel,
         sessionId,
         userMessageText: body.userMessage ?? null,
-        db,
       });
     }
   } else {
@@ -304,28 +289,18 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Persist the assistant response
         if (sessionId && fullAssistantContent) {
-          db
-            .from("chat_messages")
-            .insert({
-              session_id: sessionId,
-              role: "assistant",
-              content: fullAssistantContent,
-            })
-            .then(({ error }) => {
-              if (error)
-                console.error("[chat] failed to save assistant message:", error.message);
-            });
+          sql`
+            INSERT INTO chat_messages (session_id, role, content)
+            VALUES (${sessionId}, 'assistant', ${fullAssistantContent})
+          `.catch((err: unknown) => console.error("[chat] failed to save assistant message:", err));
 
           if (body.userMessage) {
             const title = body.userMessage.slice(0, 60).trim();
-            db
-              .from("chat_sessions")
-              .update({ title })
-              .eq("id", sessionId)
-              .eq("title", "New conversation")
-              .then(() => {});
+            sql`
+              UPDATE chat_sessions SET title = ${title}
+              WHERE id = ${sessionId} AND title = 'New conversation'
+            `.catch(() => {});
           }
         }
 
@@ -373,9 +348,8 @@ function streamCachedResponse(args: {
   modelLabel: string;
   sessionId: string | null;
   userMessageText: string | null;
-  db: ReturnType<typeof createServiceClient>;
 }) {
-  const { response, modelLabel, sessionId, userMessageText, db } = args;
+  const { response, modelLabel, sessionId, userMessageText } = args;
   const encoder = new TextEncoder();
 
   const readable = new ReadableStream({
@@ -396,24 +370,17 @@ function streamCachedResponse(args: {
       }
 
       if (sessionId && response) {
-        db.from("chat_messages")
-          .insert({
-            session_id: sessionId,
-            role: "assistant",
-            content: response,
-          })
-          .then(({ error }) => {
-            if (error)
-              console.error("[chat] failed to save assistant message:", error.message);
-          });
+        sql`
+          INSERT INTO chat_messages (session_id, role, content)
+          VALUES (${sessionId}, 'assistant', ${response})
+        `.catch((err: unknown) => console.error("[chat] failed to save assistant message:", err));
 
         if (userMessageText) {
           const title = userMessageText.slice(0, 60).trim();
-          db.from("chat_sessions")
-            .update({ title })
-            .eq("id", sessionId)
-            .eq("title", "New conversation")
-            .then(() => {});
+          sql`
+            UPDATE chat_sessions SET title = ${title}
+            WHERE id = ${sessionId} AND title = 'New conversation'
+          `.catch(() => {});
         }
       }
 

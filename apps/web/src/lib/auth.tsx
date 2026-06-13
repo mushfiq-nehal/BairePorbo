@@ -1,13 +1,12 @@
 "use client";
 
+import { useUser, useClerk } from "@clerk/nextjs";
 import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
-import type { User } from "@supabase/supabase-js";
 
 type Role = "student" | "admin";
 
 type AuthContextValue = {
-  user: User | null;
+  userId: string | null;
   role: Role | null;
   loading: boolean;
   signOut: () => Promise<void>;
@@ -16,49 +15,42 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isLoaded } = useUser();
+  const { signOut: clerkSignOut } = useClerk();
   const [role, setRole] = useState<Role | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
+    if (!isLoaded) return;
 
-    const fetchRole = async (userId: string) => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .single();
-      setRole((data?.role as Role) ?? "student");
-    };
+    if (!user) {
+      setRole(null);
+      setRoleLoading(false);
+      return;
+    }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchRole(session.user.id).finally(() => setLoading(false));
-      else setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchRole(session.user.id);
-        } else {
-          setRole(null);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        setRole((d?.profile?.role as Role) ?? "student");
+      })
+      .catch(() => setRole("student"))
+      .finally(() => setRoleLoading(false));
+  }, [isLoaded, user]);
 
   const signOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await clerkSignOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, loading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        userId: user?.id ?? null,
+        role,
+        loading: !isLoaded || roleLoading,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

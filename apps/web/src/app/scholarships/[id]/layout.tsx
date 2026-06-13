@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -27,14 +26,13 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
-    const cookieStore = await cookies();
-    const supabase = createClient(cookieStore);
-    const { data: s } = await supabase
-      .from("scholarships")
-      .select("title, country, degree_level, funding_type, ai_summary")
-      .eq("id", params.id)
-      .eq("status", "published")
-      .single();
+    const rows = await sql`
+      SELECT title, country, degree_level, funding_type, ai_summary
+      FROM scholarships
+      WHERE id = ${params.id} AND status = 'published'
+      LIMIT 1
+    `;
+    const s = rows[0];
 
     if (!s) {
       return { title: "Scholarship Not Found" };

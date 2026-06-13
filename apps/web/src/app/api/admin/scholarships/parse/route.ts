@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
 import { scrapeUrl } from "@/lib/scrape";
@@ -23,9 +22,6 @@ CRITICAL ACCURACY RULES:
 - NEVER fabricate an official_url. Only use a URL that appears in the input or
   the scraped text. If none is given, set it to null.
 - Prefer leaving a field null over guessing. An admin will review everything.
-- It is fine to write a general description from your knowledge for famous
-  scholarships, but do not state precise figures (exact stipend amounts, exact
-  dates) unless they appear in the source text.
 
 Respond with ONLY valid JSON, no markdown, no explanation.
 
@@ -37,39 +33,23 @@ Required JSON shape:
   "funding_type": "one of: full | partial | tuition_only | stipend | other",
   "deadline": "Deadline as text (e.g., '31 August 2026', 'Rolling') or null",
   "official_url": "URL string or null",
-  "raw_description_english": "A clear English description with all key details you are confident about",
-  "confidence_note": "1 short sentence: which fields you filled from knowledge vs source, and what the admin should double-check"
-}
-
-Field rules:
-- degree_level: Bachelor's/স্নাতক → "bachelors", Master's/স্নাতকোত্তর → "masters", PhD → "phd"
-- funding_type: full funding/সম্পূর্ণ → "full", partial/50% → "partial", tuition only → "tuition_only"`;
+  "raw_description_english": "A clear English description with all key details",
+  "confidence_note": "1 short sentence on which fields came from knowledge vs source"
+}`;
 
 const VALID_MODELS: ModelChoice[] = ["nim", "deepseek", "mistral"];
 
-async function requireAdmin(cookieStore: Awaited<ReturnType<typeof cookies>>) {
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return { supabase, user };
-}
-
-// Pull the first http(s) URL out of arbitrary text.
 const extractUrl = (text: string): string | null => {
   const match = text.match(/https?:\/\/[^\s"'<>)）]+/i);
   return match ? match[0].replace(/[.,;]+$/, "") : null;
 };
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const auth = await requireAdmin(cookieStore);
+  const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const ip = getClientIp(req);
-  const rate = await checkRateLimit(`admin:${auth.user.id}:parse`, { limit: 15, windowMs: 10 * 60_000 });
+  const rate = await checkRateLimit(`admin:${auth.userId}:parse`, { limit: 15, windowMs: 10 * 60_000 });
   if (!rate.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded. Please retry shortly." },
@@ -78,7 +58,9 @@ export async function POST(req: NextRequest) {
   }
 
   let body: { raw_description?: string; model?: string; scrape?: boolean };
-  try { body = await req.json(); } catch {
+  try {
+    body = await req.json();
+  } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
@@ -91,12 +73,8 @@ export async function POST(req: NextRequest) {
     ? (body.model as ModelChoice)
     : "deepseek";
 
-  // ── Optional scrape: if the input contains a URL and scraping is enabled ──
   let scrapedBlock = "";
-  let scrapeInfo: { attempted: boolean; ok: boolean; url?: string; error?: string } = {
-    attempted: false,
-    ok: false,
-  };
+  let scrapeInfo: { attempted: boolean; ok: boolean; url?: string; error?: string } = { attempted: false, ok: false };
 
   if (body.scrape !== false) {
     const url = extractUrl(rawDescription);
@@ -140,11 +118,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "AI returned invalid JSON", raw: content }, { status: 422 });
   }
 
-  return NextResponse.json({
-    parsed,
-    meta: {
-      modelUsed,
-      scrape: scrapeInfo,
-    },
-  });
+  return NextResponse.json({ parsed, meta: { modelUsed, scrape: scrapeInfo } });
 }

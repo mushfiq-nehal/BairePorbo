@@ -1,39 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
+import { getUser } from "@/utils/api-auth";
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const auth = await getUser();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const rows = await sql`
+    SELECT scholarship_id FROM user_bookmarks
+    WHERE user_id = ${auth.userId}
+    ORDER BY created_at DESC
+  `;
 
-  const { data, error } = await supabase
-    .from("user_bookmarks")
-    .select("scholarship_id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ bookmarks: data ?? [] });
+  return NextResponse.json({ bookmarks: rows });
 }
 
 export async function POST(req: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const auth = await getUser();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body;
+  let body: { scholarship_id?: string };
   try {
     body = await req.json();
   } catch {
@@ -44,34 +30,26 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "scholarship_id is required" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("user_bookmarks")
-    .insert({
-      user_id: user.id,
-      scholarship_id: body.scholarship_id
-    });
-
-  if (error) {
-    // 23505 is unique violation in postgres (already bookmarked)
-    if (error.code === '23505') {
+  try {
+    await sql`
+      INSERT INTO user_bookmarks (user_id, scholarship_id)
+      VALUES (${auth.userId}, ${body.scholarship_id})
+    `;
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    const pgErr = err as { code?: string };
+    if (pgErr?.code === "23505") {
       return NextResponse.json({ success: true, already: true });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Failed to add bookmark" }, { status: 500 });
   }
-
-  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(req: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
+  const auth = await getUser();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  let body;
+  let body: { scholarship_id?: string };
   try {
     body = await req.json();
   } catch {
@@ -82,15 +60,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "scholarship_id is required" }, { status: 400 });
   }
 
-  const { error } = await supabase
-    .from("user_bookmarks")
-    .delete()
-    .eq("user_id", user.id)
-    .eq("scholarship_id", body.scholarship_id);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await sql`
+    DELETE FROM user_bookmarks
+    WHERE user_id = ${auth.userId} AND scholarship_id = ${body.scholarship_id}
+  `;
 
   return NextResponse.json({ success: true });
 }

@@ -1,82 +1,67 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, createServiceClient } from "@/utils/supabase/server";
-import { cookies } from "next/headers";
+import { sql } from "@/utils/db";
+import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
-
-async function requireAdmin() {
-  const cookieStore = await cookies();
-  const supabase = createClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase
-    .from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return user;
-}
 
 interface RouteParams { params: Promise<{ id: string }> }
 
-/** GET /api/admin/guides/[id] — fetch a single guide for editing */
 export async function GET(_req: NextRequest, { params }: RouteParams) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const db = createServiceClient();
-  const { data, error } = await db.from("guides").select("*").eq("id", id).maybeSingle();
+  const rows = await sql`SELECT * FROM guides WHERE id = ${id} LIMIT 1`;
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
-
-  return NextResponse.json({ guide: data });
+  if (!rows[0]) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+  return NextResponse.json({ guide: rows[0] });
 }
 
-/** PATCH /api/admin/guides/[id] — update fields */
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
   let body: Record<string, unknown>;
-  try { body = await req.json(); } catch {
+  try {
+    body = await req.json();
+  } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  // If publishing, set published_at if not already set
   if (body.status === "published") {
     body.published_at = body.published_at ?? new Date().toISOString();
   }
 
-  const db = createServiceClient();
-  const { data, error } = await db
-    .from("guides")
-    .update(body)
-    .eq("id", id)
-    .select()
-    .single();
+  const allowed = ["slug", "title", "description", "category", "tags", "intro", "content", "faqs", "status", "cover_image_url", "published_at"];
+  const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!data) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
 
-  revalidateGuidePages(data.slug);
+  const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`).join(", ");
+  const values = [id, ...Object.values(updates)];
+  const rows = await sql(
+    `UPDATE guides SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+    values,
+  );
 
-  return NextResponse.json({ guide: data });
+  if (!rows[0]) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
+
+  revalidateGuidePages(rows[0].slug as string);
+  return NextResponse.json({ guide: rows[0] });
 }
 
-/** DELETE /api/admin/guides/[id] */
 export async function DELETE(_req: NextRequest, { params }: RouteParams) {
-  const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const auth = await requireAdmin();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const db = createServiceClient();
+  const existing = await sql`SELECT slug FROM guides WHERE id = ${id} LIMIT 1`;
 
-  const { data: existing } = await db.from("guides").select("slug").eq("id", id).maybeSingle();
+  await sql`DELETE FROM guides WHERE id = ${id}`;
 
-  const { error } = await db.from("guides").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-  if (existing?.slug) revalidateGuidePages(existing.slug);
+  if (existing[0]?.slug) revalidateGuidePages(existing[0].slug as string);
 
   return NextResponse.json({ ok: true });
 }

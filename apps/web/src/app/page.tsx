@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
-import { createClient } from "@/utils/supabase/client";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import SharedFooter from "@/components/layout/shared-footer";
 import { guides as staticGuides } from "./guide/data/index";
@@ -20,7 +19,7 @@ type ClosingScholarship = {
 };
 
 export default function Home() {
-  const { user, loading, signOut } = useAuth();
+  const { userId, loading, signOut } = useAuth();
   const router = useRouter();
   const t = useT();
 
@@ -31,59 +30,48 @@ export default function Home() {
   const [featuredGuides, setFeaturedGuides] = useState<Guide[]>(staticGuides.slice(0, 3));
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase
-      .from("guides")
-      .select("slug, title, description, category, tags, intro, faqs, published_at, updated_at")
-      .eq("status", "published")
-      .order("published_at", { ascending: false })
-      .then(({ data }) => {
-        if (!data?.length) return;
-        const dbGuides: Guide[] = data.map((g) => ({
-          slug: g.slug,
-          title: g.title,
-          description: g.description,
+    fetch("/api/guides")
+      .then((r) => r.json())
+      .then(({ guides: dbGuideRows }: { guides: Record<string, unknown>[] }) => {
+        if (!dbGuideRows?.length) return;
+        const dbGuides: Guide[] = dbGuideRows.map((g) => ({
+          slug: g.slug as string,
+          title: g.title as string,
+          description: g.description as string,
           category: g.category as Guide["category"],
-          tags: g.tags ?? [],
-          intro: g.intro,
-          faqs: Array.isArray(g.faqs) ? g.faqs : [],
-          publishedAt: g.published_at ?? g.updated_at ?? "",
-          updatedAt: g.updated_at ?? "",
+          tags: (g.tags as string[]) ?? [],
+          intro: g.intro as string,
+          faqs: Array.isArray(g.faqs) ? g.faqs as Guide["faqs"] : [],
+          publishedAt: (g.published_at as string) ?? (g.updated_at as string) ?? "",
+          updatedAt: (g.updated_at as string) ?? "",
         }));
         const dbSlugs = new Set(dbGuides.map((g) => g.slug));
-        const merged = [
-          ...dbGuides,
-          ...staticGuides.filter((g) => !dbSlugs.has(g.slug)),
-        ];
-        setFeaturedGuides(merged.slice(0, 3));
-      });
+        setFeaturedGuides([...dbGuides, ...staticGuides.filter((g) => !dbSlugs.has(g.slug))].slice(0, 3));
+      })
+      .catch(() => {});
 
-    supabase
-      .from("scholarships")
-      .select("id, title, country, deadline")
-      .eq("status", "published")
-      .then(({ data }) => {
+    fetch("/api/scholarships")
+      .then((r) => r.json())
+      .then(({ scholarships: data }: { scholarships: Record<string, unknown>[] }) => {
         if (!data) return;
-        const uniqueCountries = [...new Set(data.map((d) => d.country))].filter(Boolean);
-        setStats({
-          scholarships: data.length,
-          countries: uniqueCountries.length,
-        });
+        const uniqueCountries = [...new Set(data.map((d) => d.country as string))].filter(Boolean);
+        setStats({ scholarships: data.length, countries: uniqueCountries.length });
         setQuickTags(uniqueCountries.slice(0, 4));
 
-        // Closing within 30 days, up to 4
         const now = Date.now();
         const horizon = now + 30 * 24 * 60 * 60 * 1000;
         const closing = data
           .filter((s) => {
             if (!s.deadline) return false;
-            const t = new Date(s.deadline).getTime();
+            const t = new Date(s.deadline as string).getTime();
             return !isNaN(t) && t > now && t < horizon;
           })
-          .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
-          .slice(0, 4);
+          .sort((a, b) => new Date(a.deadline as string).getTime() - new Date(b.deadline as string).getTime())
+          .slice(0, 4)
+          .map((s) => ({ id: s.id as string, title: s.title as string, country: s.country as string, deadline: s.deadline as string | null }));
         setClosingSoon(closing);
-      });
+      })
+      .catch(() => {});
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -96,10 +84,10 @@ export default function Home() {
   const actions: NavAction[] = loading
     ? []
     : [
-        user
+        userId
           ? { label: t("nav.signOut"), onClick: signOut }
           : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" },
-        !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
+        !userId ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
       ].filter(Boolean) as NavAction[];
 
   const formatDaysLeft = (deadline: string | null) => {

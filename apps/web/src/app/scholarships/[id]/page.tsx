@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { createClient } from "@/utils/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
@@ -44,7 +43,7 @@ const TABS: SummaryTab[] = ["Overview", "Eligibility", "Competitiveness", "Tips"
 
 export default function ScholarshipDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { user, signOut } = useAuth();
+  const { userId, signOut } = useAuth();
   const dialog = useDialog();
   const [scholarship, setScholarship] = useState<ScholarshipDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,21 +54,17 @@ export default function ScholarshipDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-    const supabase = createClient();
-    supabase
-      .from("scholarships")
-      .select("*")
-      .eq("id", id)
-      .eq("status", "published")
-      .single()
-      .then(({ data }) => {
-        setScholarship(data);
+    fetch(`/api/scholarships/${id}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { scholarship?: ScholarshipDetail } | null) => {
+        setScholarship(data?.scholarship ?? null);
         setLoading(false);
-      });
+      })
+      .catch(() => setLoading(false));
   }, [id]);
 
   useEffect(() => {
-    if (!user || !scholarship?.id) {
+    if (!userId || !scholarship?.id) {
       setIsBookmarked(false);
       return;
     }
@@ -80,23 +75,20 @@ export default function ScholarshipDetailPage() {
         setIsBookmarked(ids.includes(scholarship.id));
       })
       .catch(() => setIsBookmarked(false));
-  }, [user, scholarship?.id]);
+  }, [userId, scholarship?.id]);
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setProfile(null);
       return;
     }
-    const supabase = createClient();
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        setProfile(data);
-      });
-  }, [user]);
+    fetch("/api/profile")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { profile?: Record<string, unknown> } | null) => {
+        setProfile(data?.profile ?? null);
+      })
+      .catch(() => setProfile(null));
+  }, [userId]);
 
   // On mobile the Tips tab is hidden (its content has a dedicated card below).
   // If a user shrinks the viewport while on Tips, fall back to Overview so the
@@ -131,7 +123,7 @@ export default function ScholarshipDetailPage() {
   };
 
   const handleBookmark = async () => {
-    if (!user) {
+    if (!userId) {
       await dialog.alert({ title: "Sign in required", description: "Please sign in to save scholarships." });
       return;
     }
@@ -184,7 +176,7 @@ export default function ScholarshipDetailPage() {
     );
   }
 
-  const actions: NavAction[] = user
+  const actions: NavAction[] = userId
     ? [{ label: "Sign out", onClick: signOut }]
     : [{ label: "Sign in", href: "/auth/login" }];
 

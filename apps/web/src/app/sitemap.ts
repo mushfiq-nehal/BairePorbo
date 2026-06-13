@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { createServiceClient } from "@/utils/supabase/server";
+import { sql } from "@/utils/db";
 import { getAllSlugs } from "@/app/guide/data/index";
 import { fetchPublishedDbGuides } from "@/lib/guides-db";
 
@@ -59,15 +59,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const supabase = createServiceClient();
-    const { data: scholarships } = await supabase
-      .from("scholarships")
-      .select("id, updated_at")
-      .eq("status", "published");
+    const scholarships = await sql`
+      SELECT id, updated_at FROM scholarships WHERE status = 'published'
+    `;
 
-    const scholarshipRoutes: MetadataRoute.Sitemap = (scholarships ?? []).map((s) => ({
-      url: `${BASE_URL}/scholarships/${s.id}`,
-      lastModified: s.updated_at ? new Date(s.updated_at) : new Date(),
+    const scholarshipRoutes: MetadataRoute.Sitemap = scholarships.map((s) => ({
+      url: `${BASE_URL}/scholarships/${s.id as string}`,
+      lastModified: s.updated_at ? new Date(s.updated_at as string) : new Date(),
       changeFrequency: "weekly",
       priority: 0.7,
     }));
