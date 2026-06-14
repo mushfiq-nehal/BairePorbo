@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/utils/db";
+import { sql, sqlQuery } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 
 export async function GET(
@@ -53,7 +53,7 @@ export async function PATCH(
     .join(", ");
 
   const values = [id, ...Object.values(updates)];
-  const rows = await sql(
+  const rows = await sqlQuery(
     `UPDATE scholarships SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
     values,
   );

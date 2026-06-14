@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql } from "@/utils/db";
+import { sql, sqlQuery } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
 
@@ -41,7 +41,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`).join(", ");
   const values = [id, ...Object.values(updates)];
-  const rows = await sql(
+  const rows = await sqlQuery(
     `UPDATE guides SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
     values,
   );

@@ -10,7 +10,16 @@ if (!process.env.DATABASE_URL) {
  * Usage (tagged template — safe parameterisation):
  *   const rows = await sql`SELECT * FROM profiles WHERE id = ${userId}`;
  *
- * For dynamic identifiers (table/column names), use the `sql.unsafe()` escape hatch
- * only when the value comes from trusted server-side code, never from user input.
+ * For dynamic queries (e.g. PATCH with variable SET clauses), use sqlQuery():
+ *   const rows = await sqlQuery(`UPDATE t SET ${clauses} WHERE id = $1`, [id, ...vals]);
  */
 export const sql = neon(process.env.DATABASE_URL);
+
+/** Execute a raw SQL string with positional $1, $2... parameters. */
+export async function sqlQuery<T = Record<string, unknown>>(
+  query: string,
+  params: unknown[] = [],
+): Promise<T[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (sql as any)(query, params) as Promise<T[]>;
+}
