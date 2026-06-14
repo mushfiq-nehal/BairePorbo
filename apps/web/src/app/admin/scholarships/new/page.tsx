@@ -11,7 +11,7 @@ type Enriched = {
   tips: string;
   tags: string[];
   ai_summary: string;
-  thumbnail_prompt: string;
+  university_name: string;
 };
 type ParsedFields = {
   title: string;
@@ -59,7 +59,7 @@ export default function NewScholarshipPage() {
   // Step 3 state
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [_copied, _setCopied] = useState(false); // kept for future use
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,11 +131,6 @@ export default function NewScholarshipPage() {
     finally { setEnriching(false); }
   };
 
-  const copyPrompt = async () => {
-    if (!enriched?.thumbnail_prompt) return;
-    await navigator.clipboard.writeText(enriched.thumbnail_prompt);
-    setCopied(true); setTimeout(() => setCopied(false), 2000);
-  };
 
   // ── Thumbnail + publish ───────────────────────────────────────────────────
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -402,11 +397,10 @@ export default function NewScholarshipPage() {
               <div className={styles.enrichedField}><span className={styles.enrichedLabel}>AI Summary</span><p>{enriched.ai_summary}</p></div>
               <div className={styles.thumbnailPromptBox}>
                 <div className={styles.thumbnailPromptHeader}>
-                  <span className={styles.enrichedLabel}>🎨 Thumbnail image prompt</span>
-                  <button className={styles.copyBtn} onClick={copyPrompt}>{copied ? "✓ Copied!" : "Copy prompt"}</button>
+                  <span className={styles.enrichedLabel}>🏛 University / Institution</span>
                 </div>
-                <p className={styles.promptText}>{enriched.thumbnail_prompt}</p>
-                <p className={styles.promptHint}>Use this in ChatGPT, Midjourney, or DALL·E to generate the thumbnail. Upload it in the next step.</p>
+                <p className={styles.promptText} style={{ fontWeight: 600, fontSize: 15 }}>{enriched.university_name}</p>
+                <p className={styles.promptHint}>Search for this university&apos;s image online and upload it as the thumbnail in the next step.</p>
               </div>
             </div>
           )}

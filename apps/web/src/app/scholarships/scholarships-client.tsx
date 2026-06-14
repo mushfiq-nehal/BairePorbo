@@ -160,6 +160,7 @@ function ScholarshipCard({
   formatDeadline,
   t,
   isUpcoming = false,
+  isClosed = false,
 }: {
   s: Scholarship;
   bookmarkedIds: string[];

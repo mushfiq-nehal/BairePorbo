@@ -11,12 +11,14 @@
 
 import { logRequest } from "@/lib/nim";
 
-export type ModelChoice = "nim" | "deepseek" | "mistral";
+export type ModelChoice = "nim" | "deepseek" | "mistral" | "minimax" | "qwen";
 
 export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
-  { value: "deepseek", label: "Deepseek V4 (OpenRouter)" },
+  { value: "deepseek", label: "Deepseek V4 Flash (OpenRouter)" },
   { value: "mistral", label: "Mistral AI (OpenRouter)" },
   { value: "nim", label: "NVIDIA NIM" },
+  { value: "minimax", label: "MiniMax M3 (OpenRouter)" },
+  { value: "qwen", label: "Qwen3 235B (OpenRouter)" },
 ];
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
@@ -37,10 +39,15 @@ type CompletionResult = {
   modelUsed: string;
 };
 
+const OPENROUTER_MODEL_MAP: Record<string, string> = {
+  deepseek: "deepseek/deepseek-v4-flash",
+  mistral:  "mistralai/ministral-3b-2512",
+  minimax:  "minimax/minimax-m3",
+  qwen:     "qwen/qwen3-235b-a22b-2507",
+};
+
 const resolveOpenRouterModel = (choice: ModelChoice): string => {
-  if (choice === "deepseek") {
-    return process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-  }
+  if (choice in OPENROUTER_MODEL_MAP) return OPENROUTER_MODEL_MAP[choice];
   return process.env.OPENROUTER_FALLBACK_MODEL ?? "mistralai/ministral-3b-2512";
 };
 
