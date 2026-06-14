@@ -21,6 +21,8 @@ type Scholarship = {
   thumbnail_url: string | null;
   competitiveness: string | null;
   is_flagship: boolean;
+  is_live: boolean;
+  opening_note: string | null;
 };
 
 const FUNDING_MAP: Record<string, string> = {
@@ -146,6 +148,126 @@ function parseDeadlineDate(d: string): Date | null {
   return null;
 }
 
+// ── Scholarship card ─────────────────────────────────────────────────────────
+function ScholarshipCard({
+  s,
+  bookmarkedIds,
+  bookmarkingId,
+  toggleBookmark,
+  isExpired,
+  isClosingSoon,
+  formatDeadline,
+  t,
+  isUpcoming = false,
+}: {
+  s: Scholarship;
+  bookmarkedIds: string[];
+  bookmarkingId: string | null;
+  toggleBookmark: (id: string) => void;
+  isExpired: (d: string | null) => boolean;
+  isClosingSoon: (d: string | null) => boolean;
+  formatDeadline: (d: string | null) => string;
+  t: (key: string) => string;
+  isUpcoming?: boolean;
+}) {
+  const deadlineBadge = () => {
+    if (isUpcoming) {
+      if (s.opening_note) return `Opens: ${s.opening_note}`;
+      return "Opening Soon";
+    }
+    if (isExpired(s.deadline)) return t("scholarships.closedBadge");
+    if (isClosingSoon(s.deadline)) return `⚡ ${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
+    return `${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
+  };
+
+  const deadlineClass = () => {
+    if (isUpcoming) return styles.deadlineUpcoming;
+    if (isExpired(s.deadline)) return styles.deadlineClosed;
+    if (isClosingSoon(s.deadline)) return styles.deadlineSoon;
+    return "";
+  };
+
+  return (
+    <article className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${isUpcoming ? styles.cardUpcoming : ""}`}>
+      <Link
+        href={`/scholarships/${s.slug ?? s.id}`}
+        className={styles.cardLink}
+        aria-label={`View ${s.title}`}
+      />
+
+      {s.thumbnail_url ? (
+        <div className={styles.thumbWrap}>
+          <Image
+            src={s.thumbnail_url}
+            alt=""
+            className={styles.cardThumb}
+            width={640}
+            height={360}
+            loading="lazy"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+          {s.is_flagship && (
+            <span className={styles.flagshipBadge} aria-label={t("scholarships.featured")}>
+              {t("scholarships.featured")}
+            </span>
+          )}
+          {isUpcoming && (
+            <span className={styles.upcomingBadge} aria-label="Opening Soon">Opening Soon</span>
+          )}
+        </div>
+      ) : s.is_flagship ? (
+        <span className={styles.flagshipBadgeCorner} aria-label={t("scholarships.featured")}>
+          {t("scholarships.featured")}
+        </span>
+      ) : null}
+
+      <button
+        className={`${styles.bookmarkIcon} ${bookmarkedIds.includes(s.id) ? styles.bookmarkIconActive : ""}`}
+        type="button"
+        onClick={() => toggleBookmark(s.id)}
+        disabled={bookmarkingId === s.id}
+        aria-label={bookmarkedIds.includes(s.id) ? `Remove bookmark for ${s.title}` : `Bookmark ${s.title}`}
+        aria-pressed={bookmarkedIds.includes(s.id)}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarkedIds.includes(s.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+        </svg>
+      </button>
+
+      <div className={styles.cardTop}>
+        <div>
+          <p className={styles.cardLabel}>{s.country}</p>
+          <h3>{s.title}</h3>
+          <p className={styles.cardMeta}>
+            {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
+          </p>
+        </div>
+        <span className={`${styles.deadline} ${deadlineClass()}`}>{deadlineBadge()}</span>
+      </div>
+
+      {s.tags && s.tags.length > 0 && (
+        <div className={styles.tagRow}>
+          {s.tags.map((tag) => <span key={tag}>{tag}</span>)}
+        </div>
+      )}
+
+      <div className={styles.cardActions}>
+        <Link className={styles.primaryButton} href={`/scholarships/${s.slug ?? s.id}`}>
+          {t("scholarships.viewDetails")}
+        </Link>
+        <button
+          className={`${styles.secondaryButton} ${bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""}`}
+          type="button"
+          onClick={() => toggleBookmark(s.id)}
+          disabled={bookmarkingId === s.id}
+        >
+          {bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
+        </button>
+      </div>
+    </article>
+  );
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 function ScholarshipsContent() {
   const { userId, signOut } = useAuth();
@@ -200,9 +322,9 @@ function ScholarshipsContent() {
   const fundingOptions = useMemo(() => [...new Set(scholarships.map((s) => FUNDING_MAP[s.funding_type] ?? s.funding_type))].sort(), [scholarships]);
   const levelOptions = useMemo(() => [...new Set(scholarships.map((s) => LEVEL_MAP[s.degree_level] ?? s.degree_level))].sort(), [scholarships]);
 
-  const filtered = useMemo(() => {
+  const applyFiltersAndSort = (list: Scholarship[]) => {
     const q = searchTerm.trim().toLowerCase();
-    let result = scholarships.filter((s) => {
+    let result = list.filter((s) => {
       if (selectedCountries.length && !selectedCountries.includes(s.country)) return false;
       const fundLabel = FUNDING_MAP[s.funding_type] ?? s.funding_type;
       if (selectedFunding.length && !selectedFunding.includes(fundLabel)) return false;
@@ -216,15 +338,14 @@ function ScholarshipsContent() {
     if (sortBy === "Deadline") {
       const now = Date.now();
       const bucket = (d: string | null) => {
-        if (!d) return 1; // free-text / unknown → middle
+        if (!d) return 1;
         const parsed = parseDeadlineDate(d);
-        if (!parsed) return 1; // free-text → middle
-        return parsed.getTime() > now ? 0 : 2; // upcoming → top, expired → bottom
+        if (!parsed) return 1;
+        return parsed.getTime() > now ? 0 : 2;
       };
       result = [...result].sort((a, b) => {
         const ba = bucket(a.deadline), bb = bucket(b.deadline);
         if (ba !== bb) return ba - bb;
-        // Within the same bucket sort by date asc (expired: most-recently-closed first)
         const ta = a.deadline ? (parseDeadlineDate(a.deadline)?.getTime() ?? Infinity) : Infinity;
         const tb = b.deadline ? (parseDeadlineDate(b.deadline)?.getTime() ?? Infinity) : Infinity;
         return ta - tb;
@@ -238,14 +359,26 @@ function ScholarshipsContent() {
       });
     }
 
-    // Flagship scholarships always float to the very top (after all other sorting)
     result = [...result].sort((a, b) => {
       if (a.is_flagship === b.is_flagship) return 0;
       return a.is_flagship ? -1 : 1;
     });
 
     return result;
+  };
+
+  const filtered = useMemo(() => {
+    return applyFiltersAndSort(scholarships);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
+
+  const filteredLive = useMemo(() => applyFiltersAndSort(scholarships.filter((s) => s.is_live !== false)), 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
+
+  const filteredUpcoming = useMemo(() => applyFiltersAndSort(scholarships.filter((s) => s.is_live === false)),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
 
   const emptySuggestions = useMemo(() => {
     const picks = new Set<string>();
@@ -286,13 +419,13 @@ function ScholarshipsContent() {
   };
 
   const closingSoonCount = useMemo(
-    () => filtered.filter((s) => isClosingSoon(s.deadline)).length,
-    [filtered],
+    () => filteredLive.filter((s) => isClosingSoon(s.deadline)).length,
+    [filteredLive],
   );
 
   // Animated count-up for the snapshot number
   useEffect(() => {
-    const target = filtered.length;
+    const target = filteredLive.length;
     if (target === displayCount) return;
     const step = Math.max(1, Math.ceil(Math.abs(target - displayCount) / 18));
     const id = window.setInterval(() => {
@@ -363,14 +496,14 @@ function ScholarshipsContent() {
                 <span className={styles.shimmerBar} aria-hidden="true" />
                 <span className={styles.srOnly}>{t("scholarships.loading")}</span>
               </p>
-            ) : filtered.length === 0 ? (
+            ) : filteredLive.length === 0 ? (
               <p className={styles.snapshotLine}>{t("scholarships.noLive")}</p>
             ) : (
               <>
                 <div className={styles.snapshotCount} aria-live="polite">
                   <span className={styles.countNumber}>{displayCount}</span>
                   <span className={styles.countLabel}>
-                    <span>{filtered.length !== 1 ? t("scholarships.liveScholarships") : t("scholarships.liveScholarship")}</span>
+                    <span>{filteredLive.length !== 1 ? t("scholarships.liveScholarships") : t("scholarships.liveScholarship")}</span>
                     <em>{t("scholarships.readyToApply")}</em>
                   </span>
                 </div>
@@ -513,143 +646,87 @@ function ScholarshipsContent() {
           </div>
         )}
 
+        {/* ── Live Scholarships Section ── */}
         <section className={styles.results}>
           <div className={styles.resultsHeader}>
-            <h2>{t("scholarships.results")} <span className={styles.resultsCount}>{filtered.length}</span></h2>
+            <h2>
+              <span className={styles.sectionLiveDot} aria-hidden="true" />
+              Open Now
+              <span className={styles.resultsCount}>{filteredLive.length}</span>
+            </h2>
+            <p className={styles.sectionSubtitle}>Applications are currently open — apply before the deadline</p>
           </div>
 
           {loading ? (
             <div className={styles.emptyState}><p>{t("scholarships.loading")}</p></div>
-          ) : filtered.length ? (
+          ) : filteredLive.length ? (
             <div className={styles.cardGrid}>
-              {filtered.map((s) => (
-                <article key={s.id} className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""}`}>
-                  <Link
-                    href={`/scholarships/${s.slug ?? s.id}`}
-                    className={styles.cardLink}
-                    aria-label={`View ${s.title}`}
-                  />
-
-                  {s.thumbnail_url ? (
-                    <div className={styles.thumbWrap}>
-                      <Image
-                        src={s.thumbnail_url}
-                        alt=""
-                        className={styles.cardThumb}
-                        width={640}
-                        height={360}
-                        loading="lazy"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                      {s.is_flagship && (
-                        <span className={styles.flagshipBadge} aria-label={t("scholarships.featured")}>
-                          {t("scholarships.featured")}
-                        </span>
-                      )}
-                    </div>
-                  ) : s.is_flagship ? (
-                    <span className={styles.flagshipBadgeCorner} aria-label={t("scholarships.featured")}>
-                      {t("scholarships.featured")}
-                    </span>
-                  ) : null}
-
-                  {/* Mobile-only bookmark icon, top-right corner */}
-                  <button
-                    className={`${styles.bookmarkIcon} ${
-                      bookmarkedIds.includes(s.id) ? styles.bookmarkIconActive : ""
-                    }`}
-                    type="button"
-                    onClick={() => toggleBookmark(s.id)}
-                    disabled={bookmarkingId === s.id}
-                    aria-label={
-                      bookmarkedIds.includes(s.id)
-                        ? `Remove bookmark for ${s.title}`
-                        : `Bookmark ${s.title}`
-                    }
-                    aria-pressed={bookmarkedIds.includes(s.id)}
-                  >
-                    <svg
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill={bookmarkedIds.includes(s.id) ? "currentColor" : "none"}
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-                    </svg>
-                  </button>
-
-                  <div className={styles.cardTop}>
-                    <div>
-                      <p className={styles.cardLabel}>{s.country}</p>
-                      <h3>{s.title}</h3>
-                      <p className={styles.cardMeta}>
-                        {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
-                      </p>
-                    </div>
-                    <span className={`${styles.deadline} ${
-                      isExpired(s.deadline)
-                        ? styles.deadlineClosed
-                        : isClosingSoon(s.deadline)
-                        ? styles.deadlineSoon
-                        : ""
-                    }`}>
-                      {isExpired(s.deadline)
-                        ? t("scholarships.closedBadge")
-                        : isClosingSoon(s.deadline)
-                        ? `⚡ ${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`
-                        : `${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`}
-                    </span>
-                  </div>
-                  {s.tags && s.tags.length > 0 && (
-                    <div className={styles.tagRow}>
-                      {s.tags.map((tag) => <span key={tag}>{tag}</span>)}
-                    </div>
-                  )}
-                  <div className={styles.cardActions}>
-                    <Link className={styles.primaryButton} href={`/scholarships/${s.slug ?? s.id}`}>
-                      {t("scholarships.viewDetails")}
-                    </Link>
-                    <button
-                      className={`${styles.secondaryButton} ${
-                        bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""
-                      }`}
-                      type="button"
-                      onClick={() => toggleBookmark(s.id)}
-                      disabled={bookmarkingId === s.id}
-                    >
-                      {bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
-                    </button>
-                  </div>
-                </article>
+              {filteredLive.map((s) => (
+                <ScholarshipCard
+                  key={s.id}
+                  s={s}
+                  bookmarkedIds={bookmarkedIds}
+                  bookmarkingId={bookmarkingId}
+                  toggleBookmark={toggleBookmark}
+                  isExpired={isExpired}
+                  isClosingSoon={isClosingSoon}
+                  formatDeadline={formatDeadline}
+                  t={t}
+                />
               ))}
             </div>
-          ) : (
+          ) : !loading && scholarships.length > 0 ? (
             <div className={styles.emptyState}>
               <p>{t("scholarships.noMatch")}</p>
               <p className={styles.emptyHint}>{t("scholarships.youMightLike")}</p>
               {emptySuggestions.length > 0 && (
                 <div className={styles.emptySuggestions}>
-                  {emptySuggestions.map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      className={styles.suggestionPill}
-                      onClick={() => setSearchTerm(s)}
-                    >
-                      {s}
-                    </button>
+                  {emptySuggestions.map((sug) => (
+                    <button key={sug} type="button" className={styles.suggestionPill} onClick={() => setSearchTerm(sug)}>{sug}</button>
                   ))}
                 </div>
               )}
               <button className={styles.primaryButton} type="button" onClick={clearFilters}>{t("scholarships.resetFilters")}</button>
             </div>
-          )}
+          ) : null}
         </section>
+
+        {/* ── Upcoming / Opening Soon Section ── */}
+        {!loading && filteredUpcoming.length > 0 && (
+          <section className={styles.results}>
+            <div className={styles.resultsHeader}>
+              <h2>
+                <span className={styles.sectionUpcomingDot} aria-hidden="true" />
+                Opening Soon
+                <span className={styles.resultsCount}>{filteredUpcoming.length}</span>
+              </h2>
+              <p className={styles.sectionSubtitle}>Not yet open — bookmark now and prepare early</p>
+            </div>
+            <div className={styles.cardGrid}>
+              {filteredUpcoming.map((s) => (
+                <ScholarshipCard
+                  key={s.id}
+                  s={s}
+                  bookmarkedIds={bookmarkedIds}
+                  bookmarkingId={bookmarkingId}
+                  toggleBookmark={toggleBookmark}
+                  isExpired={isExpired}
+                  isClosingSoon={isClosingSoon}
+                  formatDeadline={formatDeadline}
+                  t={t}
+                  isUpcoming
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state when no results in either section */}
+        {!loading && filteredLive.length === 0 && filteredUpcoming.length === 0 && scholarships.length === 0 && (
+          <div className={styles.emptyState}>
+            <p>{t("scholarships.nonePublished")}</p>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -13,6 +13,8 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
     deadline: "", official_url: "", raw_description: "",
     eligibility_summary: "", tips: "", ai_summary: "", competitiveness: "", tags: "",
     is_flagship: false as boolean,
+    is_live: true as boolean,
+    opening_note: "",
   });
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -45,6 +47,8 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
             competitiveness: s.competitiveness ?? "",
             tags: (s.tags ?? []).join(", "),
             is_flagship: s.is_flagship ?? false,
+            is_live: s.is_live ?? true,
+            opening_note: s.opening_note ?? "",
           });
           setOriginalThumbnail(s.thumbnail_url);
         }
@@ -131,7 +135,7 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
 
       <form onSubmit={save} className={styles.formCard}>
         {/* Flagship toggle – shown at the very top for easy access */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24, padding: "12px 16px", background: form.is_flagship ? "var(--amber-50, #fffbeb)" : "var(--sand-100, #f5f4f0)", border: `1.5px solid ${form.is_flagship ? "var(--amber-300, #fcd34d)" : "var(--sand-200, #e8e5dc)"}`, borderRadius: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, padding: "12px 16px", background: form.is_flagship ? "var(--amber-50, #fffbeb)" : "var(--sand-100, #f5f4f0)", border: `1.5px solid ${form.is_flagship ? "var(--amber-300, #fcd34d)" : "var(--sand-200, #e8e5dc)"}`, borderRadius: 10 }}>
           <input
             type="checkbox"
             id="is_flagship"
@@ -143,6 +147,22 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
             ⭐ Mark as Flagship (pinned to top of public list)
           </label>
         </div>
+
+        {/* Application status selector */}
+        <div style={{ marginBottom: 24 }}>
+          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-700)", marginBottom: 8 }}>Application Status *</p>
+          <div style={{ display: "flex", gap: 12 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "10px 16px", borderRadius: 10, border: `2px solid ${form.is_live ? "var(--teal-500, #0f8f8d)" : "var(--sand-200, #e8e5dc)"}`, background: form.is_live ? "rgba(15, 143, 141, 0.06)" : "var(--sand-50, #faf9f6)", flex: 1, fontWeight: form.is_live ? 600 : 400, color: form.is_live ? "var(--teal-700)" : "var(--ink-600)", fontSize: 13 }}>
+              <input type="radio" name="edit_is_live" value="live" checked={form.is_live} onChange={() => setBool("is_live", true)} style={{ accentColor: "var(--teal-500)" }} />
+              Open Now — applications currently live
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: "10px 16px", borderRadius: 10, border: `2px solid ${!form.is_live ? "var(--amber-400, #f59e0b)" : "var(--sand-200, #e8e5dc)"}`, background: !form.is_live ? "rgba(245, 158, 11, 0.06)" : "var(--sand-50, #faf9f6)", flex: 1, fontWeight: !form.is_live ? 600 : 400, color: !form.is_live ? "var(--amber-700, #b45309)" : "var(--ink-600)", fontSize: 13 }}>
+              <input type="radio" name="edit_is_live" value="upcoming" checked={!form.is_live} onChange={() => setBool("is_live", false)} style={{ accentColor: "var(--amber-400)" }} />
+              Opening Soon — not yet accepting applications
+            </label>
+          </div>
+        </div>
+
         <div className={styles.parsedSection} style={{ marginTop: 0 }}>
           <div className={styles.fieldGrid}>
             <div className={styles.field}>
@@ -174,9 +194,15 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
               </select>
             </div>
             <div className={styles.field}>
-              <label>Deadline</label>
-              <input type="text" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} placeholder="e.g. Rolling, 31 Dec 2026" />
+              <label>{form.is_live ? "Deadline" : "Deadline (optional)"}</label>
+              <input type="text" value={form.deadline} onChange={(e) => set("deadline", e.target.value)} placeholder={form.is_live ? "e.g. 31 Dec 2026" : "Leave blank if unknown"} />
             </div>
+            {!form.is_live && (
+              <div className={styles.field}>
+                <label>Typically opens when (optional)</label>
+                <input type="text" value={form.opening_note} onChange={(e) => set("opening_note", e.target.value)} placeholder="e.g. August–October each year, Early 2027" />
+              </div>
+            )}
             <div className={styles.field}>
               <label>Official URL</label>
               <input type="url" value={form.official_url} onChange={(e) => set("official_url", e.target.value)} />

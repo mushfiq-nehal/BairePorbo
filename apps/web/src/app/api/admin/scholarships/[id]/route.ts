@@ -37,6 +37,7 @@ export async function PATCH(
     "official_url", "raw_description", "status", "is_flagship",
     "ai_summary", "eligibility_summary", "competitiveness", "tips",
     "tags", "thumbnail_url", "thumbnail_prompt",
+    "is_live", "opening_note",
   ];
 
   const updates = Object.fromEntries(

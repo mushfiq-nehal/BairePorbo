@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   const slug = slugBase ? makeSlugUnique(slugBase, existingSlugs) : null;
 
   const rows = await sql`
-    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status, slug)
+    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status, slug, is_live, opening_note)
     VALUES (
       ${auth.userId},
       ${body.title as string},
@@ -46,7 +46,9 @@ export async function POST(req: NextRequest) {
       ${(body.official_url as string | null) ?? null},
       ${(body.raw_description as string | null) ?? null},
       'draft',
-      ${slug}
+      ${slug},
+      ${(body.is_live as boolean | null) ?? true},
+      ${(body.opening_note as string | null) ?? null}
     )
     RETURNING *
   `;
