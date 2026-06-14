@@ -129,7 +129,7 @@ function DropdownFilter({
   );
 }
 
-// ── Deadline parser (shared by sort + display) ───────────────────────────────
+// ── Deadline utilities (module-level — no component state dependency) ─────────
 function parseDeadlineDate(d: string): Date | null {
   const s = d.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
@@ -147,6 +147,27 @@ function parseDeadlineDate(d: string): Date | null {
     return isNaN(date.getTime()) ? null : date;
   }
   return null;
+}
+
+function formatDeadline(d: string | null): string {
+  if (!d) return "Open";
+  const date = parseDeadlineDate(d);
+  if (date) return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  return d;
+}
+
+function isClosingSoon(d: string | null): boolean {
+  if (!d) return false;
+  const date = parseDeadlineDate(d);
+  if (!date) return false;
+  const diff = date.getTime() - Date.now();
+  return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
+}
+
+function isExpired(d: string | null): boolean {
+  if (!d) return false;
+  const date = parseDeadlineDate(d);
+  return date ? date.getTime() < Date.now() : false;
 }
 
 // ── Scholarship card ─────────────────────────────────────────────────────────
@@ -419,26 +440,6 @@ function ScholarshipsContent() {
   const hasActiveFilters = searchTerm || selectedCountries.length || selectedFunding.length || selectedLevels.length || sortBy !== "Deadline";
 
 
-  const formatDeadline = (d: string | null) => {
-    if (!d) return "Open";
-    const date = parseDeadlineDate(d);
-    if (date) return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    return d; // free-text like "early 2027", "1 Aug – 1 Oct"
-  };
-
-  const isClosingSoon = (d: string | null) => {
-    if (!d) return false;
-    const date = parseDeadlineDate(d);
-    if (!date) return false;
-    const diff = date.getTime() - Date.now();
-    return diff > 0 && diff < 60 * 24 * 60 * 60 * 1000;
-  };
-
-  const isExpired = (d: string | null) => {
-    if (!d) return false;
-    const date = parseDeadlineDate(d);
-    return date ? date.getTime() < Date.now() : false;
-  };
 
   const closingSoonCount = useMemo(
     () => filteredLive.filter((s) => isClosingSoon(s.deadline)).length,
