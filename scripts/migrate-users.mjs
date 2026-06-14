@@ -9,17 +9,12 @@
  *
  *   # Step 2 — send password reset emails (run AFTER deployment is live)
  *   node scripts/migrate-users.mjs ./users.csv --send-emails
- *
- * Required env vars:
- *   CLERK_SECRET_KEY
- *   DATABASE_URL
  */
 
 import fs from "fs";
 import { parse } from "csv-parse/sync";
 import { neon } from "@neondatabase/serverless";
 
-// ── Config ────────────────────────────────────────────────────────────────────
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY;
 const DATABASE_URL = process.env.DATABASE_URL;
 const CLERK_API = "https://api.clerk.com/v1";
@@ -29,29 +24,47 @@ if (!DATABASE_URL) throw new Error("DATABASE_URL is not set");
 
 const sql = neon(DATABASE_URL);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 async function clerkRequest(method, path, body) {
-  const res = await fetch(`${CLERK_API}${path}`, {
+  const res = await fetch(CLERK_API + path, {
     method,
     headers: {
-      Authorization: `Bearer ${CLERK_SECRET_KEY}`,
+      Authorization: "Bearer " + CLERK_SECRET_KEY,
       "Content-Type": "application/json",
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(JSON.stringify(json));
+  const text = await res.text();
+  let json = null;
+  try { json = text ? JSON.parse(text) : null; } catch { json = null; }
+  if (!res.ok) throw new Error(text);
   return json;
 }
 
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
 function parseName(row) {
-  // This CSV has a direct full_name column
-  const fullName = row.full_name?.trim() || "";
+  const fullName = (row.full_name || "").trim();
   const parts = fullName.split(" ");
-  const firstName = parts[0] || "";
-  const lastName = parts.slice(1).join(" ") || "";
-  return { firstName, lastName };
+  return { firstName: parts[0] || "", lastName: parts.slice(1).join(" ") || "" };
 }
+
+// ── Fetch ALL Clerk users up front so we have accurate IDs ────────────────────
+console.log("Loading all users from Clerk...");
+const emailToClerkUser = new Map();
+let offset = 0;
+while (true) {
+  const page = await clerkRequest("GET", "/users?limit=100&offset=" + offset);
+  if (!Array.isArray(page) || page.length === 0) break;
+  for (const u of page) {
+    for (const ea of (u.email_addresses || [])) {
+      emailToClerkUser.set(ea.email_address.toLowerCase(), u);
+    }
+  }
+  if (page.length < 100) break;
+  offset += 100;
+  await sleep(200);
+}
+console.log("  → " + emailToClerkUser.size + " Clerk users loaded\n");
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 const csvPath = process.argv[2];
@@ -62,68 +75,84 @@ if (!csvPath) {
   process.exit(1);
 }
 
-if (sendEmails) {
-  console.log("📧 --send-emails flag set: password reset emails WILL be sent\n");
-} else {
-  console.log("ℹ️  No --send-emails flag: users will be imported but NOT emailed.");
-  console.log("   Re-run with --send-emails after your app is deployed.\n");
-}
+console.log(sendEmails
+  ? "📧 --send-emails flag set: password reset emails WILL be sent\n"
+  : "ℹ️  No --send-emails flag: users imported but NOT emailed.\n");
 
-const csvContent = fs.readFileSync(csvPath, "utf8");
-const rows = parse(csvContent, { columns: true, skip_empty_lines: true });
+const rows = parse(fs.readFileSync(csvPath, "utf8"), { columns: true, skip_empty_lines: true });
+console.log("Found " + rows.length + " users in CSV\n");
 
-console.log(`Found ${rows.length} users to migrate\n`);
-
-let created = 0;
-let skipped = 0;
-let failed = 0;
+let created = 0, skipped = 0, emailSent = 0, emailSkipped = 0, failed = 0;
 
 for (const row of rows) {
-  const email = row.email?.trim();
+  const email = (row.email || "").trim().toLowerCase();
   if (!email) { skipped++; continue; }
 
   const { firstName, lastName } = parseName(row);
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
   try {
-    // 1. Create user in Clerk (no password — they'll reset via email)
-    const clerkUser = await clerkRequest("POST", "/users", {
-      email_address: [email],
-      first_name: firstName || undefined,
-      last_name: lastName || undefined,
-      skip_password_requirement: true,
-    });
+    let clerkId;
+    let existingUser = emailToClerkUser.get(email);
 
-    const clerkId = clerkUser.id;
+    if (existingUser) {
+      // User already in Clerk
+      clerkId = existingUser.id;
+      skipped++;
+    } else {
+      // Create new user
+      const u = await clerkRequest("POST", "/users", {
+        email_address: [email],
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
+        skip_password_requirement: true,
+      });
+      clerkId = u.id;
+      created++;
+      await sleep(200);
+    }
 
-    // 2. Upsert profile row in Neon
+    // Upsert profile in Neon
     await sql`
       INSERT INTO profiles (id, full_name, role)
       VALUES (${clerkId}, ${fullName || null}, 'student')
       ON CONFLICT (id) DO NOTHING
     `;
 
-    // 3. Send password reset email — only after deployment is live
     if (sendEmails) {
-      await clerkRequest("POST", `/users/${clerkId}/send_reset_password_email`, {});
-    }
-
-    console.log(`✓ ${email} → ${clerkId}`);
-    created++;
-
-    // Clerk rate limit: ~20 req/s — small delay to be safe
-    await new Promise((r) => setTimeout(r, 60));
-  } catch (err) {
-    const msg = err.message || String(err);
-    // Skip if user already exists in Clerk
-    if (msg.includes("already exists") || msg.includes("duplicate")) {
-      console.log(`~ ${email} (already exists, skipped)`);
-      skipped++;
+      try {
+        // Set a temp password to enable the password strategy, then send reset email
+        const tempPwd = "Bp!" + Math.random().toString(36).slice(2, 10) + "X9";
+        await clerkRequest("PATCH", "/users/" + clerkId, {
+          password: tempPwd,
+          skip_password_checks: true,
+        });
+        await sleep(300);
+        await clerkRequest("POST", "/users/" + clerkId + "/send_reset_password_email", {});
+        console.log("📧 " + email);
+        emailSent++;
+      } catch (e) {
+        const msg = (e.message || "").slice(0, 100);
+        console.warn("⚠️  " + email + " — " + msg);
+        emailSkipped++;
+      }
+      await sleep(500); // conservative delay to avoid rate limits
     } else {
-      console.error(`✗ ${email}: ${msg}`);
-      failed++;
+      console.log("✓ " + email + " → " + clerkId);
+      await sleep(100);
     }
+
+  } catch (err) {
+    console.error("✗ " + email + ": " + (err.message || String(err)).slice(0, 120));
+    failed++;
   }
 }
 
-console.log(`\nDone — created: ${created}, skipped: ${skipped}, failed: ${failed}`);
+console.log("\nDone!");
+console.log("  Created   : " + created);
+console.log("  Skipped   : " + skipped + " (already in Clerk)");
+if (sendEmails) {
+  console.log("  📧 Sent   : " + emailSent);
+  console.log("  ⚠️  Skipped: " + emailSkipped + " (OAuth-only or rate limited)");
+}
+console.log("  Failed    : " + failed);
