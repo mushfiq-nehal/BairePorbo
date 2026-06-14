@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSignUp, useClerk } from "@clerk/nextjs";
+import { useSignUp, useSignIn } from "@clerk/nextjs";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
@@ -50,7 +50,8 @@ function validateEmail(email: string): string | null {
 export default function SignupPage() {
   const t = useT();
   const { signUp } = useSignUp();
-  const clerk = useClerk();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { signIn } = useSignIn() as any;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -100,9 +101,12 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setError(null);
     try {
-      await clerk.redirectToSignIn({
-        redirectUrl: "/",
+      const { error } = await signIn.create({
+        strategy: "oauth_google",
+        redirectUrl: `${window.location.origin}/auth/callback`,
+        actionCompleteRedirectUrl: "/",
       });
+      if (error) setError((error as { message?: string }).message ?? "Google sign-in failed.");
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
       setError(clerkErr?.errors?.[0]?.message ?? "Google sign-in failed.");
