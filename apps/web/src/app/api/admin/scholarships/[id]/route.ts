@@ -53,11 +53,18 @@ export async function PATCH(
     .join(", ");
 
   const values = [id, ...Object.values(updates)];
-  const rows = await sqlQuery(
-    `UPDATE scholarships SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
-    values,
-  );
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await sqlQuery(
+      `UPDATE scholarships SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      values,
+    );
+  } catch (err) {
+    console.error("PATCH /scholarships/[id] DB error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
+  if (!rows[0]) return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
   return NextResponse.json({ scholarship: rows[0] });
 }
 

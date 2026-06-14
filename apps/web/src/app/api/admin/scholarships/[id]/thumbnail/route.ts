@@ -33,10 +33,15 @@ export async function POST(
 
   const publicUrl = getPublicUrl(key);
 
-  await sql`
-    UPDATE scholarships SET thumbnail_url = ${publicUrl}, updated_at = NOW()
-    WHERE id = ${id}
-  `;
+  try {
+    await sql`
+      UPDATE scholarships SET thumbnail_url = ${publicUrl}, updated_at = NOW()
+      WHERE id = ${id}
+    `;
+  } catch (err) {
+    console.error("Thumbnail DB update error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
   return NextResponse.json({ thumbnail_url: publicUrl });
 }

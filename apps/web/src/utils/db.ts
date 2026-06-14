@@ -20,6 +20,5 @@ export async function sqlQuery<T = Record<string, unknown>>(
   query: string,
   params: unknown[] = [],
 ): Promise<T[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (sql as any)(query, params) as Promise<T[]>;
+  return sql.query(query, params) as Promise<T[]>;
 }

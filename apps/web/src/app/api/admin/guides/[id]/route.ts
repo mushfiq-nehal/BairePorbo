@@ -41,10 +41,16 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
   const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`).join(", ");
   const values = [id, ...Object.values(updates)];
-  const rows = await sqlQuery(
-    `UPDATE guides SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
-    values,
-  );
+  let rows: Record<string, unknown>[];
+  try {
+    rows = await sqlQuery(
+      `UPDATE guides SET ${setClauses}, updated_at = NOW() WHERE id = $1 RETURNING *`,
+      values,
+    );
+  } catch (err) {
+    console.error("PATCH /guides/[id] DB error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 
   if (!rows[0]) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
 
