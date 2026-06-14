@@ -35,7 +35,7 @@ export default function AdminDashboard() {
         <div>
           <p className={styles.kicker}>Admin</p>
           <h1>Dashboard</h1>
-          <p className={styles.sub}>Welcome, {user?.email}</p>
+          <p className={styles.sub}>Welcome, {userId}</p>
         </div>
         <Link href="/admin/scholarships/new" className={styles.primaryBtn}>
           + Add scholarship
