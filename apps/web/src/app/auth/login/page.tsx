@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSignIn } from "@clerk/nextjs";
+import { useSignIn, useClerk } from "@clerk/nextjs";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
@@ -14,6 +14,7 @@ function LoginForm() {
   const redirect = searchParams.get("redirect") ?? "/";
   const t = useT();
   const { signIn } = useSignIn();
+  const clerk = useClerk();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,13 +42,11 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!signIn) return;
     setError(null);
     try {
-      await signIn.authenticateWithRedirect({
-        strategy: "oauth_google",
+      await clerk.redirectToSignIn({
         redirectUrl: `${window.location.origin}/auth/callback`,
-        redirectUrlComplete: redirect,
+        afterSignInUrl: redirect,
       });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };

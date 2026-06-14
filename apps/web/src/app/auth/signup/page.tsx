@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSignUp, useSignIn } from "@clerk/nextjs";
+import { useSignUp, useClerk } from "@clerk/nextjs";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
@@ -50,7 +50,7 @@ function validateEmail(email: string): string | null {
 export default function SignupPage() {
   const t = useT();
   const { signUp } = useSignUp();
-  const { signIn } = useSignIn();
+  const clerk = useClerk();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -97,13 +97,11 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!signIn) return;
     setError(null);
     try {
-      await signIn!.authenticateWithRedirect({
-        strategy: "oauth_google",
+      await clerk.redirectToSignIn({
         redirectUrl: `${window.location.origin}/auth/callback`,
-        redirectUrlComplete: "/",
+        afterSignInUrl: "/",
       });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
