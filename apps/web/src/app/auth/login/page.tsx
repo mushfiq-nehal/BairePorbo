@@ -13,7 +13,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
   const t = useT();
-  const { signIn } = useSignIn();
+  const { signIn, isLoaded, setActive } = useSignIn() as any;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,15 +22,16 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signIn) return;
+    if (!isLoaded || !signIn) return;
     setError(null);
     setLoading(true);
     try {
-      const { error } = await signIn.create({ identifier: email, password });
-      if (error) {
-        setError(error.message ?? "Sign in failed. Please try again.");
-      } else {
+      const result = await signIn.create({ identifier: email, password });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
         router.replace(redirect);
+      } else {
+        setError("Sign-in incomplete. Please try again.");
       }
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
@@ -41,16 +42,14 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!signIn) return;
+    if (!isLoaded || !signIn) return;
     setError(null);
     try {
-      const { error } = await signIn.create({
+      await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: `${window.location.origin}/auth/callback`,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        actionCompleteRedirectUrl: redirect,
-      } as any);
-      if (error) setError((error as { message?: string }).message ?? "Google sign-in failed.");
+        redirectUrlComplete: redirect,
+      });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
       setError(clerkErr?.errors?.[0]?.message ?? "Google sign-in failed.");
@@ -107,7 +106,7 @@ function LoginForm() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.primaryBtn} disabled={loading || !signIn}>
+          <button type="submit" className={styles.primaryBtn} disabled={loading || !isLoaded}>
             {loading ? t("login.signingIn") : t("login.signIn")}
           </button>
         </form>

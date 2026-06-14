@@ -49,9 +49,8 @@ function validateEmail(email: string): string | null {
 
 export default function SignupPage() {
   const t = useT();
-  const { signUp } = useSignUp();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { signIn } = useSignIn() as any;
+  const { signUp, isLoaded: signUpLoaded } = useSignUp() as any;
+  const { signIn, isLoaded: signInLoaded } = useSignIn() as any;
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -65,7 +64,7 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signUp) return;
+    if (!signUpLoaded) return;
     setError(null);
 
     const emailValidationError = validateEmail(email);
@@ -99,14 +98,14 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!signInLoaded || !signIn) return;
     setError(null);
     try {
-      const { error } = await signIn.create({
+      await signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: `${window.location.origin}/auth/callback`,
-        actionCompleteRedirectUrl: "/",
+        redirectUrlComplete: "/dashboard",
       });
-      if (error) setError((error as { message?: string }).message ?? "Google sign-in failed.");
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
       setError(clerkErr?.errors?.[0]?.message ?? "Google sign-in failed.");
@@ -196,7 +195,7 @@ export default function SignupPage() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.primaryBtn} disabled={loading || !signUp}>
+          <button type="submit" className={styles.primaryBtn} disabled={loading || !signUpLoaded}>
             {loading ? t("signup.creating") : t("signup.create")}
           </button>
 
