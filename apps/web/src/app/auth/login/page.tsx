@@ -45,8 +45,7 @@ function LoginForm() {
     setError(null);
     try {
       await clerk.redirectToSignIn({
-        redirectUrl: `${window.location.origin}/auth/callback`,
-        afterSignInUrl: redirect,
+        redirectUrl: redirect,
       });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };

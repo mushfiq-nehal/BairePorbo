@@ -100,8 +100,7 @@ export default function SignupPage() {
     setError(null);
     try {
       await clerk.redirectToSignIn({
-        redirectUrl: `${window.location.origin}/auth/callback`,
-        afterSignInUrl: "/",
+        redirectUrl: "/",
       });
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
