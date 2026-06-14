@@ -81,7 +81,8 @@ export default function SignupPage() {
         firstName: fullName.split(" ")[0] ?? fullName,
         lastName: fullName.split(" ").slice(1).join(" ") || undefined,
       });
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (signUp as any).prepareEmailAddressVerification({ strategy: "email_code" });
       setDone(true);
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string; code?: string }[] };
