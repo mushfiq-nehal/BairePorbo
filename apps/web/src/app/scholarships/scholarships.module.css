@@ -961,6 +961,21 @@
   pointer-events: none;
 }
 
+/* Closed card variant */
+.cardClosed {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+}
+
+.cardClosed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1.5px dashed rgba(120, 110, 100, 0.3);
+  pointer-events: none;
+}
+
 /* Upcoming badge on thumbnail */
 .upcomingBadge {
   position: absolute;
@@ -975,6 +990,35 @@
   border-radius: 999px;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+}
+
+/* Closed badge on thumbnail */
+.closedBadge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(80, 70, 60, 0.82);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Section dot for recently closed */
+.sectionClosedDot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+  flex-shrink: 0;
+  background: var(--ink-400, #9e9589);
+  box-shadow: 0 0 0 3px rgba(120, 110, 100, 0.12);
 }
 
 /* Deadline badge for upcoming scholarships */

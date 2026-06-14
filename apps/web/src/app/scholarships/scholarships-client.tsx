@@ -170,26 +170,27 @@ function ScholarshipCard({
   formatDeadline: (d: string | null) => string;
   t: (key: TranslationKey) => string;
   isUpcoming?: boolean;
+  isClosed?: boolean;
 }) {
   const deadlineBadge = () => {
     if (isUpcoming) {
       if (s.opening_note) return `Opens: ${s.opening_note}`;
       return "Opening Soon";
     }
-    if (isExpired(s.deadline)) return t("scholarships.closedBadge");
+    if (isClosed || isExpired(s.deadline)) return `Closed ${formatDeadline(s.deadline)}`;
     if (isClosingSoon(s.deadline)) return `⚡ ${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
     return `${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
   };
 
   const deadlineClass = () => {
     if (isUpcoming) return styles.deadlineUpcoming;
-    if (isExpired(s.deadline)) return styles.deadlineClosed;
+    if (isClosed || isExpired(s.deadline)) return styles.deadlineClosed;
     if (isClosingSoon(s.deadline)) return styles.deadlineSoon;
     return "";
   };
 
   return (
-    <article className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${isUpcoming ? styles.cardUpcoming : ""}`}>
+    <article className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${isUpcoming ? styles.cardUpcoming : ""} ${isClosed ? styles.cardClosed : ""}`}>
       <Link
         href={`/scholarships/${s.slug ?? s.id}`}
         className={styles.cardLink}
@@ -214,6 +215,9 @@ function ScholarshipCard({
           )}
           {isUpcoming && (
             <span className={styles.upcomingBadge} aria-label="Opening Soon">Opening Soon</span>
+          )}
+          {isClosed && (
+            <span className={styles.closedBadge} aria-label="Closed">Closed</span>
           )}
         </div>
       ) : s.is_flagship ? (
@@ -373,11 +377,27 @@ function ScholarshipsContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
 
-  const filteredLive = useMemo(() => applyFiltersAndSort(scholarships.filter((s) => s.is_live !== false)), 
+  // Live = is_live true AND deadline not expired (or no parseable deadline)
+  const filteredLive = useMemo(() => applyFiltersAndSort(
+    scholarships.filter((s) => s.is_live !== false && !isExpired(s.deadline))
+  ),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
 
   const filteredUpcoming = useMemo(() => applyFiltersAndSort(scholarships.filter((s) => s.is_live === false)),
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
+
+  // Recently closed = is_live true but deadline has passed (within ~90 days)
+  const filteredRecentlyClosed = useMemo(() => applyFiltersAndSort(
+    scholarships.filter((s) => {
+      if (s.is_live === false) return false;
+      const date = s.deadline ? parseDeadlineDate(s.deadline) : null;
+      if (!date) return false;
+      const msSince = Date.now() - date.getTime();
+      return msSince > 0 && msSince < 90 * 24 * 60 * 60 * 1000;
+    })
+  ),
   // eslint-disable-next-line react-hooks/exhaustive-deps
   [scholarships, searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
 
@@ -424,9 +444,9 @@ function ScholarshipsContent() {
     [filteredLive],
   );
 
-  // Animated count-up for the snapshot number
+  // Animated count-up for the snapshot number (total tracked, not just live)
   useEffect(() => {
-    const target = filteredLive.length;
+    const target = filtered.length;
     if (target === displayCount) return;
     const step = Math.max(1, Math.ceil(Math.abs(target - displayCount) / 18));
     const id = window.setInterval(() => {
@@ -497,15 +517,15 @@ function ScholarshipsContent() {
                 <span className={styles.shimmerBar} aria-hidden="true" />
                 <span className={styles.srOnly}>{t("scholarships.loading")}</span>
               </p>
-            ) : filteredLive.length === 0 ? (
-              <p className={styles.snapshotLine}>{t("scholarships.noLive")}</p>
+            ) : scholarships.length === 0 ? (
+              <p className={styles.snapshotLine}>{t("scholarships.nonePublished")}</p>
             ) : (
               <>
                 <div className={styles.snapshotCount} aria-live="polite">
                   <span className={styles.countNumber}>{displayCount}</span>
                   <span className={styles.countLabel}>
-                    <span>{filteredLive.length !== 1 ? t("scholarships.liveScholarships") : t("scholarships.liveScholarship")}</span>
-                    <em>{t("scholarships.readyToApply")}</em>
+                    <span>scholarships tracked</span>
+                    <em>{filteredLive.length} open now · {filteredUpcoming.length} opening soon</em>
                   </span>
                 </div>
                 <div className={styles.snapshotProgress} aria-hidden="true">
@@ -518,12 +538,6 @@ function ScholarshipsContent() {
                   </p>
                 )}
               </>
-            )}
-
-            {!loading && scholarships.length === 0 && (
-              <p style={{ fontSize: 13, color: "var(--ink-500)", marginTop: 8 }}>
-                {t("scholarships.nonePublished")}
-              </p>
             )}
           </div>
         </section>
@@ -722,8 +736,38 @@ function ScholarshipsContent() {
           </section>
         )}
 
-        {/* Empty state when no results in either section */}
-        {!loading && filteredLive.length === 0 && filteredUpcoming.length === 0 && scholarships.length === 0 && (
+        {/* ── Recently Closed Section ── */}
+        {!loading && filteredRecentlyClosed.length > 0 && (
+          <section className={styles.results}>
+            <div className={styles.resultsHeader}>
+              <h2>
+                <span className={styles.sectionClosedDot} aria-hidden="true" />
+                Recently Closed
+                <span className={styles.resultsCount}>{filteredRecentlyClosed.length}</span>
+              </h2>
+              <p className={styles.sectionSubtitle}>Deadline passed — these typically recur annually, bookmark to catch next cycle</p>
+            </div>
+            <div className={styles.cardGrid}>
+              {filteredRecentlyClosed.map((s) => (
+                <ScholarshipCard
+                  key={s.id}
+                  s={s}
+                  bookmarkedIds={bookmarkedIds}
+                  bookmarkingId={bookmarkingId}
+                  toggleBookmark={toggleBookmark}
+                  isExpired={isExpired}
+                  isClosingSoon={isClosingSoon}
+                  formatDeadline={formatDeadline}
+                  t={t}
+                  isClosed
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state when no results anywhere */}
+        {!loading && filteredLive.length === 0 && filteredUpcoming.length === 0 && filteredRecentlyClosed.length === 0 && scholarships.length === 0 && (
           <div className={styles.emptyState}>
             <p>{t("scholarships.nonePublished")}</p>
           </div>
