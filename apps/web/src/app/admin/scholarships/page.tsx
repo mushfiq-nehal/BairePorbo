@@ -72,6 +72,18 @@ export default function AdminScholarshipsPage() {
     load();
   };
 
+  const deletePermanently = async (id: string, title: string) => {
+    const confirmed = await dialog.confirm({
+      title: "Permanently Delete Scholarship",
+      description: `This will permanently delete "${title}" and cannot be undone. All associated data including embeddings will be removed.`,
+      isDestructive: true,
+      confirmText: "Delete Forever",
+    });
+    if (!confirmed) return;
+    await fetch(`/api/admin/scholarships/${id}?permanent=true`, { method: "DELETE" });
+    load();
+  };
+
   const ingest = async (id: string) => {
     setIngestingId(id);
     setIngestStatus(null);
@@ -212,6 +224,13 @@ export default function AdminScholarshipsPage() {
                     Archive
                   </button>
                 )}
+                <button
+                  className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                  onClick={() => deletePermanently(s.id, s.title)}
+                  title="Permanently delete this scholarship"
+                >
+                  Delete
+                </button>
               </span>
             </div>
           ))}

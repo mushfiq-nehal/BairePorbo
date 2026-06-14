@@ -84,14 +84,20 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  await sql`UPDATE scholarships SET status = 'archived', updated_at = NOW() WHERE id = ${id}`;
+  const permanent = new URL(req.url).searchParams.get("permanent") === "true";
+
+  if (permanent) {
+    await sql`DELETE FROM scholarships WHERE id = ${id}`;
+  } else {
+    await sql`UPDATE scholarships SET status = 'archived', updated_at = NOW() WHERE id = ${id}`;
+  }
 
   return NextResponse.json({ ok: true });
 }
