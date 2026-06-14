@@ -13,7 +13,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") ?? "/";
   const t = useT();
-  const { signIn, isLoaded } = useSignIn();
+  const { signIn } = useSignIn();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +22,7 @@ function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isLoaded) return;
+    if (!signIn) return;
     setError(null);
     setLoading(true);
     try {
@@ -41,7 +41,7 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!isLoaded) return;
+    if (!signIn) return;
     setError(null);
     try {
       await signIn.authenticateWithRedirect({
@@ -105,7 +105,7 @@ function LoginForm() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.primaryBtn} disabled={loading || !isLoaded}>
+          <button type="submit" className={styles.primaryBtn} disabled={loading || !signIn}>
             {loading ? t("login.signingIn") : t("login.signIn")}
           </button>
         </form>

@@ -49,8 +49,8 @@ function validateEmail(email: string): string | null {
 
 export default function SignupPage() {
   const t = useT();
-  const { signUp, isLoaded: signUpLoaded } = useSignUp();
-  const { signIn, isLoaded: signInLoaded } = useSignIn();
+  const { signUp } = useSignUp();
+  const { signIn } = useSignIn();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -64,7 +64,7 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signUpLoaded) return;
+    if (!signUp) return;
     setError(null);
 
     const emailValidationError = validateEmail(email);
@@ -97,7 +97,7 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!signInLoaded) return;
+    if (!signIn) return;
     setError(null);
     try {
       await signIn!.authenticateWithRedirect({
@@ -194,7 +194,7 @@ export default function SignupPage() {
 
           {error && <p className={styles.error}>{error}</p>}
 
-          <button type="submit" className={styles.primaryBtn} disabled={loading || !signUpLoaded}>
+          <button type="submit" className={styles.primaryBtn} disabled={loading || !signUp}>
             {loading ? t("signup.creating") : t("signup.create")}
           </button>
 
