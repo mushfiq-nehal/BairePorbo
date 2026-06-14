@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
+import type { TranslationKey } from "@/lib/translations";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./scholarships.module.css";
 
@@ -167,7 +168,7 @@ function ScholarshipCard({
   isExpired: (d: string | null) => boolean;
   isClosingSoon: (d: string | null) => boolean;
   formatDeadline: (d: string | null) => string;
-  t: (key: string) => string;
+  t: (key: TranslationKey) => string;
   isUpcoming?: boolean;
 }) {
   const deadlineBadge = () => {
