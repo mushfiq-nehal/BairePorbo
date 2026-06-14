@@ -8,7 +8,7 @@ import styles from "./admin.module.css";
 type Stats = { total: number; published: number; drafts: number; guides: number };
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const [stats, setStats] = useState<Stats>({ total: 0, published: 0, drafts: 0, guides: 0 });
 
   useEffect(() => {

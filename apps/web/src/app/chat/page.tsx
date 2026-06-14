@@ -134,7 +134,7 @@ const DEFAULT_MODEL_LABEL =
 function ChatContent() {
   const searchParams = useSearchParams();
   const dialog = useDialog();
-  const { user, signOut } = useAuth();
+  const { userId, signOut } = useAuth();
   const t = useT();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
@@ -156,7 +156,7 @@ function ChatContent() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [anonUsage, setAnonUsage] = useState<number>(0);
 
-  const isAnon = !user;
+  const isAnon = !userId;
   const welcomeMessage = useMemo(() => (isAnon ? WELCOME_ANON : WELCOME_USER), [isAnon]);
   const anonRemaining = Math.max(0, ANON_DAILY_LIMIT - anonUsage);
 
@@ -176,10 +176,10 @@ function ChatContent() {
     const key = getOrCreateAnonKey();
     setAnonKey(key);
     setAnonUsage(readAnonUsage());
-    if (user) {
+    if (userId) {
       loadSessions(key);
     }
-  }, [user]);
+  }, [userId]);
 
   // Reset welcome message and clear sessions when auth state changes
   useEffect(() => {
@@ -210,7 +210,7 @@ function ChatContent() {
   // Open a specific session via ?session=<id> (used by the dashboard "Resume" link)
   useEffect(() => {
     const sessionIdParam = searchParams.get("session");
-    if (!sessionIdParam || !user) return;
+    if (!sessionIdParam || !userId) return;
     // Build a minimal Session shape — loadSessionHistory only needs id.
     loadSessionHistory({
       id: sessionIdParam,
@@ -218,7 +218,7 @@ function ChatContent() {
       updated_at: new Date().toISOString(),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, user]);
+  }, [searchParams, userId]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -543,7 +543,7 @@ function ChatContent() {
               <div className={styles.sidebarNavLinks}>
                 <PrimaryNav className={styles.navVertical} />
               </div>
-              {user ? (
+              {userId ? (
                 <button className={styles.ghostButton} type="button" onClick={signOut}>
                   {t("chat.signOut")}
                 </button>

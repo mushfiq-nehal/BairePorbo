@@ -55,7 +55,7 @@ const UserIcon = () => (
  */
 export default function MobileTabBar() {
   const pathname = usePathname() ?? "/";
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const t = useT();
 
   // Hide the tab bar on auth flow pages — they're focused, modal-like
@@ -80,10 +80,10 @@ export default function MobileTabBar() {
     {
       // Logged-in users go to the dashboard. Anonymous users go to signup
       // since the dashboard is gated.
-      href: user ? "/dashboard" : "/auth/signup",
-      label: user ? t("nav.dashboard") : t("tab.signUp"),
+      href: userId ? "/dashboard" : "/auth/signup",
+      label: userId ? t("nav.dashboard") : t("tab.signUp"),
       icon: <UserIcon />,
-      matchPrefix: user ? "/dashboard" : undefined,
+      matchPrefix: userId ? "/dashboard" : undefined,
     },
   ];
 

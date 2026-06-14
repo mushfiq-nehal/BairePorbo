@@ -12,16 +12,16 @@ import AppNavbar from "@/components/layout/app-navbar";
  * <AppNavbar /> so the nav stays consistent with the rest of the app.
  */
 export default function NavbarWithAuth() {
-  const { user, loading, signOut } = useAuth();
+  const { userId, loading, signOut } = useAuth();
   const t = useT();
 
   const actions = loading
     ? []
     : [
-        user
+        userId
           ? { label: t("nav.signOut"), onClick: signOut }
           : { label: t("nav.signIn"), href: "/auth/login", variant: "ghost" as const },
-        !user ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
+        !userId ? { label: t("nav.getStarted"), href: "/auth/signup" } : null,
       ].filter(Boolean) as Parameters<typeof AppNavbar>[0]["actions"];
 
   return <AppNavbar actions={actions} />;

@@ -7,7 +7,7 @@ import { useT } from "@/lib/lang-context";
 import styles from "./shared-footer.module.css";
 
 export default function SharedFooter() {
-  const { user } = useAuth();
+  const { userId } = useAuth();
   const t = useT();
 
   return (
@@ -43,7 +43,7 @@ export default function SharedFooter() {
             <Link href="/scholarships">{t("footer.browseScholarships")}</Link>
             <Link href="/chat">{t("nav.aiMentor")}</Link>
             <Link href="/guide">{t("footer.studyGuides")}</Link>
-            <Link href={user ? "/dashboard" : "/auth/login"}>{t("nav.dashboard")}</Link>
+            <Link href={userId ? "/dashboard" : "/auth/login"}>{t("nav.dashboard")}</Link>
           </div>
           <div className={styles.footerCol}>
             <h4>{t("footer.account")}</h4>

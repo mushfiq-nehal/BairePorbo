@@ -33,9 +33,9 @@ export default function LegalLayout({
   sections,
   contact,
 }: LegalLayoutProps) {
-  const { user, signOut } = useAuth();
+  const { userId, signOut } = useAuth();
 
-  const actions: NavAction[] = user
+  const actions: NavAction[] = userId
     ? [{ label: "Sign out", onClick: signOut }]
     : [
         { label: "Sign in", href: "/auth/login", variant: "ghost" },
