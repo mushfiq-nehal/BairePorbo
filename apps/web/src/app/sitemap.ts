@@ -60,11 +60,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   try {
     const scholarships = await sql`
-      SELECT id, updated_at FROM scholarships WHERE status = 'published'
+      SELECT id, slug, updated_at FROM scholarships WHERE status = 'published'
     `;
 
+    // Use slug URL when available; fall back to UUID for unslugified rows
     const scholarshipRoutes: MetadataRoute.Sitemap = scholarships.map((s) => ({
-      url: `${BASE_URL}/scholarships/${s.id as string}`,
+      url: `${BASE_URL}/scholarships/${(s.slug as string | null) ?? (s.id as string)}`,
       lastModified: s.updated_at ? new Date(s.updated_at as string) : new Date(),
       changeFrequency: "weekly",
       priority: 0.7,

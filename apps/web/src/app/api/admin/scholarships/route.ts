@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
+import { generateScholarshipSlug, makeSlugUnique } from "@/lib/slug";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -27,8 +28,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  // Generate a unique slug for the new scholarship
+  const slugBase = generateScholarshipSlug(body.title as string, body.country as string);
+  const existingRows = await sql`SELECT slug FROM scholarships WHERE slug IS NOT NULL`;
+  const existingSlugs = new Set(existingRows.map((r) => r.slug as string));
+  const slug = slugBase ? makeSlugUnique(slugBase, existingSlugs) : null;
+
   const rows = await sql`
-    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status)
+    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status, slug)
     VALUES (
       ${auth.userId},
       ${body.title as string},
@@ -38,7 +45,8 @@ export async function POST(req: NextRequest) {
       ${(body.deadline as string | null) ?? null},
       ${(body.official_url as string | null) ?? null},
       ${(body.raw_description as string | null) ?? null},
-      'draft'
+      'draft',
+      ${slug}
     )
     RETURNING *
   `;

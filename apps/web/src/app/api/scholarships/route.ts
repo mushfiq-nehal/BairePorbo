@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   const rows = await sql`
     SELECT id, title, country, funding_type, deadline, degree_level,
-           tags, thumbnail_url, competitiveness, is_flagship, updated_at
+           tags, thumbnail_url, competitiveness, is_flagship, updated_at, slug
     FROM scholarships
     WHERE status = ${status}
     ORDER BY is_flagship DESC, created_at DESC
