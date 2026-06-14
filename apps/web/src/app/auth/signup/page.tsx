@@ -98,7 +98,6 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!signInLoaded || !signIn) return;
     setError(null);
     try {
       await signIn.authenticateWithRedirect({

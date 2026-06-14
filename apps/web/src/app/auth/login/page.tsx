@@ -42,7 +42,6 @@ function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!isLoaded || !signIn) return;
     setError(null);
     try {
       await signIn.authenticateWithRedirect({
