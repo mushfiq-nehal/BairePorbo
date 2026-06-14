@@ -26,11 +26,11 @@ function LoginForm() {
     setError(null);
     setLoading(true);
     try {
-      const result = await signIn.create({ identifier: email, password });
-      if (result.status === "complete") {
-        router.replace(redirect);
+      const { error } = await signIn.create({ identifier: email, password });
+      if (error) {
+        setError(error.message ?? "Sign in failed. Please try again.");
       } else {
-        setError("Sign-in incomplete. Please try again.");
+        router.replace(redirect);
       }
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
