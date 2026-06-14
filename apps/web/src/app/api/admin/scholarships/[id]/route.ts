@@ -51,7 +51,7 @@ export async function PATCH(
   // Build parameterised SET pairs.
   // tags is TEXT[] — needs explicit cast so Neon's HTTP driver doesn't send it as JSON.
   const setClauses = Object.keys(updates)
-    .map((key, i) => key === "tags" ? `${key} = $${i + 2}::TEXT[]` : `${key} = $${i + 2}`)
+    .map((key, i) => key === "tags" ? `${key} = $${i + 2}::JSONB` : `${key} = $${i + 2}`)
     .join(", ");
 
   const values = [id, ...Object.values(updates)];
