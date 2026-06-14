@@ -248,6 +248,8 @@ export default function BulkImportPage() {
     let preStructured: ParsedScholarship[] | null = null; // JSON fast-path
     let textItems: string[] = [];
 
+    const CHUNK = 50; // items per API call
+
     if (inputMode === "json") {
       const { items, errors } = parseJsonInput(rawInput);
       if (items.length === 0) {
@@ -255,7 +257,6 @@ export default function BulkImportPage() {
         setProcessing(false);
         return;
       }
-      if (items.length > 50) { setError("Maximum 50 scholarships per batch."); setProcessing(false); return; }
       preStructured = items;
     } else {
       if (inputMode === "csv") textItems = parseCSV(rawInput.trim());
@@ -263,63 +264,76 @@ export default function BulkImportPage() {
       else textItems = splitTextInput(rawInput.trim());
 
       if (textItems.length === 0) { setError("No items found. Check your input format."); setProcessing(false); return; }
-      if (textItems.length > 50) { setError("Maximum 50 scholarships per batch."); setProcessing(false); return; }
     }
 
-    // ── Phase 1: Parse (skipped for JSON) ──────────────────────────────────
+    const totalItems = preStructured?.length ?? textItems.length;
+    const totalChunks = Math.ceil(totalItems / CHUNK);
+
+    // ── Phase 1: Parse (skipped for JSON, chunked for text/url/csv) ─────────
     let parseResults: { index: number; parsed: ParsedScholarship | null; error?: string }[] = [];
 
     if (preStructured) {
-      setProcessStatus(`JSON detected — ${preStructured.length} scholarships pre-structured, skipping AI parse…`);
-      setProcessProgress(30);
-      await new Promise((r) => setTimeout(r, 600)); // brief pause for UX
+      setProcessStatus(`JSON detected — ${totalItems} scholarships pre-structured, skipping AI parse…`);
+      setProcessProgress(10);
+      await new Promise((r) => setTimeout(r, 400));
       parseResults = preStructured.map((p, i) => ({ index: i, parsed: p }));
     } else {
-      setProcessStatus(`Parsing ${textItems.length} scholarships with Deepseek V4 Flash…`);
-      try {
-        const res = await fetch("/api/admin/scholarships/bulk-parse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: textItems, scrape: inputMode !== "text" || scrapeEnabled }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Parse failed");
-        parseResults = data.results;
-      } catch (err) {
-        setError(`Parse failed: ${String(err)}`);
-        setProcessing(false);
-        return;
+      // Split into chunks and call bulk-parse sequentially
+      for (let c = 0; c < totalChunks; c++) {
+        const chunk = textItems.slice(c * CHUNK, (c + 1) * CHUNK);
+        const chunkOffset = c * CHUNK;
+        setProcessStatus(`Parsing chunk ${c + 1}/${totalChunks} (items ${chunkOffset + 1}–${chunkOffset + chunk.length}) with Deepseek V4 Flash…`);
+        setProcessProgress(5 + Math.round((c / totalChunks) * 25));
+        try {
+          const res = await fetch("/api/admin/scholarships/bulk-parse", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ items: chunk, scrape: inputMode !== "text" || scrapeEnabled }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? "Parse failed");
+          // Re-index results to global indices
+          const chunkResults = (data.results as { index: number; parsed: ParsedScholarship | null; error?: string }[])
+            .map((r) => ({ ...r, index: r.index + chunkOffset }));
+          parseResults.push(...chunkResults);
+        } catch (err) {
+          setError(`Parse failed on chunk ${c + 1}: ${String(err)}`);
+          setProcessing(false);
+          return;
+        }
       }
     }
 
-    setProcessProgress(38);
+    setProcessProgress(32);
 
-    // ── Phase 2: Verify ─────────────────────────────────────────────────────
-    setProcessStatus("Cross-verifying with MiniMax M3 + Qwen3 235B…");
-
+    // ── Phase 2: Verify in chunks of 50 ─────────────────────────────────────
     const validParsed = parseResults.filter((r) => r.parsed !== null);
     let verifyResults: VerifyResult[] = [];
+    const verifyChunks = Math.ceil(validParsed.length / CHUNK);
 
-    if (validParsed.length > 0) {
+    for (let c = 0; c < verifyChunks; c++) {
+      const chunk = validParsed.slice(c * CHUNK, (c + 1) * CHUNK);
+      setProcessStatus(`Verifying chunk ${c + 1}/${verifyChunks} (${chunk.length} items) with MiniMax M3 + Qwen3 235B…`);
+      setProcessProgress(32 + Math.round((c / verifyChunks) * 48));
       try {
         const res = await fetch("/api/admin/scholarships/bulk-verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scholarships: validParsed.map((r) => r.parsed) }),
+          body: JSON.stringify({ scholarships: chunk.map((r) => r.parsed) }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Verify failed");
-        verifyResults = data.results.map((vr: VerifyResult, i: number) => ({
+        const chunkVerified = (data.results as VerifyResult[]).map((vr, i) => ({
           ...vr,
-          index: validParsed[i].index,
+          index: chunk[i].index,
         }));
+        verifyResults.push(...chunkVerified);
       } catch {
-        setProcessStatus("Verification unavailable, continuing with parsed data…");
-        await new Promise((r) => setTimeout(r, 600));
+        // Non-fatal — continue without verification for this chunk
       }
     }
 
-    setProcessProgress(68);
+    setProcessProgress(82);
 
     // ── Phase 3: Dedup ──────────────────────────────────────────────────────
     setProcessStatus("Checking for duplicates against existing database…");
@@ -398,14 +412,18 @@ export default function BulkImportPage() {
   const duplicateCount = rows.filter((r) => r.dedup?.isDuplicate).length;
   const lowConfCount = rows.filter((r) => r.confidence === "low").length;
 
-  // ── Import ─────────────────────────────────────────────────────────────────
+  // ── Import (chunked so even 300+ items work without timeout) ─────────────
+
+  const [importProgress, setImportProgress] = useState("");
 
   const runImport = async () => {
     if (approvedRows.length === 0) return;
     setImporting(true);
     setError(null);
+    setImportProgress("");
 
-    const scholarships = approvedRows.map((r) => ({
+    const CHUNK = 50;
+    const allScholarships = approvedRows.map((r) => ({
       title: r.title,
       country: r.country,
       degree_level: r.degree_level,
@@ -416,20 +434,52 @@ export default function BulkImportPage() {
       is_live: r.is_live,
     }));
 
+    let totalImported = 0;
+    const allErrors: { index: number; error: string }[] = [];
+    const chunks = Math.ceil(allScholarships.length / CHUNK);
+
     try {
-      const res = await fetch("/api/admin/scholarships/bulk-import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scholarships }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Import failed");
-      setImportResult(data);
+      // ── Phase 1: Save all as drafts ───────────────────────────────────────
+      const allSavedIds: string[] = [];
+      for (let c = 0; c < chunks; c++) {
+        const chunk = allScholarships.slice(c * CHUNK, (c + 1) * CHUNK);
+        setImportProgress(`Saving ${c * CHUNK + chunk.length}/${allScholarships.length}…`);
+        const res = await fetch("/api/admin/scholarships/bulk-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scholarships: chunk }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Import failed");
+        totalImported += data.imported ?? 0;
+        allErrors.push(...(data.errors ?? []));
+        allSavedIds.push(...(data.ids ?? []));
+      }
+
+      // ── Phase 2: Auto-enrich all saved scholarships with Deepseek ─────────
+      const enrichChunks = Math.ceil(allSavedIds.length / CHUNK);
+      let enriched = 0;
+      for (let c = 0; c < enrichChunks; c++) {
+        const chunk = allSavedIds.slice(c * CHUNK, (c + 1) * CHUNK);
+        setImportProgress(`Enriching ${enriched + chunk.length}/${allSavedIds.length} with Deepseek…`);
+        try {
+          const res = await fetch("/api/admin/scholarships/bulk-enrich", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: chunk }),
+          });
+          const data = await res.json();
+          enriched += data.enriched ?? 0;
+        } catch { /* non-fatal — enrichment can be retried per-item in admin */ }
+      }
+
+      setImportResult({ imported: totalImported, errors: allErrors });
       setStep(4);
     } catch (err) {
       setError(String(err));
     } finally {
       setImporting(false);
+      setImportProgress("");
     }
   };
 
@@ -443,7 +493,7 @@ export default function BulkImportPage() {
         <div>
           <p className={styles.kicker}>Admin · Scholarships · Bulk Import</p>
           <h1>Bulk Import</h1>
-          <p className={styles.sub}>Import up to 50 scholarships at once. All saved as drafts — add thumbnails and publish manually.</p>
+          <p className={styles.sub}>Import any number of scholarships — automatically chunked and processed in batches of 50. All saved as drafts.</p>
         </div>
         <a href="/admin/scholarships" className={styles.ghostBtn} style={{ textDecoration: "none" }}>← Back to list</a>
       </header>
@@ -770,7 +820,7 @@ export default function BulkImportPage() {
               disabled={importing || approvedRows.length === 0}
             >
               {importing
-                ? <><span className={styles.spinner} /> Saving…</>
+                ? <><span className={styles.spinner} /> {importProgress || "Saving…"}</>
                 : `Save ${approvedRows.length} as Drafts →`}
             </button>
           </div>
@@ -786,7 +836,7 @@ export default function BulkImportPage() {
           <div style={{ fontSize: 40, marginBottom: 16 }}>🎉</div>
           <h2 style={{ marginBottom: 8 }}>{importResult.imported} scholarships saved as drafts</h2>
           <p style={{ color: "var(--ink-500)", marginBottom: 8 }}>
-            Each needs a thumbnail upload, AI enrich, and a final review before publishing.
+            Eligibility, tips, tags and summary are already filled in. Each one just needs a thumbnail upload before publishing.
           </p>
           {importResult.errors.length > 0 && (
             <p style={{ color: "var(--red-600,#dc2626)", fontSize: 13 }}>

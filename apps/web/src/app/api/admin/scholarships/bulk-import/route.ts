@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(scholarships) || scholarships.length === 0) {
     return NextResponse.json({ error: "scholarships[] is required" }, { status: 400 });
   }
-  if (scholarships.length > 50) {
-    return NextResponse.json({ error: "Maximum 50 per import" }, { status: 400 });
+  if (scholarships.length > 1000) {
+    return NextResponse.json({ error: "Maximum 1000 per import" }, { status: 400 });
   }
 
   // Fetch existing slugs for uniqueness

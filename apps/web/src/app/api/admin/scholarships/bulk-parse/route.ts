@@ -101,8 +101,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "items[] is required" }, { status: 400 });
   }
-  if (items.length > 50) {
-    return NextResponse.json({ error: "Maximum 50 scholarships per batch" }, { status: 400 });
+  if (items.length > 1000) {
+    return NextResponse.json({ error: "Maximum 1000 scholarships per batch" }, { status: 400 });
   }
 
   const scrape = body.scrape !== false;
