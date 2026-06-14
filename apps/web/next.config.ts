@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.0.105"],
   images: {
     remotePatterns: [
-      // Cloudflare R2 public bucket domain
+      // Cloudflare R2 public bucket / custom CDN domain
       ...(R2_PUBLIC_DOMAIN
         ? [
             {
@@ -16,7 +16,6 @@ const nextConfig: NextConfig = {
             },
           ]
         : []),
-      // Fallback for any other CDN domains you add
     ],
     formats: ["image/avif", "image/webp"],
   },
