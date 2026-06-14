@@ -48,11 +48,24 @@ export async function PATCH(
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  // Build parameterised SET pairs.
-  // tags is TEXT[] — needs explicit cast so Neon's HTTP driver doesn't send it as JSON.
-  const setClauses = Object.keys(updates)
-    .map((key, i) => key === "tags" ? `${key} = $${i + 2}::JSONB` : `${key} = $${i + 2}`)
+  // Pre-process values that need special handling for Neon's HTTP driver:
+  // - tags is JSONB: pass as a JSON string with ::jsonb cast (same as enrich route)
+  // - booleans: cast explicitly so the driver doesn't mis-serialize them
+  const keys = Object.keys(updates);
+  const setClauses = keys
+    .map((key, i) => {
+      if (key === "tags") return `${key} = $${i + 2}::jsonb`;
+      if (key === "is_flagship" || key === "is_live") return `${key} = $${i + 2}::boolean`;
+      return `${key} = $${i + 2}`;
+    })
     .join(", ");
+
+  // Serialise values to match the casts above
+  for (const key of keys) {
+    if (key === "tags" && Array.isArray(updates[key])) {
+      updates[key] = JSON.stringify(updates[key]);
+    }
+  }
 
   const values = [id, ...Object.values(updates)];
   let rows: Record<string, unknown>[];
