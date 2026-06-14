@@ -100,14 +100,21 @@ export default function SignupPage() {
   const handleGoogleSignIn = async () => {
     setError(null);
     try {
-      await signIn.authenticateWithRedirect({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const clerkInstance = (window as any).Clerk;
+      if (!clerkInstance?.loaded) {
+        setError("Authentication not ready. Please refresh and try again.");
+        return;
+      }
+      await clerkInstance.client.signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: `${window.location.origin}/auth/callback`,
         redirectUrlComplete: "/dashboard",
       });
     } catch (err: unknown) {
-      const clerkErr = err as { errors?: { message: string }[] };
-      setError(clerkErr?.errors?.[0]?.message ?? "Google sign-in failed.");
+      console.error("Google OAuth error:", err);
+      const clerkErr = err as { errors?: { message: string }[]; message?: string };
+      setError(clerkErr?.errors?.[0]?.message ?? clerkErr?.message ?? String(err));
     }
   };
 
