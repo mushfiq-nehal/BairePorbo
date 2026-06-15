@@ -83,8 +83,8 @@ export default async function ScholarshipDetailPage({ params }: Props) {
   };
 
   const eligibilityItems = (s.eligibility_summary ?? "")
-    .split(/[.•\n]/)
-    .map((item) => item.trim())
+    .split(/(?<=\.)\s+(?=[A-Z•])|[•\n]/)
+    .map((item) => item.replace(/\.\s*$/, "").trim())
     .filter(Boolean);
 
   const tipItems = (s.tips ?? "")
