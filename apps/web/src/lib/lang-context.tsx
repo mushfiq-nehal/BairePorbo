@@ -3,6 +3,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { translations, type Lang, type TranslationKey } from "./translations";
 
+export type { Lang };
+
 type LangContextType = {
   lang: Lang;
   setLang: (l: Lang) => void;
@@ -13,10 +15,17 @@ const LangContext = createContext<LangContextType>({
   setLang: () => {},
 });
 
-export function LangProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("bn");
+export function LangProvider({
+  children,
+  defaultLang = "bn",
+}: {
+  children: ReactNode;
+  defaultLang?: Lang;
+}) {
+  const [lang, setLangState] = useState<Lang>(defaultLang);
 
   useEffect(() => {
+    // Explicit user preference (localStorage) overrides the geo-based default
     try {
       const stored = localStorage.getItem("bp_lang") as Lang | null;
       if (stored === "bn" || stored === "en") {
@@ -30,7 +39,10 @@ export function LangProvider({ children }: { children: ReactNode }) {
   const setLang = (l: Lang) => {
     setLangState(l);
     try {
+      // Persist to localStorage for client-side reads
       localStorage.setItem("bp_lang", l);
+      // Persist to cookie so future server renders respect the explicit choice
+      document.cookie = `bp_lang=${l}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     } catch {
       // ignore
     }

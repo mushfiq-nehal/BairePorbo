@@ -3,6 +3,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { Fraunces, Manrope, Hind_Siliguri } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { headers, cookies } from "next/headers";
 import "./globals.css";
 import Providers from "./providers";
 import MobileTabBar from "@/components/layout/mobile-tab-bar";
@@ -91,13 +92,24 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
+
+  // Respect an explicit user preference set via the language toggle
+  const storedLang = cookieStore.get("bp_lang")?.value;
+  const preferredLang =
+    storedLang === "bn" || storedLang === "en" ? storedLang : undefined;
+
+  // Fall back to geo-based default: Bangla for Bangladesh, English everywhere else
+  const country = headersList.get("x-vercel-ip-country");
+  const defaultLang: "bn" | "en" = preferredLang ?? (country === "BD" ? "bn" : "en");
+
   return (
-    <html lang="bn" className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
+    <html lang={defaultLang} className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f8f8d" />
@@ -123,7 +135,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body>
-        <Providers>
+        <Providers defaultLang={defaultLang}>
           {children}
           <MobileTabBar />
         </Providers>

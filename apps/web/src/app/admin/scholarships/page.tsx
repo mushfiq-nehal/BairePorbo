@@ -18,6 +18,13 @@ type Scholarship = {
   is_flagship: boolean;
 };
 
+type TelegramModal = {
+  id: string;
+  title: string;
+  text: string;
+  url: string;
+};
+
 const STATUS_LABELS: Record<string, string> = {
   draft: "Draft",
   published: "Published",
@@ -30,6 +37,9 @@ export default function AdminScholarshipsPage() {
   const [ingestingId, setIngestingId] = useState<string | null>(null);
   const [ingestingAll, setIngestingAll] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<string | null>(null);
+  const [generatingTelegramId, setGeneratingTelegramId] = useState<string | null>(null);
+  const [telegramModal, setTelegramModal] = useState<TelegramModal | null>(null);
+  const [copied, setCopied] = useState(false);
   const dialog = useDialog();
 
   const load = () => {
@@ -113,6 +123,71 @@ export default function AdminScholarshipsPage() {
       setIngestStatus(`✅ Batch complete — ${data.succeeded} succeeded, ${data.failed} failed`);
     } else {
       setIngestStatus(`❌ Batch ingest failed: ${data.error}`);
+    }
+  };
+
+  const generateTelegramUpdate = async (scholarship: Scholarship) => {
+    setGeneratingTelegramId(scholarship.id);
+    setCopied(false);
+    try {
+      const res = await fetch(`/api/admin/scholarships/${scholarship.id}/telegram-update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "deepseek" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to generate");
+      setTelegramModal({
+        id: scholarship.id,
+        title: scholarship.title,
+        text: data.text,
+        url: data.url,
+      });
+    } catch (err) {
+      setIngestStatus(`❌ Telegram update failed: ${String(err)}`);
+    } finally {
+      setGeneratingTelegramId(null);
+    }
+  };
+
+  const regenerateTelegramUpdate = async () => {
+    if (!telegramModal) return;
+    const scholarship = items.find(s => s.id === telegramModal.id);
+    if (!scholarship) return;
+    setGeneratingTelegramId(scholarship.id);
+    setCopied(false);
+    try {
+      const res = await fetch(`/api/admin/scholarships/${scholarship.id}/telegram-update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "deepseek" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to regenerate");
+      setTelegramModal(prev => prev ? { ...prev, text: data.text } : null);
+    } catch (err) {
+      setIngestStatus(`❌ Regenerate failed: ${String(err)}`);
+    } finally {
+      setGeneratingTelegramId(null);
+    }
+  };
+
+  const copyTelegramText = async () => {
+    if (!telegramModal) return;
+    try {
+      await navigator.clipboard.writeText(telegramModal.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // fallback for older browsers
+      const el = document.createElement("textarea");
+      el.value = telegramModal.text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
     }
   };
 
@@ -208,6 +283,21 @@ export default function AdminScholarshipsPage() {
                 >
                   {ingestingId === s.id ? "Ingesting…" : "Ingest"}
                 </button>
+                <button
+                  className={styles.telegramGenBtn}
+                  onClick={() => generateTelegramUpdate(s)}
+                  disabled={generatingTelegramId === s.id}
+                  title="Generate Bangla Telegram update for this scholarship"
+                >
+                  {generatingTelegramId === s.id ? (
+                    <>
+                      <span className={styles.spinner} style={{ borderColor: "rgba(14,114,160,0.3)", borderTopColor: "#0e72a0" }} />
+                      Generating…
+                    </>
+                  ) : (
+                    <>✈️ Telegram</>
+                  )}
+                </button>
                 {s.status !== "published" && (
                   <button
                     className={`${styles.actionBtn} ${styles.publishBtn}`}
@@ -234,6 +324,75 @@ export default function AdminScholarshipsPage() {
               </span>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Telegram Update Modal */}
+      {telegramModal && (
+        <div
+          className={styles.telegramOverlay}
+          onClick={(e) => { if (e.target === e.currentTarget) setTelegramModal(null); }}
+        >
+          <div className={styles.telegramModal}>
+            <div className={styles.telegramModalHeader}>
+              <div>
+                <p className={styles.telegramModalTitle}>✈️ Telegram Update</p>
+                <p className={styles.telegramModalSub}>{telegramModal.title}</p>
+              </div>
+              <button
+                className={styles.telegramCloseBtn}
+                onClick={() => setTelegramModal(null)}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className={styles.telegramTextBox}>
+              {generatingTelegramId === telegramModal.id ? (
+                <span style={{ color: "var(--ink-400, #94a3b8)", fontStyle: "italic" }}>Generating new update…</span>
+              ) : (
+                telegramModal.text
+              )}
+            </div>
+
+            <div style={{ fontSize: "12px", color: "var(--ink-500, #6b7c8d)", display: "flex", alignItems: "center", gap: "6px" }}>
+              <span>🔗</span>
+              <a
+                href={telegramModal.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--teal-700, #0a6b6a)", textDecoration: "underline", wordBreak: "break-all" }}
+              >
+                {telegramModal.url}
+              </a>
+            </div>
+
+            <div className={styles.telegramActions}>
+              <button
+                className={`${styles.telegramCopyBtn} ${copied ? styles.telegramCopyBtnDone : ""}`}
+                onClick={copyTelegramText}
+                disabled={generatingTelegramId === telegramModal.id}
+              >
+                {copied ? "✅ Copied!" : "📋 Copy to Clipboard"}
+              </button>
+              <button
+                className={styles.telegramRegenerateBtn}
+                onClick={regenerateTelegramUpdate}
+                disabled={generatingTelegramId === telegramModal.id}
+                title="Generate a fresh variation"
+              >
+                {generatingTelegramId === telegramModal.id ? (
+                  <>
+                    <span className={styles.spinner} style={{ borderColor: "rgba(0,0,0,0.15)", borderTopColor: "#555" }} />
+                    Regenerating…
+                  </>
+                ) : (
+                  <>🔄 Regenerate</>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
