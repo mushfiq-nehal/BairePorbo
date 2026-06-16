@@ -10,54 +10,55 @@ import type { TranslationKey } from "@/lib/translations";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./scholarships.module.css";
 
-const POPUP_STORAGE_KEY = "bp_telegram_popup_v1";
+const POPUP_STORAGE_KEY = "bp_telegram_popup_v2";
 
 function TelegramPopup() {
   const { lang } = useLang();
-  const [visible, setVisible] = useState(false);
-  const [animating, setAnimating] = useState(false);
+  const [show, setShow] = useState<"hidden" | "entering" | "visible" | "leaving">("hidden");
 
   useEffect(() => {
     try {
       if (localStorage.getItem(POPUP_STORAGE_KEY)) return;
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
+
     const timer = setTimeout(() => {
-      setVisible(true);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => setAnimating(true));
-      });
+      setShow("entering");
     }, 2200);
     return () => clearTimeout(timer);
   }, []);
 
+  // Trigger the CSS enter animation one frame after mounting the DOM node
+  useEffect(() => {
+    if (show !== "entering") return;
+    const id = requestAnimationFrame(() => setShow("visible"));
+    return () => cancelAnimationFrame(id);
+  }, [show]);
+
   const dismiss = useCallback(() => {
-    setAnimating(false);
-    setTimeout(() => {
-      setVisible(false);
-      try { localStorage.setItem(POPUP_STORAGE_KEY, "1"); } catch { /* ignore */ }
-    }, 300);
+    setShow("leaving");
+    try { localStorage.setItem(POPUP_STORAGE_KEY, "1"); } catch { /* ignore */ }
+    // Remove from DOM after transition completes
+    setTimeout(() => setShow("hidden"), 320);
   }, []);
 
   useEffect(() => {
-    if (!visible) return;
+    if (show === "hidden") return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") dismiss(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [visible, dismiss]);
+  }, [show, dismiss]);
 
-  if (!visible) return null;
+  if (show === "hidden") return null;
 
   return (
     <div
-      className={`${styles.popupBackdrop} ${animating ? styles.popupBackdropVisible : ""}`}
+      className={`${styles.popupBackdrop} ${show === "visible" ? styles.popupBackdropVisible : ""}`}
       onClick={(e) => { if (e.target === e.currentTarget) dismiss(); }}
       role="dialog"
       aria-modal="true"
       aria-label="Telegram চ্যানেল জয়েন করুন"
     >
-      <div className={`${styles.popupCard} ${animating ? styles.popupCardVisible : ""}`}>
+      <div className={`${styles.popupCard} ${show === "visible" ? styles.popupCardVisible : ""}`}>
         <button
           className={styles.popupClose}
           onClick={dismiss}
