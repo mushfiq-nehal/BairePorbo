@@ -78,8 +78,8 @@
   margin-top: 12px;
   padding: 14px 16px;
   background: rgba(15, 143, 141, 0.05);
-  border-left: 3px solid var(--teal-500);
-  border-radius: 0 12px 12px 0;
+  border: 1px solid rgba(15, 143, 141, 0.15);
+  border-radius: var(--radius-md);
   font-size: 13px;
   line-height: 1.55;
   color: var(--ink-700);

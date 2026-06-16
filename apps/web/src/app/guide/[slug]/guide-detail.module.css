@@ -87,8 +87,10 @@
   color: var(--ink-700);
   line-height: 1.75;
   margin-bottom: 1.25rem;
-  padding-left: 1rem;
-  border-left: 3px solid var(--teal-500);
+  padding: 1rem;
+  background: rgba(15, 143, 141, 0.04);
+  border: 1px solid rgba(15, 143, 141, 0.12);
+  border-radius: var(--radius-md);
 }
 
 .tagList {
