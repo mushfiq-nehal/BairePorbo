@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/lang-context";
+import { useT, useLang } from "@/lib/lang-context";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import SharedFooter from "@/components/layout/shared-footer";
 import { guides as staticGuides } from "./guide/data/index";
@@ -454,6 +454,9 @@ function AndroidBanner() {
 
 // ── Inline visual: chat preview shown beside the hero ─────────────────────────
 function ProductPreview() {
+  const { lang } = useLang();
+  const isBn = lang === "bn";
+
   return (
     <div className={styles.previewWrap} aria-hidden="true">
       <div className={styles.previewCard}>
@@ -471,18 +474,36 @@ function ProductPreview() {
 
         <div className={styles.previewBody}>
           <div className={styles.previewBubbleUser}>
-            I have a 3.4 CGPA from BRAC. Can I get into Chevening?
+            {isBn
+              ? "আমার BRAC-এ ৩.৪ CGPA। Chevening কি পাব?"
+              : "I have a 3.4 CGPA from BRAC. Can I get into Chevening?"}
           </div>
           <div className={styles.previewBubbleAi}>
-            <strong>Short answer: yes, you&apos;re competitive.</strong>
-            <br />
-            Chevening doesn&apos;t set a minimum CGPA — they prioritise{" "}
-            <em>leadership and impact</em>. Your 3.4 is fine.
-            <ul>
-              <li>2+ years of experience needed</li>
-              <li>Apply before <strong>5 Nov</strong></li>
-              <li>3 distinct UK programs</li>
-            </ul>
+            {isBn ? (
+              <>
+                <strong>সংক্ষেপে: হ্যাঁ, তুমি competitive।</strong>
+                <br />
+                Chevening-এ কোনো minimum CGPA নেই — ওরা{" "}
+                <em>leadership ও impact</em> দেখে। ৩.৪ দিয়ে apply করো।
+                <ul>
+                  <li>২+ বছর কাজের অভিজ্ঞতা লাগবে</li>
+                  <li><strong>৫ নভেম্বর</strong>-এর আগে আবেদন করো</li>
+                  <li>৩টি আলাদা UK programme বেছে নাও</li>
+                </ul>
+              </>
+            ) : (
+              <>
+                <strong>Short answer: yes, you&apos;re competitive.</strong>
+                <br />
+                Chevening doesn&apos;t set a minimum CGPA — they prioritise{" "}
+                <em>leadership and impact</em>. Your 3.4 is fine.
+                <ul>
+                  <li>2+ years of experience needed</li>
+                  <li>Apply before <strong>5 Nov</strong></li>
+                  <li>3 distinct UK programs</li>
+                </ul>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -497,31 +518,60 @@ function ProductPreview() {
 
 // ── Annotated chat mockup for the showcase section ────────────────────────────
 function MentorMock() {
+  const { lang } = useLang();
+  const isBn = lang === "bn";
+
   return (
     <div className={styles.mentorMock} aria-hidden="true">
-      <div className={styles.mentorMockBubbleUser}>What is Chevening?</div>
+      <div className={styles.mentorMockBubbleUser}>
+        {isBn
+          ? "৩.২ CGPA তে কোন scholarship পাব?"
+          : "Which scholarships can I get with a 3.2 CGPA?"}
+      </div>
 
       <div className={styles.mentorMockBubbleAi}>
-        <p>
-          <strong>Chevening</strong> is the UK government&apos;s global scholarship for one-year
-          Master&apos;s programmes — fully funded, including tuition, stipend, and flights.
-        </p>
-        <p className={styles.mentorMockKey}>For Bangladeshi applicants:</p>
-        <ul>
-          <li>Bangladeshi citizenship (not dual UK)</li>
-          <li>2+ years of work experience</li>
-          <li>IELTS 6.5+ for UKVI</li>
-          <li>Return to Bangladesh for 2 years</li>
-        </ul>
+        {isBn ? (
+          <>
+            <p>
+              <strong>সুখবর</strong> — ৩.২ CGPA দিয়ে অনেক দরজা খোলা আছে:
+            </p>
+            <p className={styles.mentorMockKey}>তোমার জন্য সেরা options:</p>
+            <ul>
+              <li><strong>Germany (DAAD):</strong> নির্দিষ্ট minimum নেই, motivation গুরুত্বপূর্ণ</li>
+              <li><strong>Japan (MEXT):</strong> ৩.০+ সাধারণত গ্রহণযোগ্য</li>
+              <li><strong>Chevening UK:</strong> CGPA নয়, leadership দেখে</li>
+              <li><strong>Australia Awards:</strong> ৩.০+ অধিকাংশ field-এ চলে</li>
+            </ul>
+            <p className={styles.mentorMockTip}>
+              💡 ভালো SOP ও IELTS ৬.৫+ কম CGPA-কে compensate করতে পারে।
+            </p>
+          </>
+        ) : (
+          <>
+            <p>
+              <strong>Good news</strong> — 3.2 CGPA opens more doors than most students expect:
+            </p>
+            <p className={styles.mentorMockKey}>Top options for you:</p>
+            <ul>
+              <li><strong>Germany (DAAD):</strong> No strict minimum — motivation matters</li>
+              <li><strong>Japan (MEXT):</strong> 3.0+ is usually accepted</li>
+              <li><strong>Chevening UK:</strong> No published minimum — leadership is key</li>
+              <li><strong>Australia Awards:</strong> 3.0+ accepted in most fields</li>
+            </ul>
+            <p className={styles.mentorMockTip}>
+              💡 A strong SOP and IELTS 6.5+ can offset a lower GPA in many programmes.
+            </p>
+          </>
+        )}
       </div>
 
       <div className={styles.mentorMockAnnotation} data-position="top-right">
-        <span className={styles.mentorMockTag}>Plain English</span>
-        <p>No jargon. The mentor explains eligibility the way a senior would.</p>
+        <span className={styles.mentorMockTag}>{isBn ? "সহজ বাংলায়" : "Plain English"}</span>
+        <p>{isBn ? "কোনো jargon নেই। Mentor সিনিয়রের মতো বুঝিয়ে বলে।" : "No jargon. The mentor explains eligibility the way a senior would."}</p>
       </div>
       <div className={styles.mentorMockAnnotation} data-position="bottom-left">
-        <span className={styles.mentorMockTag}>BD context</span>
-        <p>Knows local universities, IELTS centers, and visa quirks.</p>
+        <span className={styles.mentorMockTag}>BD Context</span>
+        <p>{isBn ? "BUET, DU, BRAC সব চেনে। Local quirks সহ।" : "Knows local universities, IELTS centers, and visa quirks."}</p>
       </div>
     </div>
   );

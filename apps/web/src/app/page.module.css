@@ -532,6 +532,10 @@
   border-radius: var(--radius-lg);
   border: 1px solid var(--sand-200);
   box-shadow: var(--shadow-lg);
+  /* reserve space above and below so annotations clear the card content */
+  margin-top: 96px;
+  margin-bottom: 96px;
+  margin-right: 12px;
 }
 
 .mentorMockBubbleUser {
@@ -582,6 +586,13 @@
   color: var(--ink-900);
 }
 
+.mentorMockTip {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--ink-500);
+  line-height: 1.5;
+}
+
 .mentorMockAnnotation {
   position: absolute;
   background: var(--ink-900);
@@ -604,21 +615,25 @@
 }
 
 .mentorMockAnnotation[data-position="top-right"] {
-  top: -18px;
-  right: -32px;
+  /* sits above the card — clear of all card content */
+  top: -92px;
+  right: 0;
 }
 
 .mentorMockAnnotation[data-position="top-right"]::before {
+  /* tail points downward into the card */
   bottom: -4px;
   left: 24px;
 }
 
 .mentorMockAnnotation[data-position="bottom-left"] {
-  bottom: -22px;
-  left: -28px;
+  /* sits below the card — clear of all card content */
+  bottom: -92px;
+  left: 0;
 }
 
 .mentorMockAnnotation[data-position="bottom-left"]::before {
+  /* tail points upward into the card */
   top: -4px;
   right: 28px;
 }
@@ -942,12 +957,12 @@
   }
 
   .mentorMockAnnotation[data-position="top-right"] {
-    top: -10px;
+    top: -92px;
     right: 0;
   }
 
   .mentorMockAnnotation[data-position="bottom-left"] {
-    bottom: -14px;
+    bottom: -92px;
     left: 0;
   }
 }
