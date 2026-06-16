@@ -39,7 +39,20 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
-  const setClauses = Object.keys(updates).map((key, i) => `${key} = $${i + 2}`).join(", ");
+  const keys = Object.keys(updates);
+  const setClauses = keys
+    .map((key, i) => {
+      if (key === "tags" || key === "faqs") return `${key} = $${i + 2}::jsonb`;
+      return `${key} = $${i + 2}`;
+    })
+    .join(", ");
+
+  for (const key of keys) {
+    if ((key === "tags" || key === "faqs") && typeof updates[key] !== "string") {
+      updates[key] = JSON.stringify(updates[key]);
+    }
+  }
+
   const values = [id, ...Object.values(updates)];
   let rows: Record<string, unknown>[];
   try {
