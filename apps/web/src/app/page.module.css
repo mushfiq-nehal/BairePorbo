@@ -690,55 +690,135 @@
   gap: 16px;
 }
 
+/* Card: no top padding — thumbnail bleeds to the edges */
 .closingCard {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 18px;
   background: #ffffff;
   border: 1px solid var(--sand-200);
   border-radius: var(--radius-lg);
   text-decoration: none;
   color: inherit;
-  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(15, 34, 52, 0.06);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .closingCard:hover {
-  transform: translateY(-3px);
-  border-color: var(--teal-500);
-  box-shadow: 0 12px 28px rgba(15, 143, 141, 0.15);
+  transform: translateY(-4px);
+  border-color: var(--teal-400, #2ab5b3);
+  box-shadow: 0 16px 36px rgba(15, 143, 141, 0.18);
 }
 
+/* ── Thumbnail zone ── */
+.closingThumb {
+  position: relative;
+  height: 148px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.closingThumbImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.closingCard:hover .closingThumbImg {
+  transform: scale(1.04);
+}
+
+/* Gradient fallback when no thumbnail */
+.closingThumbFallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closingThumbInitials {
+  font-family: var(--font-display), sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 2px;
+  user-select: none;
+}
+
+/* Bottom gradient so badge is always legible over any image */
+.closingThumbOverlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    rgba(10, 20, 30, 0.72) 100%
+  );
+}
+
+/* Badge: overlaid on the thumbnail bottom-left */
 .closingBadge {
-  align-self: flex-start;
+  position: absolute;
+  bottom: 10px;
+  left: 12px;
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(240, 138, 104, 0.18);
-  color: #b14a2a;
-  border: 1px solid rgba(240, 138, 104, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
-.closingCard h3 {
-  font-size: 14.5px;
+/* ── Card body (below thumbnail) ── */
+.closingCardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px 12px;
+  flex: 1;
+}
+
+.closingCardBody h3 {
+  font-size: 14px;
   line-height: 1.35;
   color: var(--ink-900);
   font-weight: 700;
   margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .closingMeta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 11.5px;
   color: var(--ink-500);
   margin: 0;
   flex-wrap: wrap;
+}
+
+/* ── Urgency strip at the very bottom of the card ── */
+.closingUrgencyBar {
+  height: 3px;
+  flex-shrink: 0;
+  opacity: 0.85;
+  transition: opacity 0.2s ease;
+}
+
+.closingCard:hover .closingUrgencyBar {
+  opacity: 1;
 }
 
 .closingEmpty {

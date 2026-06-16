@@ -17,6 +17,8 @@ type ClosingScholarship = {
   title: string;
   country: string;
   deadline: string | null;
+  thumbnail_url: string | null;
+  funding_type: string | null;
 };
 
 export default function HomeClient() {
@@ -69,7 +71,15 @@ export default function HomeClient() {
           })
           .sort((a, b) => new Date(a.deadline as string).getTime() - new Date(b.deadline as string).getTime())
           .slice(0, 4)
-          .map((s) => ({ id: s.id as string, slug: (s.slug as string | null) ?? null, title: s.title as string, country: s.country as string, deadline: s.deadline as string | null }));
+          .map((s) => ({
+            id: s.id as string,
+            slug: (s.slug as string | null) ?? null,
+            title: s.title as string,
+            country: s.country as string,
+            deadline: s.deadline as string | null,
+            thumbnail_url: (s.thumbnail_url as string | null) ?? null,
+            funding_type: (s.funding_type as string | null) ?? null,
+          }));
         setClosingSoon(closing);
       })
       .catch(() => {});
@@ -106,6 +116,32 @@ export default function HomeClient() {
     if (isNaN(d.getTime())) return "—";
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
+
+  const getUrgencyColor = (deadline: string | null): string => {
+    if (!deadline) return "var(--teal-500)";
+    const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+    if (days <= 7) return "#e63946";
+    if (days <= 14) return "#f4a261";
+    return "#2ab673";
+  };
+
+  // Stable gradient per country for the fallback thumbnail
+  const THUMB_GRADIENTS = [
+    "linear-gradient(145deg, #0f3460 0%, #16213e 100%)",
+    "linear-gradient(145deg, #1a472a 0%, #0d2b18 100%)",
+    "linear-gradient(145deg, #7b2d8b 0%, #4a1460 100%)",
+    "linear-gradient(145deg, #7c2929 0%, #4a1414 100%)",
+    "linear-gradient(145deg, #0a3d62 0%, #0c2461 100%)",
+  ];
+
+  const getThumbGradient = (country: string): string => {
+    let h = 0;
+    for (let i = 0; i < country.length; i++) h = country.charCodeAt(i) + ((h << 5) - h);
+    return THUMB_GRADIENTS[Math.abs(h) % THUMB_GRADIENTS.length];
+  };
+
+  const getCountryInitials = (country: string): string =>
+    country.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   // ── Render ──
   return (
@@ -267,13 +303,48 @@ export default function HomeClient() {
                   href={`/scholarships/${s.slug ?? s.id}`}
                   className={styles.closingCard}
                 >
-                  <span className={styles.closingBadge}>{formatDaysLeft(s.deadline)}</span>
-                  <h3>{s.title}</h3>
-                  <p className={styles.closingMeta}>
-                    <span>{s.country}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{t("home.deadlinePrefix")} {formatDeadlineShort(s.deadline)}</span>
-                  </p>
+                  {/* Thumbnail zone */}
+                  <div className={styles.closingThumb}>
+                    {s.thumbnail_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={s.thumbnail_url}
+                        alt=""
+                        className={styles.closingThumbImg}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className={styles.closingThumbFallback}
+                        style={{ background: getThumbGradient(s.country) }}
+                        aria-hidden="true"
+                      >
+                        <span className={styles.closingThumbInitials}>
+                          {getCountryInitials(s.country)}
+                        </span>
+                      </div>
+                    )}
+                    {/* Bottom gradient so badge text is always readable */}
+                    <div className={styles.closingThumbOverlay} aria-hidden="true" />
+                    <span className={styles.closingBadge}>{formatDaysLeft(s.deadline)}</span>
+                  </div>
+
+                  {/* Content */}
+                  <div className={styles.closingCardBody}>
+                    <h3>{s.title}</h3>
+                    <p className={styles.closingMeta}>
+                      <span>{s.country}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{t("home.deadlinePrefix")} {formatDeadlineShort(s.deadline)}</span>
+                    </p>
+                  </div>
+
+                  {/* Urgency strip */}
+                  <div
+                    className={styles.closingUrgencyBar}
+                    style={{ background: getUrgencyColor(s.deadline) }}
+                    aria-hidden="true"
+                  />
                 </Link>
               ))}
             </div>
