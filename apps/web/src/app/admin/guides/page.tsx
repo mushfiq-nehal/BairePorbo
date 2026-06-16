@@ -13,6 +13,7 @@ type GuideRow = {
   faqs: unknown[];
   published_at: string | null;
   created_at: string;
+  is_pinned: boolean;
 };
 
 export default function AdminGuidesPage() {
@@ -47,6 +48,17 @@ export default function AdminGuidesPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "draft" }),
+    });
+    setActionId(null);
+    load();
+  };
+
+  const togglePin = async (id: string, currentlyPinned: boolean) => {
+    setActionId(id);
+    await fetch(`/api/admin/guides/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_pinned: !currentlyPinned }),
     });
     setActionId(null);
     load();
@@ -101,6 +113,9 @@ export default function AdminGuidesPage() {
               style={{ gridTemplateColumns: "2.5fr 1fr 1fr 1fr 1.5fr" }}
             >
               <div className={styles.titleCell}>
+                {g.is_pinned && (
+                  <span title="Pinned to position 1" style={{ fontSize: 14 }}>📌</span>
+                )}
                 <span>{g.title}</span>
               </div>
               <span style={{ fontSize: 12, color: "var(--ink-500)" }}>{g.category}</span>
@@ -123,6 +138,15 @@ export default function AdminGuidesPage() {
                 >
                   Edit
                 </Link>
+                <button
+                  type="button"
+                  className={`${styles.actionBtn} ${g.is_pinned ? styles.pinActiveBtn : styles.pinBtn}`}
+                  onClick={() => togglePin(g.id, g.is_pinned)}
+                  disabled={actionId === g.id}
+                  title={g.is_pinned ? "Unpin from position 1" : "Pin to position 1"}
+                >
+                  {g.is_pinned ? "📌 Pinned" : "📍 Pin"}
+                </button>
                 {g.status !== "published" ? (
                   <button
                     type="button"
