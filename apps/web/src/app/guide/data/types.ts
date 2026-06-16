@@ -19,4 +19,6 @@ export type Guide = {
   faqs: FAQ[];
   /** Optional hero image URL — shown only on the guide detail page, not on listing cards */
   coverImageUrl?: string;
+  /** When true the guide is always sorted to position 1 in every listing */
+  isPinned?: boolean;
 };

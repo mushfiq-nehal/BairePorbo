@@ -4,10 +4,10 @@ import { sql } from "@/utils/db";
 export async function GET() {
   const rows = await sql`
     SELECT slug, title, description, category, tags, intro, content, faqs,
-           published_at, updated_at, cover_image_url
+           published_at, updated_at, cover_image_url, is_pinned
     FROM guides
     WHERE status = 'published'
-    ORDER BY published_at DESC
+    ORDER BY is_pinned DESC, published_at DESC
   `;
 
   return NextResponse.json({ guides: rows }, {

@@ -15,6 +15,7 @@ type DbGuideRow = {
   updated_at: string | null;
   created_at?: string | null;
   cover_image_url?: string | null;
+  is_pinned?: boolean | null;
 };
 
 function mapDbGuide(g: DbGuideRow): Guide {
@@ -30,6 +31,7 @@ function mapDbGuide(g: DbGuideRow): Guide {
     publishedAt: g.published_at ?? g.updated_at ?? g.created_at ?? "",
     updatedAt: g.updated_at ?? "",
     coverImageUrl: g.cover_image_url ?? undefined,
+    isPinned: g.is_pinned ?? false,
   };
 }
 
@@ -37,10 +39,10 @@ export async function fetchPublishedDbGuides(): Promise<Guide[]> {
   try {
     const rows = await sql`
       SELECT slug, title, description, category, tags, intro, content, faqs,
-             published_at, updated_at, cover_image_url
+             published_at, updated_at, cover_image_url, is_pinned
       FROM guides
       WHERE status = 'published'
-      ORDER BY published_at DESC
+      ORDER BY is_pinned DESC, published_at DESC
     `;
     return (rows as DbGuideRow[]).map(mapDbGuide);
   } catch {
@@ -63,5 +65,10 @@ export async function fetchPublishedGuideBySlug(slug: string): Promise<Guide | u
 
 export function mergeGuides(dbGuides: Guide[]): Guide[] {
   const dbSlugs = new Set(dbGuides.map((g) => g.slug));
-  return [...dbGuides, ...staticGuides.filter((g) => !dbSlugs.has(g.slug))];
+  const merged = [...dbGuides, ...staticGuides.filter((g) => !dbSlugs.has(g.slug))];
+  // Keep pinned guides anchored at position 1 regardless of other ordering
+  return [
+    ...merged.filter((g) => g.isPinned),
+    ...merged.filter((g) => !g.isPinned),
+  ];
 }
