@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState, useRef } from "react";
+import { Suspense, useEffect, useMemo, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,6 +9,97 @@ import { useT } from "@/lib/lang-context";
 import type { TranslationKey } from "@/lib/translations";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import styles from "./scholarships.module.css";
+
+const POPUP_STORAGE_KEY = "bp_telegram_popup_v1";
+
+function TelegramPopup() {
+  const [visible, setVisible] = useState(false);
+  const [animating, setAnimating] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(POPUP_STORAGE_KEY)) return;
+    } catch {
+      // ignore
+    }
+    const timer = setTimeout(() => {
+      setVisible(true);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setAnimating(true));
+      });
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const dismiss = useCallback(() => {
+    setAnimating(false);
+    setTimeout(() => {
+      setVisible(false);
+      try { localStorage.setItem(POPUP_STORAGE_KEY, "1"); } catch { /* ignore */ }
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") dismiss(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [visible, dismiss]);
+
+  if (!visible) return null;
+
+  return (
+    <div
+      className={`${styles.popupBackdrop} ${animating ? styles.popupBackdropVisible : ""}`}
+      onClick={(e) => { if (e.target === e.currentTarget) dismiss(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Telegram চ্যানেল জয়েন করুন"
+    >
+      <div className={`${styles.popupCard} ${animating ? styles.popupCardVisible : ""}`}>
+        <button
+          className={styles.popupClose}
+          onClick={dismiss}
+          aria-label="বন্ধ করুন"
+          type="button"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+        </button>
+
+        <div className={styles.popupImageWrap}>
+          <Image
+            src="/photo_2026-06-17_02-07-44.jpg"
+            alt="BairePortbo Telegram Scholarship Updates"
+            width={560}
+            height={840}
+            className={styles.popupImage}
+            priority
+          />
+        </div>
+
+        <div className={styles.popupBody}>
+          <p className={styles.popupText}>
+            সব স্কলারশিপ এর নিয়মিত আপডেট হতে জয়েন করুন
+          </p>
+          <a
+            href="https://t.me/baireporbo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.popupTelegramBtn}
+            onClick={dismiss}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+            </svg>
+            Telegram এ জয়েন করুন
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type Scholarship = {
   id: string;
@@ -493,6 +584,7 @@ function ScholarshipsContent() {
 
   return (
     <div className={styles.page}>
+      <TelegramPopup />
       <AppNavbar actions={actions} />
 
       <main className={styles.main}>

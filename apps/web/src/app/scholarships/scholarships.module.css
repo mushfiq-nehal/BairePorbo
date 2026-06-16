@@ -1200,3 +1200,159 @@
     z-index: 2;
   }
 }
+
+/* ── Telegram Popup ───────────────────────────────────────────────────────── */
+.popupBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 22, 36, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+.popupBackdropVisible {
+  opacity: 1;
+}
+
+.popupCard {
+  position: relative;
+  background: var(--surface, #fff);
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 400px;
+  box-shadow:
+    0 24px 64px -12px rgba(10, 22, 36, 0.38),
+    0 4px 16px rgba(10, 22, 36, 0.12);
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.28s ease;
+  opacity: 0;
+}
+
+.popupCardVisible {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.popupClose {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(10, 22, 36, 0.55);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: background 0.18s ease, transform 0.15s ease;
+}
+
+.popupClose:hover {
+  background: rgba(10, 22, 36, 0.78);
+  transform: scale(1.08);
+}
+
+.popupClose:active {
+  transform: scale(0.94);
+}
+
+.popupImageWrap {
+  width: 100%;
+  max-height: 320px;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.popupImage {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.popupBody {
+  padding: 20px 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+  text-align: center;
+}
+
+.popupText {
+  font-family: var(--font-bengali, sans-serif);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--ink-900, #0e1e2e);
+  margin: 0;
+}
+
+.popupTelegramBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: #229ED9;
+  color: #fff;
+  font-family: var(--font-bengali, sans-serif);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: background 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 16px -4px rgba(34, 158, 217, 0.55);
+  width: 100%;
+  justify-content: center;
+}
+
+.popupTelegramBtn:hover {
+  background: #1a8bbf;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px -6px rgba(34, 158, 217, 0.6);
+}
+
+.popupTelegramBtn:active {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popupBackdrop,
+  .popupCard {
+    transition: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .popupCard {
+    border-radius: 16px;
+    max-width: 100%;
+  }
+
+  .popupImageWrap {
+    max-height: 260px;
+  }
+
+  .popupBody {
+    padding: 16px 18px 20px;
+  }
+
+  .popupText {
+    font-size: 15px;
+  }
+}
