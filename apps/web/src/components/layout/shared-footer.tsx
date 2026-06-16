@@ -56,6 +56,7 @@ export default function SharedFooter() {
             <Link href="/legal/contact">{t("footer.contactUs")}</Link>
             <Link href="/legal/privacy">{t("footer.privacyPolicy")}</Link>
             <Link href="/legal/terms">{t("footer.termsOfService")}</Link>
+            <Link href="/legal/partner">{t("footer.partnerWithUs")}</Link>
           </div>
           <div className={styles.footerCol}>
             <h4>{t("footer.connectSupport")}</h4>

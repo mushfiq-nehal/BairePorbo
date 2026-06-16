@@ -83,6 +83,7 @@ export const translations = {
   "footer.contactUs": { en: "Contact us", bn: "যোগাযোগ করুন" },
   "footer.privacyPolicy": { en: "Privacy policy", bn: "Privacy Policy" },
   "footer.termsOfService": { en: "Terms of service", bn: "Terms of Service" },
+  "footer.partnerWithUs": { en: "Partner with us", bn: "পার্টনার হন" },
   "footer.connectSupport": { en: "Connect & Support", bn: "যোগাযোগ ও সহায়তা" },
   "footer.replyTime": { en: "We typically reply within 24 hours.", bn: "আমরা সাধারণত ২৪ ঘণ্টার মধ্যে উত্তর দিই।" },
 
