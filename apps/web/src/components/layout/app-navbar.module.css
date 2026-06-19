@@ -1,11 +1,11 @@
 .nav {
   position: relative;
   z-index: var(--z-tooltip);
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  padding: 12px 0;
+  gap: 16px;
+  padding: 14px 0;
 }
 
 .brand {
@@ -24,15 +24,24 @@
 }
 
 .navLinks {
+  /* Frosted-glass pill — centered in the grid auto column */
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex: 1;
+  background: rgba(255, 255, 255, 0.30);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  padding: 5px 6px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+  transform: translateZ(0);
+  will-change: backdrop-filter;
 }
 
 .actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
 }
 
@@ -132,6 +141,7 @@
 
 @media (max-width: 720px) {
   .nav {
+    display: flex;
     flex-wrap: wrap;
     gap: 12px;
   }
@@ -153,6 +163,10 @@
 /* Show the hamburger on tablets where the tab bar isn't shown but desktop
    nav is still hidden */
 @media (min-width: 721px) and (max-width: 980px) {
+  .nav {
+    display: flex;
+  }
+
   .navLinks {
     display: none;
   }

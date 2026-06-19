@@ -1,34 +1,59 @@
 .page {
   position: relative;
+  /* Own stacking context so the ambient background layers (z-index:-1)
+     stay contained behind the page content but above the body. */
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 64px;
   padding: 32px 8vw 64px;
   min-height: 100vh;
-  overflow: hidden;
+  /* overflow: hidden removed — it breaks backdrop-filter on child elements */
+  overflow: clip;
+  /* Layered warm→teal aurora mesh. Color is pushed to the right and edges so
+     the dark hero copy on the left stays crisp and readable. Kept as a soft
+     tint rather than a saturated wash. */
+  background:
+    radial-gradient(ellipse 58% 56% at 100% -8%, rgba(240, 138, 104, 0.26) 0%, transparent 60%),
+    radial-gradient(ellipse 44% 38% at 72% 2%,   rgba(246, 196, 102, 0.13) 0%, transparent 58%),
+    radial-gradient(ellipse 52% 58% at -8% 12%,  rgba(15, 143, 141, 0.16)  0%, transparent 62%),
+    radial-gradient(ellipse 76% 54% at 88% 110%, rgba(15, 143, 141, 0.10)  0%, transparent 64%),
+    linear-gradient(165deg, #fdfdfc 0%, var(--bg-body) 44%, #f1f4f2 100%);
 }
 
-.page::before,
+/* Dotted grid texture — a tactile, modern surface. Strongest across the top
+   third of the page, fading downward so it never fights the content. */
+.page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(15, 143, 141, 0.15) 1.1px, transparent 1.5px);
+  background-size: 26px 26px;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 38%, transparent 78%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.55) 38%, transparent 78%);
+}
+
+/* Ambient aurora glow that drifts slowly for a living, premium feel. */
 .page::after {
   content: "";
   position: absolute;
-  width: 420px;
-  height: 420px;
-  border-radius: 50%;
-  opacity: 0.35;
-  z-index: 0;
+  inset: -25% -12% auto -12%;
+  height: 95%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 40% 64% at 14% 28%, rgba(15, 143, 141, 0.14) 0%, transparent 72%),
+    radial-gradient(ellipse 46% 70% at 88% 18%, rgba(240, 138, 104, 0.16) 0%, transparent 72%);
+  filter: blur(28px);
+  animation: auroraDrift 22s ease-in-out infinite alternate;
 }
 
-.page::before {
-  top: -160px;
-  right: -120px;
-  background: radial-gradient(circle, rgba(240, 138, 104, 0.7), rgba(240, 138, 104, 0));
-}
-
-.page::after {
-  bottom: -220px;
-  left: -160px;
-  background: radial-gradient(circle, rgba(15, 143, 141, 0.6), rgba(15, 143, 141, 0));
+@keyframes auroraDrift {
+  0%   { transform: translate3d(-3%, -1%, 0) scale(1);    opacity: 0.85; }
+  50%  { transform: translate3d(3%, 2.5%, 0) scale(1.08); opacity: 1; }
+  100% { transform: translate3d(4%, -2%, 0)  scale(1.04); opacity: 0.8; }
 }
 
 .main {
