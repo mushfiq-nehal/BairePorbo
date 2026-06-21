@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "../../admin.module.css";
-import { MODEL_OPTIONS, type ModelChoice } from "@/lib/ai-completion";
+import { MODEL_OPTIONS, type ModelChoice } from "@/lib/model-options";
 
 type FAQ = { question: string; answer: string };
 

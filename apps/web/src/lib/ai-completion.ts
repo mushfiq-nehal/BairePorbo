@@ -11,15 +11,10 @@
  */
 
 import { logRequest } from "@/lib/nim";
+import type { ModelChoice } from "@/lib/model-options";
 
-export type ModelChoice = "nim" | "kimi" | "deepseek" | "mistral";
-
-export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
-  { value: "deepseek", label: "Deepseek V4 (best quality)" },
-  { value: "mistral", label: "Mistral AI (fast, cheap)" },
-  { value: "nim", label: "NVIDIA NIM (env model)" },
-  { value: "kimi", label: "Kimi K2.6 (Moonshot / NIM)" },
-];
+export type { ModelChoice } from "@/lib/model-options";
+export { MODEL_OPTIONS } from "@/lib/model-options";
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
