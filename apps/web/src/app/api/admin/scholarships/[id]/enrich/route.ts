@@ -4,7 +4,7 @@ import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
 
-const VALID_MODELS: ModelChoice[] = ["nim", "deepseek", "mistral"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
 
 const ENRICH_SYSTEM = `You are a scholarship data specialist. Given raw scholarship information, you will return a structured JSON object with enriched, accurate details.
 

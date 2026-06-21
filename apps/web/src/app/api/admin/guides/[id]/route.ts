@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     body.published_at = body.published_at ?? new Date().toISOString();
   }
 
-  const allowed = ["slug", "title", "description", "category", "tags", "intro", "content", "faqs", "status", "cover_image_url", "published_at", "is_pinned"];
+  const allowed = ["slug", "title", "description", "category", "tags", "intro", "content", "faqs", "status", "cover_image_url", "writer_name", "writer_designation", "published_at", "is_pinned"];
   const updates = Object.fromEntries(Object.entries(body).filter(([k]) => allowed.includes(k)));
 
   if (Object.keys(updates).length === 0) {

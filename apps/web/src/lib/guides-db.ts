@@ -16,6 +16,8 @@ type DbGuideRow = {
   created_at?: string | null;
   cover_image_url?: string | null;
   is_pinned?: boolean | null;
+  writer_name?: string | null;
+  writer_designation?: string | null;
 };
 
 function mapDbGuide(g: DbGuideRow): Guide {
@@ -32,6 +34,8 @@ function mapDbGuide(g: DbGuideRow): Guide {
     updatedAt: g.updated_at ?? "",
     coverImageUrl: g.cover_image_url ?? undefined,
     isPinned: g.is_pinned ?? false,
+    writerName: g.writer_name ?? undefined,
+    writerDesignation: g.writer_designation ?? undefined,
   };
 }
 
@@ -39,7 +43,8 @@ export async function fetchPublishedDbGuides(): Promise<Guide[]> {
   try {
     const rows = await sql`
       SELECT slug, title, description, category, tags, intro, content, faqs,
-             published_at, updated_at, cover_image_url, is_pinned
+             published_at, updated_at, cover_image_url, is_pinned,
+             writer_name, writer_designation
       FROM guides
       WHERE status = 'published'
       ORDER BY is_pinned DESC, published_at DESC

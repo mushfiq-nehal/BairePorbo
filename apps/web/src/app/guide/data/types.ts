@@ -21,4 +21,8 @@ export type Guide = {
   coverImageUrl?: string;
   /** When true the guide is always sorted to position 1 in every listing */
   isPinned?: boolean;
+  /** Optional author name shown in the byline (manual guides) */
+  writerName?: string;
+  /** Optional author designation shown alongside writerName */
+  writerDesignation?: string;
 };

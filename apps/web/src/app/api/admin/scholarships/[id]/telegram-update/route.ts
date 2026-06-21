@@ -6,7 +6,7 @@ import { fetchCompletion, type ModelChoice } from "@/lib/ai-completion";
 
 const BASE_URL = "https://baireporbo.app";
 
-const VALID_MODELS: ModelChoice[] = ["nim", "deepseek", "mistral"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
 
 const TELEGRAM_SYSTEM = `তুমি একজন বাংলাদেশী scholarship information specialist। তোমার কাজ হলো একটি আকর্ষণীয় Telegram channel post লেখা যা বাংলাদেশী students দের scholarship apply করতে উৎসাহিত করবে।
 

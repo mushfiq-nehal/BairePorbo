@@ -165,6 +165,25 @@ export default async function GuideDetailPage({ params }: Props) {
                     </span>
                   ))}
                 </div>
+
+                {/* Writer byline — only shown when set on the guide */}
+                {guide.writerName && (
+                  <div className={styles.authorByline}>
+                    <span className={styles.authorName}>{guide.writerName}</span>
+                    {guide.writerDesignation && (
+                      <span className={styles.authorDesig}>{guide.writerDesignation}</span>
+                    )}
+                    {guide.publishedAt && (
+                      <span className={styles.authorDate}>
+                        {new Date(guide.publishedAt).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                )}
               </header>
 
               {/* Cover image — optional, only shown if provided */}

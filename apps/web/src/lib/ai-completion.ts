@@ -5,18 +5,20 @@
  *
  * Supported model choices:
  *   "nim"       → NVIDIA NIM (NIM_MODEL env, e.g. kimi/gemma)
+ *   "kimi"      → NVIDIA NIM, explicitly moonshotai/kimi-k2.6
  *   "deepseek"  → OpenRouter deepseek/deepseek-v4-flash
  *   "mistral"   → OpenRouter mistralai/ministral-3b-2512
  */
 
 import { logRequest } from "@/lib/nim";
 
-export type ModelChoice = "nim" | "deepseek" | "mistral";
+export type ModelChoice = "nim" | "kimi" | "deepseek" | "mistral";
 
 export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
   { value: "deepseek", label: "Deepseek V4 (best quality)" },
   { value: "mistral", label: "Mistral AI (fast, cheap)" },
-  { value: "nim", label: "NVIDIA NIM" },
+  { value: "nim", label: "NVIDIA NIM (env model)" },
+  { value: "kimi", label: "Kimi K2.6 (Moonshot / NIM)" },
 ];
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
@@ -80,14 +82,17 @@ const callNim = async (
   messages: Message[],
   maxTokens: number,
   temperature: number,
+  explicitModel?: string,
 ): Promise<{ content: string; model: string }> => {
   const apiKey = process.env.NVIDIA_API_KEY;
   if (!apiKey) throw new Error("NVIDIA_API_KEY is not configured.");
 
-  const models = [
-    process.env.NIM_MODEL ?? "moonshotai/kimi-k2.6",
-    process.env.NIM_FALLBACK_MODEL,
-  ].filter((m): m is string => Boolean(m));
+  const models = explicitModel
+    ? [explicitModel]
+    : [
+        process.env.NIM_MODEL ?? "moonshotai/kimi-k2.6",
+        process.env.NIM_FALLBACK_MODEL,
+      ].filter((m): m is string => Boolean(m));
 
   let lastError: Error | null = null;
   for (const model of models) {
@@ -123,6 +128,12 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
 
   if (model === "nim") {
     const { content, model: modelUsed } = await callNim(messages, maxTokens, temperature);
+    logRequest("ai.completion", { provider: "nim", model: modelUsed });
+    return { content, modelUsed };
+  }
+
+  if (model === "kimi") {
+    const { content, model: modelUsed } = await callNim(messages, maxTokens, temperature, "moonshotai/kimi-k2.6");
     logRequest("ai.completion", { provider: "nim", model: modelUsed });
     return { content, modelUsed };
   }

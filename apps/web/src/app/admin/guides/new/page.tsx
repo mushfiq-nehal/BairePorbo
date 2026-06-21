@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { MODEL_OPTIONS, type ModelChoice } from "@/lib/ai-completion";
 
 type FAQ = { question: string; answer: string };
 
@@ -19,15 +20,41 @@ type RefinedGuide = {
   cover_image_url: string;
 };
 
+type EntryMode = "ai" | "manual";
 type Step = "draft" | "review" | "done";
 
 const CATEGORIES = ["Scholarships", "Applications", "Tests", "Destinations", "Visa"];
 
+const BLANK_GUIDE: RefinedGuide = {
+  slug: "",
+  title: "",
+  description: "",
+  category: "Scholarships",
+  tags: [],
+  intro: "",
+  content: "",
+  faqs: [],
+  cover_image_url: "",
+};
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80);
+}
+
 export default function NewGuidePage() {
   const router = useRouter();
+  const [entryMode, setEntryMode] = useState<EntryMode | null>(null);
   const [step, setStep] = useState<Step>("draft");
 
-  // Step 1: draft
+  // AI model picker
+  const [aiModel, setAiModel] = useState<ModelChoice>("deepseek");
+
+  // Step 1 (AI mode): draft
   const [draft, setDraft] = useState("");
   const [refining, setRefining] = useState(false);
   const [refineError, setRefineError] = useState("");
@@ -36,6 +63,11 @@ export default function NewGuidePage() {
   const [guide, setGuide] = useState<RefinedGuide | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+
+  // Author fields (both modes)
+  const [writerName, setWriterName] = useState("");
+  const [writerDesignation, setWriterDesignation] = useState("");
+  const [authorDate, setAuthorDate] = useState("");
 
   // FAQ inline editing
   const [editingFaq, setEditingFaq] = useState<number | null>(null);
@@ -62,7 +94,7 @@ export default function NewGuidePage() {
       const res = await fetch("/api/admin/guides/refine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ draft }),
+        body: JSON.stringify({ draft, model: aiModel }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -78,6 +110,11 @@ export default function NewGuidePage() {
     }
   };
 
+  const startManual = () => {
+    setGuide({ ...BLANK_GUIDE });
+    setStep("review");
+  };
+
   const handleSave = async (publish: boolean) => {
     if (!guide) return;
     setSaving(true);
@@ -90,6 +127,9 @@ export default function NewGuidePage() {
           ...guide,
           cover_image_url: null,
           status: publish ? "published" : "draft",
+          writer_name: writerName.trim() || null,
+          writer_designation: writerDesignation.trim() || null,
+          published_at: authorDate || null,
         }),
       });
       const json = await res.json();
@@ -165,7 +205,11 @@ export default function NewGuidePage() {
         <div>
           <p className={styles.kicker}>Admin → Guides</p>
           <h1>New Guide</h1>
-          <p className={styles.sub}>Paste a draft — AI will structure it into an SEO-ready FAQ guide</p>
+          <p className={styles.sub}>
+            {entryMode === "manual"
+              ? "Write your guide manually — content posted as-is, no AI refinement"
+              : "Paste a draft — AI will structure it into an SEO-ready FAQ guide"}
+          </p>
         </div>
         <Link href="/admin/guides" className={styles.ghostBtn}>
           ← Back
@@ -176,11 +220,11 @@ export default function NewGuidePage() {
       <div className={styles.stepper}>
         <div className={`${styles.stepItem} ${step === "draft" ? styles.stepActive : styles.stepDone}`}>
           <span className={styles.stepDot}>{step !== "draft" ? "✓" : "1"}</span>
-          Draft
+          {entryMode === "manual" ? "Write" : "Draft"}
         </div>
         <div className={`${styles.stepItem} ${(step as string) === "review" ? styles.stepActive : (step as string) === "done" ? styles.stepDone : ""}`}>
           <span className={styles.stepDot}>{(step as string) === "done" ? "✓" : "2"}</span>
-          Review & Edit
+          Review &amp; Edit
         </div>
         <div className={`${styles.stepItem} ${(step as string) === "done" ? styles.stepActive : ""}`}>
           <span className={styles.stepDot}>3</span>
@@ -188,67 +232,147 @@ export default function NewGuidePage() {
         </div>
       </div>
 
-      {/* ── Step 1: Draft ── */}
+      {/* ── Step 1: Mode picker + Draft / Manual form ── */}
       {step === "draft" && (
         <div className={styles.formCard}>
-          <div className={styles.pasteSection}>
-            <div className={styles.pasteLabelRow}>
-              <div>
-                <p className={styles.pasteLabel}>Your rough draft</p>
-                <p className={styles.pasteHint}>
-                  Write notes, bullet points, or prose. The AI will expand it into 8–14 FAQs.
-                  Include the topic, key questions students ask, and any specific facts you know.
-                </p>
-              </div>
-            </div>
-            <textarea
-              className={styles.pasteArea}
-              rows={16}
-              placeholder={`Example:
-
-Topic: Erasmus Mundus scholarships for Bangladeshi students
-
-- Fully funded by EU
-- For Masters degrees only (usually 1–2 years)
-- You must apply to a consortium of universities, not a single one
-- Stipend is around €1,000–€1,400/month depending on the consortium
-- No GRE required
-- IELTS 6.5 usually needed
-- Deadline is usually January for the following October intake
-- Very competitive — about 1% acceptance rate
-- No age limit
-- Bangladesh students are categorised as "Partner Country"
-- Can apply to multiple consortiums in the same year
-- Common fields: CS, data science, sustainability, public policy, law`}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-          </div>
-
-          {refineError && <p className={styles.error}>{refineError}</p>}
-
-          <div className={styles.formActions}>
-            <p className={styles.parsePrompt}>
-              {draft.length > 0
-                ? `${draft.length} chars — ready to refine`
-                : "Write your draft above, then click Refine"}
+          {/* Mode selector */}
+          <div style={{ marginBottom: 24 }}>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "var(--ink-700)", marginBottom: 10 }}>
+              How do you want to add this guide?
             </p>
-            <button
-              type="button"
-              className={styles.parseBtn}
-              onClick={handleRefine}
-              disabled={refining || draft.trim().length < 30}
-            >
-              {refining ? (
-                <>
-                  <span className={styles.spinner} />
-                  Refining…
-                </>
-              ) : (
-                <>✨ Refine with AI</>
-              )}
-            </button>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setEntryMode("ai")}
+                style={{
+                  flex: 1,
+                  padding: "14px 16px",
+                  borderRadius: 12,
+                  border: `2px solid ${entryMode === "ai" ? "var(--teal-500, #0f8f8d)" : "var(--sand-200, #e8e3db)"}`,
+                  background: entryMode === "ai" ? "var(--teal-50, #f0fafa)" : "#fff",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                <div style={{ fontSize: 18, marginBottom: 4 }}>✨</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink-900)" }}>AI-Assisted</div>
+                <div style={{ fontSize: 12, color: "var(--ink-500)", marginTop: 2 }}>
+                  Paste a rough draft — AI structures it into a polished guide with FAQs
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEntryMode("manual")}
+                style={{
+                  flex: 1,
+                  padding: "14px 16px",
+                  borderRadius: 12,
+                  border: `2px solid ${entryMode === "manual" ? "var(--teal-500, #0f8f8d)" : "var(--sand-200, #e8e3db)"}`,
+                  background: entryMode === "manual" ? "var(--teal-50, #f0fafa)" : "#fff",
+                  cursor: "pointer",
+                  textAlign: "left",
+                  fontFamily: "inherit",
+                  transition: "all 0.15s",
+                }}
+              >
+                <div style={{ fontSize: 18, marginBottom: 4 }}>✏️</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--ink-900)" }}>Manual Entry</div>
+                <div style={{ fontSize: 12, color: "var(--ink-500)", marginTop: 2 }}>
+                  Write and post content as-is — no AI refinement
+                </div>
+              </button>
+            </div>
           </div>
+
+          {/* AI mode: draft textarea + model picker */}
+          {entryMode === "ai" && (
+            <>
+              {/* AI model picker */}
+              <div className={styles.aiControls}>
+                <div className={styles.aiControlField}>
+                  <label htmlFor="ai-model-guide">AI model</label>
+                  <select
+                    id="ai-model-guide"
+                    value={aiModel}
+                    onChange={(e) => setAiModel(e.target.value as ModelChoice)}
+                  >
+                    {MODEL_OPTIONS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className={styles.pasteSection}>
+                <div className={styles.pasteLabelRow}>
+                  <div>
+                    <p className={styles.pasteLabel}>Your rough draft</p>
+                    <p className={styles.pasteHint}>
+                      Write notes, bullet points, or prose. The AI will expand it into 8–14 FAQs.
+                      Include the topic, key questions students ask, and any specific facts you know.
+                    </p>
+                  </div>
+                </div>
+                <textarea
+                  className={styles.pasteArea}
+                  rows={16}
+                  placeholder={`Example:\n\nTopic: Erasmus Mundus scholarships for Bangladeshi students\n\n- Fully funded by EU\n- For Masters degrees only (usually 1–2 years)\n- You must apply to a consortium of universities, not a single one\n- Stipend is around €1,000–€1,400/month depending on the consortium\n- No GRE required\n- IELTS 6.5 usually needed\n- Deadline is usually January for the following October intake\n- Very competitive — about 1% acceptance rate`}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                />
+              </div>
+
+              {refineError && <p className={styles.error}>{refineError}</p>}
+
+              <div className={styles.formActions}>
+                <p className={styles.parsePrompt}>
+                  {draft.length > 0
+                    ? `${draft.length} chars — ready to refine`
+                    : "Write your draft above, then click Refine"}
+                </p>
+                <button
+                  type="button"
+                  className={styles.parseBtn}
+                  onClick={handleRefine}
+                  disabled={refining || draft.trim().length < 30}
+                >
+                  {refining ? (
+                    <>
+                      <span className={styles.spinner} />
+                      Refining…
+                    </>
+                  ) : (
+                    <>✨ Refine with AI</>
+                  )}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Manual mode: proceed button */}
+          {entryMode === "manual" && (
+            <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
+              <p style={{ fontSize: 13, color: "var(--ink-500)", marginBottom: 16 }}>
+                You&apos;ll fill in the guide fields directly on the next screen. Add a thumbnail and optional author details.
+              </p>
+              <button
+                type="button"
+                className={styles.parseBtn}
+                onClick={startManual}
+              >
+                Continue to form →
+              </button>
+            </div>
+          )}
+
+          {/* Nothing selected yet */}
+          {!entryMode && (
+            <p style={{ textAlign: "center", color: "var(--ink-400)", fontSize: 13, padding: "8px 0" }}>
+              Select a mode above to get started
+            </p>
+          )}
         </div>
       )}
 
@@ -257,7 +381,7 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
         <>
           <div className={styles.formCard}>
             <div className={styles.parsedBadge}>
-              ✨ AI-refined — review and edit before publishing
+              {entryMode === "manual" ? "✏️ Manual entry — fill in your guide details" : "✨ AI-refined — review and edit before publishing"}
             </div>
 
             <div className={styles.fieldGrid}>
@@ -266,7 +390,14 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                 <input
                   type="text"
                   value={guide.title}
-                  onChange={(e) => setGuide({ ...guide, title: e.target.value })}
+                  onChange={(e) => {
+                    const title = e.target.value;
+                    setGuide({
+                      ...guide,
+                      title,
+                      slug: guide.slug || slugify(title),
+                    });
+                  }}
                 />
               </div>
               <div className={styles.field}>
@@ -319,7 +450,10 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                 />
               </div>
               <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-                <label>Intro paragraph <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(2–3 sentences shown below the title)</span></label>
+                <label>
+                  Intro paragraph{" "}
+                  <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(2–3 sentences shown below the title)</span>
+                </label>
                 <textarea
                   rows={3}
                   value={guide.intro}
@@ -327,7 +461,10 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                 />
               </div>
               <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-                <label>Article body <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(Markdown — shown before the FAQs)</span></label>
+                <label>
+                  Article body{" "}
+                  <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(Markdown — shown before the FAQs)</span>
+                </label>
                 <textarea
                   rows={16}
                   value={guide.content}
@@ -335,8 +472,15 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                   style={{ fontFamily: "monospace", fontSize: 13 }}
                 />
               </div>
+
+              {/* Thumbnail — required prompt in manual mode */}
               <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
-                <label>Cover image <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(optional — shown on detail page only)</span></label>
+                <label>
+                  Thumbnail / Cover image{" "}
+                  <span style={{ fontWeight: 400, color: entryMode === "manual" ? "var(--teal-600, #0a7070)" : "var(--ink-500)" }}>
+                    {entryMode === "manual" ? "(required for manual guides)" : "(optional — shown on detail page only)"}
+                  </span>
+                </label>
                 <div className={styles.uploadArea}>
                   {coverPreview ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -354,6 +498,43 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                   <p className={styles.uploadHint}>PNG, JPG, WebP — recommended 1200×630px</p>
                 </div>
               </div>
+
+              {/* Author / byline fields */}
+              <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-700)", marginBottom: 10, display: "block" }}>
+                  Author byline{" "}
+                  <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(optional — displayed below the title)</span>
+                </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className={styles.field} style={{ margin: 0 }}>
+                    <label>Writer name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Rahim Uddin"
+                      value={writerName}
+                      onChange={(e) => setWriterName(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.field} style={{ margin: 0 }}>
+                    <label>Designation</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Senior Counselor"
+                      value={writerDesignation}
+                      onChange={(e) => setWriterDesignation(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className={styles.field} style={{ marginTop: 12, marginBottom: 0 }}>
+                  <label>Publication date <span style={{ fontWeight: 400, color: "var(--ink-500)" }}>(optional — overrides auto-set date)</span></label>
+                  <input
+                    type="date"
+                    value={authorDate}
+                    onChange={(e) => setAuthorDate(e.target.value)}
+                    style={{ maxWidth: 220 }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -362,6 +543,9 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ fontWeight: 700, fontSize: 15 }}>
                 FAQs ({guide.faqs.length})
+                {entryMode === "manual" && (
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "var(--ink-500)", marginLeft: 8 }}>optional</span>
+                )}
               </p>
               <button type="button" className={styles.ghostBtn} onClick={addFaq}>
                 + Add FAQ
@@ -441,6 +625,11 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
                   )}
                 </div>
               ))}
+              {guide.faqs.length === 0 && (
+                <p style={{ fontSize: 13, color: "var(--ink-400)", textAlign: "center", padding: "12px 0" }}>
+                  No FAQs yet — click &ldquo;+ Add FAQ&rdquo; to add one
+                </p>
+              )}
             </div>
           </div>
 
@@ -453,7 +642,7 @@ Topic: Erasmus Mundus scholarships for Bangladeshi students
               onClick={() => setStep("draft")}
               disabled={saving}
             >
-              ← Re-draft
+              ← Back
             </button>
             <button
               type="button"

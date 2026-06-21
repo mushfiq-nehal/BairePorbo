@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { slug, title, description, category, tags, intro, content, faqs, status, cover_image_url } = body;
+  const { slug, title, description, category, tags, intro, content, faqs, status, cover_image_url, writer_name, writer_designation, published_at } = body;
 
   if (!slug || !title) {
     return NextResponse.json({ error: "slug and title are required" }, { status: 400 });
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const rows = await sql`
-      INSERT INTO guides (slug, title, description, category, tags, intro, content, faqs, status, cover_image_url, published_at)
+      INSERT INTO guides (slug, title, description, category, tags, intro, content, faqs, status, cover_image_url, writer_name, writer_designation, published_at)
       VALUES (
         ${slug as string},
         ${title as string},
@@ -47,7 +47,9 @@ export async function POST(req: NextRequest) {
         ${JSON.stringify(faqs ?? [])}::jsonb,
         ${(status as string) ?? "draft"},
         ${(cover_image_url as string | null) ?? null},
-        ${status === "published" ? new Date().toISOString() : null}
+        ${(writer_name as string | null) ?? null},
+        ${(writer_designation as string | null) ?? null},
+        ${published_at ? (published_at as string) : status === "published" ? new Date().toISOString() : null}
       )
       RETURNING *
     `;

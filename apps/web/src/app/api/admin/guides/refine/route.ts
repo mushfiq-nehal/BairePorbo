@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
-import { fetchCompletion, parseJsonFromCompletion } from "@/lib/ai-completion";
+import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
+
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
 
 const GUIDE_REFINE_SYSTEM = `You are an expert content editor for BairePorbo, a study-abroad guidance platform for Bangladeshi students.
 
@@ -43,7 +45,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { draft?: string };
+  let body: { draft?: string; model?: string };
   try {
     body = await req.json();
   } catch {
@@ -55,11 +57,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "draft must be at least 30 characters" }, { status: 400 });
   }
 
+  const model: ModelChoice = VALID_MODELS.includes(body.model as ModelChoice)
+    ? (body.model as ModelChoice)
+    : "deepseek";
+
   let content: string;
   let modelUsed: string;
   try {
     const result = await fetchCompletion({
-      model: "deepseek",
+      model,
       system: GUIDE_REFINE_SYSTEM,
       user: `Admin's rough draft:\n\n${draft}`,
       maxTokens: 5000,
