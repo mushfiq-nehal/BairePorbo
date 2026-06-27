@@ -8,7 +8,13 @@ type Role = "student" | "admin";
 type AuthContextValue = {
   userId: string | null;
   role: Role | null;
+  /** True only while Clerk resolves the auth session. Does NOT wait on the
+   *  background /api/profile role fetch, so auth-aware UI (e.g. the navbar)
+   *  renders instantly instead of blocking on a cold Neon database. */
   loading: boolean;
+  /** True while the role is still being fetched from /api/profile. Only
+   *  consumers that actually need the role (e.g. AdminGuard) should gate on this. */
+  roleLoading: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -47,7 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         userId: user?.id ?? null,
         role,
-        loading: !isLoaded || roleLoading,
+        loading: !isLoaded,
+        roleLoading,
         signOut,
       }}
     >
