@@ -5,7 +5,7 @@ import { fetchPublishedDbGuides, mergeGuides } from "@/lib/guides-db";
 import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Study Abroad Guides & FAQs for Bangladeshi Students",

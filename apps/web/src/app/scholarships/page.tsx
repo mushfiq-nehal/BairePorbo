@@ -3,8 +3,6 @@ import ScholarshipsClient from "./scholarships-client";
 
 const BASE_URL = "https://baireporbo.app";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "International Scholarships for Bangladeshi Students",
   description:
