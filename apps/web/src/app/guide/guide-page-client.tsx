@@ -13,6 +13,21 @@ const CATEGORY_COLORS: Record<string, string> = {
   Visa: "purple",
 };
 
+// Stable gradient per guide for the fallback thumbnail (when no cover image)
+const THUMB_GRADIENTS = [
+  "linear-gradient(145deg, #0f3460 0%, #16213e 100%)",
+  "linear-gradient(145deg, #1a472a 0%, #0d2b18 100%)",
+  "linear-gradient(145deg, #7b2d8b 0%, #4a1460 100%)",
+  "linear-gradient(145deg, #7c2929 0%, #4a1414 100%)",
+  "linear-gradient(145deg, #0a3d62 0%, #0c2461 100%)",
+];
+
+function gradientFor(key: string): string {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = key.charCodeAt(i) + ((h << 5) - h);
+  return THUMB_GRADIENTS[Math.abs(h) % THUMB_GRADIENTS.length];
+}
+
 export default function GuidePageClient({ guides }: { guides: Guide[] }) {
   const t = useT();
 
@@ -53,6 +68,25 @@ export default function GuidePageClient({ guides }: { guides: Guide[] }) {
                 className={styles.card}
                 aria-label={`${t("guide.readGuide")} ${guide.title}`}
               >
+                <div className={styles.cardThumb}>
+                  {guide.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={guide.coverImageUrl}
+                      alt=""
+                      className={styles.cardThumbImg}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div
+                      className={styles.cardThumbFallback}
+                      style={{ background: gradientFor(guide.slug) }}
+                      aria-hidden="true"
+                    >
+                      <span>{guide.category}</span>
+                    </div>
+                  )}
+                </div>
                 <div className={styles.cardTop}>
                   <span
                     className={styles.categoryBadge}

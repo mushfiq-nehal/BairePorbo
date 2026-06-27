@@ -76,11 +76,56 @@ export default function NewGuidePage() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
+  // AI-suggested thumbnail prompt
+  const [thumbPrompt, setThumbPrompt] = useState("");
+  const [thumbPromptLoading, setThumbPromptLoading] = useState(false);
+  const [thumbPromptError, setThumbPromptError] = useState("");
+  const [thumbPromptCopied, setThumbPromptCopied] = useState(false);
+
   const onCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setCoverFile(f);
     setCoverPreview(URL.createObjectURL(f));
+  };
+
+  const handleSuggestThumbPrompt = async () => {
+    if (!guide) return;
+    setThumbPromptLoading(true);
+    setThumbPromptError("");
+    try {
+      const res = await fetch("/api/admin/guides/thumbnail-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: guide.title,
+          category: guide.category,
+          intro: guide.intro,
+          content: guide.content,
+          model: aiModel,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setThumbPromptError(json.error ?? "Failed to generate a prompt.");
+        return;
+      }
+      setThumbPrompt(json.prompt as string);
+    } catch (err) {
+      setThumbPromptError(String(err));
+    } finally {
+      setThumbPromptLoading(false);
+    }
+  };
+
+  const copyThumbPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(thumbPrompt);
+      setThumbPromptCopied(true);
+      setTimeout(() => setThumbPromptCopied(false), 1500);
+    } catch {
+      // clipboard may be unavailable — admin can select the text manually
+    }
   };
 
   const handleRefine = async () => {
@@ -117,6 +162,11 @@ export default function NewGuidePage() {
 
   const handleSave = async (publish: boolean) => {
     if (!guide) return;
+    // A thumbnail is mandatory to publish — it's used on the guide listing cards.
+    if (publish && !coverFile) {
+      setSaveError("A thumbnail / cover image is required to publish a guide.");
+      return;
+    }
     setSaving(true);
     setSaveError("");
     try {
@@ -477,8 +527,8 @@ export default function NewGuidePage() {
               <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
                 <label>
                   Thumbnail / Cover image{" "}
-                  <span style={{ fontWeight: 400, color: entryMode === "manual" ? "var(--teal-600, #0a7070)" : "var(--ink-500)" }}>
-                    {entryMode === "manual" ? "(required for manual guides)" : "(optional — shown on detail page only)"}
+                  <span style={{ fontWeight: 600, color: "var(--teal-600, #0a7070)" }}>
+                    (required — shown on guide cards &amp; detail page)
                   </span>
                 </label>
                 <div className={styles.uploadArea}>
@@ -496,6 +546,76 @@ export default function NewGuidePage() {
                     <input type="file" accept="image/*" onChange={onCoverFile} style={{ display: "none" }} />
                   </label>
                   <p className={styles.uploadHint}>PNG, JPG, WebP — recommended 1200×630px</p>
+                </div>
+
+                {/* AI-suggested thumbnail prompt — paste into an image generator,
+                    then upload the result above. */}
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: 14,
+                    borderRadius: 12,
+                    border: "1px dashed var(--sand-200, #e8e3db)",
+                    background: "var(--sand-50, #faf8f5)",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-900)", margin: 0 }}>
+                        Need a thumbnail idea?
+                      </p>
+                      <p style={{ fontSize: 12, color: "var(--ink-500)", margin: "2px 0 0" }}>
+                        Generate an AI image-prompt from this guide, paste it into your image tool, then upload the result above.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={styles.ghostBtn}
+                      onClick={handleSuggestThumbPrompt}
+                      disabled={thumbPromptLoading || !guide.title}
+                      title={!guide.title ? "Add a title first" : undefined}
+                    >
+                      {thumbPromptLoading ? (
+                        <>
+                          <span className={styles.spinner} />
+                          Generating…
+                        </>
+                      ) : (
+                        <>✨ Suggest thumbnail prompt</>
+                      )}
+                    </button>
+                  </div>
+
+                  {thumbPromptError && (
+                    <p className={styles.error} style={{ marginTop: 10 }}>{thumbPromptError}</p>
+                  )}
+
+                  {thumbPrompt && (
+                    <div style={{ marginTop: 12 }}>
+                      <textarea
+                        readOnly
+                        rows={4}
+                        value={thumbPrompt}
+                        style={{
+                          width: "100%",
+                          resize: "vertical",
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          padding: 10,
+                          borderRadius: 8,
+                          border: "1px solid var(--sand-200, #e8e3db)",
+                          background: "#fff",
+                          fontFamily: "inherit",
+                        }}
+                        onFocus={(e) => e.currentTarget.select()}
+                      />
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                        <button type="button" className={styles.ghostBtn} onClick={copyThumbPrompt}>
+                          {thumbPromptCopied ? "✓ Copied" : "Copy prompt"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -656,7 +776,8 @@ export default function NewGuidePage() {
               type="button"
               className={styles.enrichBtn}
               onClick={() => handleSave(true)}
-              disabled={saving || !guide.title || !guide.slug}
+              disabled={saving || !guide.title || !guide.slug || !coverFile}
+              title={!coverFile ? "Add a thumbnail / cover image to publish" : undefined}
             >
               {saving ? (
                 <>

@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth";
 import { useT, useLang } from "@/lib/lang-context";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import SharedFooter from "@/components/layout/shared-footer";
-import { guides as staticGuides } from "./guide/data/index";
 import type { Guide } from "./guide/data/types";
 import styles from "./page.module.css";
 
@@ -30,7 +29,7 @@ export default function HomeClient() {
   const [stats, setStats] = useState({ scholarships: 0, countries: 0 });
   const [closingSoon, setClosingSoon] = useState<ClosingScholarship[]>([]);
   const [quickTags, setQuickTags] = useState<string[]>([]);
-  const [featuredGuides, setFeaturedGuides] = useState<Guide[]>(staticGuides.slice(0, 3));
+  const [featuredGuides, setFeaturedGuides] = useState<Guide[]>([]);
 
   useEffect(() => {
     fetch("/api/guides")
@@ -47,9 +46,9 @@ export default function HomeClient() {
           faqs: Array.isArray(g.faqs) ? g.faqs as Guide["faqs"] : [],
           publishedAt: (g.published_at as string) ?? (g.updated_at as string) ?? "",
           updatedAt: (g.updated_at as string) ?? "",
+          coverImageUrl: (g.cover_image_url as string | null) ?? undefined,
         }));
-        const dbSlugs = new Set(dbGuides.map((g) => g.slug));
-        setFeaturedGuides([...dbGuides, ...staticGuides.filter((g) => !dbSlugs.has(g.slug))].slice(0, 3));
+        setFeaturedGuides(dbGuides.slice(0, 3));
       })
       .catch(() => {});
 

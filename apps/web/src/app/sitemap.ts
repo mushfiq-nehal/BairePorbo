@@ -1,6 +1,5 @@
 import { MetadataRoute } from "next";
 import { sql } from "@/utils/db";
-import { getAllSlugs } from "@/app/guide/data/index";
 import { fetchPublishedDbGuides } from "@/lib/guides-db";
 
 const BASE_URL = "https://baireporbo.app";
@@ -26,12 +25,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.8,
     },
-    ...getAllSlugs().map((slug) => ({
-      url: `${BASE_URL}/guide/${slug}`,
-      lastModified: new Date(),
-      changeFrequency: "monthly" as const,
-      priority: 0.8,
-    })),
     {
       url: `${BASE_URL}/legal/about`,
       lastModified: new Date(),
@@ -72,15 +65,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     const dbGuides = await fetchPublishedDbGuides();
-    const staticSlugs = new Set(getAllSlugs());
-    const dbGuideRoutes: MetadataRoute.Sitemap = dbGuides
-      .filter((g) => !staticSlugs.has(g.slug))
-      .map((g) => ({
-        url: `${BASE_URL}/guide/${g.slug}`,
-        lastModified: g.updatedAt ? new Date(g.updatedAt) : new Date(),
-        changeFrequency: "monthly" as const,
-        priority: 0.8,
-      }));
+    const dbGuideRoutes: MetadataRoute.Sitemap = dbGuides.map((g) => ({
+      url: `${BASE_URL}/guide/${g.slug}`,
+      lastModified: g.updatedAt ? new Date(g.updatedAt) : new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    }));
 
     return [...staticRoutes, ...dbGuideRoutes, ...scholarshipRoutes];
   } catch {

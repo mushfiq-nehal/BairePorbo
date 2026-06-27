@@ -4,8 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import SharedFooter from "@/components/layout/shared-footer";
-import { getGuideBySlug, getAllSlugs } from "../data/index";
-import { fetchPublishedDbGuides, fetchPublishedGuideBySlug, mergeGuides } from "@/lib/guides-db";
+import { fetchPublishedDbGuides, fetchPublishedGuideBySlug, sortGuides } from "@/lib/guides-db";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
@@ -17,15 +16,16 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export function generateStaticParams() {
-  // Pre-render static file guides at build time.
-  // DB-created guides are handled by ISR (on-demand after revalidate).
-  return getAllSlugs().map((slug) => ({ slug }));
+export async function generateStaticParams() {
+  // Pre-render published guides (all created via the admin dashboard) at build
+  // time; newly added ones are picked up by ISR after `revalidate`.
+  const guides = await fetchPublishedDbGuides();
+  return guides.map((g) => ({ slug: g.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const guide = (await fetchPublishedGuideBySlug(slug)) ?? getGuideBySlug(slug);
+  const guide = await fetchPublishedGuideBySlug(slug);
   if (!guide) return {};
 
   const BASE = "https://baireporbo.app";
@@ -55,11 +55,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function GuideDetailPage({ params }: Props) {
   const { slug } = await params;
 
-  const guide = (await fetchPublishedGuideBySlug(slug)) ?? getGuideBySlug(slug);
+  const guide = await fetchPublishedGuideBySlug(slug);
   if (!guide) notFound();
 
   /* Related guides: same category, exclude current */
-  const related = mergeGuides(await fetchPublishedDbGuides())
+  const related = sortGuides(await fetchPublishedDbGuides())
     .filter((g) => g.slug !== guide.slug && g.category === guide.category)
     .slice(0, 3);
 

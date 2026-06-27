@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import SharedFooter from "@/components/layout/shared-footer";
-import { fetchPublishedDbGuides, mergeGuides } from "@/lib/guides-db";
+import { fetchPublishedDbGuides, sortGuides } from "@/lib/guides-db";
 import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
 
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function GuidePage() {
-  const allGuides = mergeGuides(await fetchPublishedDbGuides());
+  const allGuides = sortGuides(await fetchPublishedDbGuides());
 
   return (
     <div className={styles.page}>

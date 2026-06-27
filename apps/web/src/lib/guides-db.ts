@@ -1,6 +1,5 @@
 import { sql } from "@/utils/db";
 import type { Guide } from "@/app/guide/data/types";
-import { guides as staticGuides } from "@/app/guide/data/index";
 
 type DbGuideRow = {
   slug: string;
@@ -68,12 +67,15 @@ export async function fetchPublishedGuideBySlug(slug: string): Promise<Guide | u
   }
 }
 
-export function mergeGuides(dbGuides: Guide[]): Guide[] {
-  const dbSlugs = new Set(dbGuides.map((g) => g.slug));
-  const merged = [...dbGuides, ...staticGuides.filter((g) => !dbSlugs.has(g.slug))];
-  // Keep pinned guides anchored at position 1 regardless of other ordering
+/**
+ * Order guides for display: pinned guides first, then the rest in the order
+ * returned by the database query. Only guides created via the admin dashboard
+ * (i.e. rows in the `guides` table) are ever shown — there are no static/demo
+ * guides anymore.
+ */
+export function sortGuides(dbGuides: Guide[]): Guide[] {
   return [
-    ...merged.filter((g) => g.isPinned),
-    ...merged.filter((g) => !g.isPinned),
+    ...dbGuides.filter((g) => g.isPinned),
+    ...dbGuides.filter((g) => !g.isPinned),
   ];
 }
