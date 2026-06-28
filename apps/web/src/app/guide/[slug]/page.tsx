@@ -10,17 +10,10 @@ import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
 
-export const revalidate = 3600; // ISR: rebuild slug pages hourly
+export const dynamic = "force-dynamic";
 
 interface Props {
   params: Promise<{ slug: string }>;
-}
-
-export async function generateStaticParams() {
-  // Pre-render published guides (all created via the admin dashboard) at build
-  // time; newly added ones are picked up by ISR after `revalidate`.
-  const guides = await fetchPublishedDbGuides();
-  return guides.map((g) => ({ slug: g.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
