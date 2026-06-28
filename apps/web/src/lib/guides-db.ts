@@ -49,7 +49,8 @@ export async function fetchPublishedDbGuides(): Promise<Guide[]> {
       ORDER BY is_pinned DESC, published_at DESC
     `;
     return (rows as DbGuideRow[]).map(mapDbGuide);
-  } catch {
+  } catch (err) {
+    console.error("[guides-db] fetchPublishedDbGuides failed:", err);
     return [];
   }
 }

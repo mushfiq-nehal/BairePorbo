@@ -11,9 +11,9 @@ export async function GET() {
   `;
 
   return NextResponse.json({ guides: rows }, {
-    // s-maxage: fresh for 5 min. stale-while-revalidate: for up to 1 day after that,
-    // serve the cached copy INSTANTLY while refreshing in the background — so a sleeping
-    // Neon DB never makes a visitor wait on a cold start.
-    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=86400" },
+    // s-maxage=300: CDN serves fresh for 5 min.
+    // stale-while-revalidate=3600: serve stale for up to 1 hour while revalidating
+    // in the background. Tighter than 86400 so new guides appear within the hour.
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600" },
   });
 }
