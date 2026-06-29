@@ -8,7 +8,7 @@ export async function GET() {
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rows = await sql`
-    SELECT id, slug, title, category, status, faqs, published_at, updated_at, created_at
+    SELECT id, slug, title, category, status, faqs, is_pinned, published_at, updated_at, created_at
     FROM guides
     ORDER BY created_at DESC
   `;
