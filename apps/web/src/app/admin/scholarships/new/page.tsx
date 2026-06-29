@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import styles from "../../admin.module.css";
+import dupStyles from "./duplicate-check.module.css";
+
+type SimilarMatch = {
+  id: string;
+  title: string;
+  country: string;
+  status: string;
+  slug: string | null;
+  similarity: number;
+  match_type: "exact_url" | "likely" | "possible";
+};
 
 type Step = 1 | 2 | 3;
 type Enriched = {
@@ -62,11 +73,54 @@ export default function NewScholarshipPage() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [_copied, _setCopied] = useState(false); // kept for future use
 
+  // Duplicate check state
+  const [similarMatches, setSimilarMatches] = useState<SimilarMatch[]>([]);
+  const [checkingSimilar, setCheckingSimilar] = useState(false);
+  const [dupDismissed, setDupDismissed] = useState(false);
+  const dupCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const setBool = (k: string, v: boolean) => setForm((p) => ({ ...p, [k]: v }));
+
+  // ── Duplicate / similarity check ──────────────────────────────────────────
+  const checkSimilar = useCallback(
+    async (title: string, country: string, officialUrl?: string) => {
+      if (!title.trim()) return;
+      setDupDismissed(false);
+      setCheckingSimilar(true);
+      try {
+        const res = await fetch("/api/admin/scholarships/check-similar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, country, official_url: officialUrl ?? "" }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSimilarMatches(data.matches ?? []);
+        }
+      } catch {
+        // silently ignore — this is a non-blocking helper
+      } finally {
+        setCheckingSimilar(false);
+      }
+    },
+    []
+  );
+
+  // Debounced check triggered when user edits the title field manually
+  const onTitleChange = (v: string) => {
+    set("title", v);
+    setSimilarMatches([]);
+    if (dupCheckTimer.current) clearTimeout(dupCheckTimer.current);
+    if (v.trim().length > 5) {
+      dupCheckTimer.current = setTimeout(() => {
+        checkSimilar(v, form.country, form.official_url);
+      }, 800);
+    }
+  };
 
   // ── Parse raw text with AI ────────────────────────────────────────────────
   const parseWithAI = async () => {
@@ -93,6 +147,10 @@ export default function NewScholarshipPage() {
         official_url: p.official_url ?? "",
         raw_description: p.raw_description_english ?? rawInput,
       }));
+      // Auto-check for duplicates after parsing
+      if (p.title) {
+        checkSimilar(p.title, p.country ?? "", p.official_url ?? "");
+      }
     } catch (err) { setError(String(err)); }
     finally { setParsing(false); }
   };
@@ -287,7 +345,12 @@ export default function NewScholarshipPage() {
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
                   <label>Title *</label>
-                  <input required value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="e.g. Bond University Transformer Scholarship 2026" />
+                  <input
+                    required
+                    value={form.title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    placeholder="e.g. Bond University Transformer Scholarship 2026"
+                  />
                 </div>
                 <div className={styles.field}>
                   <label>Country *</label>
@@ -356,6 +419,81 @@ export default function NewScholarshipPage() {
                 <label>Description (English)</label>
                 <textarea rows={5} value={form.raw_description} onChange={(e) => set("raw_description", e.target.value)} />
               </div>
+            </div>
+          )}
+
+          {/* Similarity warning */}
+          {(checkingSimilar || (similarMatches.length > 0 && !dupDismissed)) && (
+            <div className={dupStyles.dupPanel} data-severity={
+              similarMatches.some(m => m.match_type === "exact_url") ? "exact" :
+              similarMatches.some(m => m.match_type === "likely") ? "likely" : "possible"
+            }>
+              {checkingSimilar ? (
+                <div className={dupStyles.dupChecking}>
+                  <span className={styles.spinner} /> Checking for similar scholarships…
+                </div>
+              ) : (
+                <>
+                  <div className={dupStyles.dupHeader}>
+                    <span className={dupStyles.dupIcon}>
+                      {similarMatches.some(m => m.match_type === "exact_url") ? "🔴" :
+                       similarMatches.some(m => m.match_type === "likely") ? "⚠️" : "💡"}
+                    </span>
+                    <div>
+                      <strong className={dupStyles.dupTitle}>
+                        {similarMatches.some(m => m.match_type === "exact_url")
+                          ? "This scholarship already exists"
+                          : similarMatches.some(m => m.match_type === "likely")
+                          ? "Possible duplicate detected"
+                          : "Similar scholarships found"}
+                      </strong>
+                      <p className={dupStyles.dupSubtitle}>
+                        {similarMatches.some(m => m.match_type === "exact_url")
+                          ? "A scholarship with the same official URL is already in the database."
+                          : "The following scholarships look similar. Check if one of them is the same before adding a new one."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className={dupStyles.dupDismiss}
+                      onClick={() => setDupDismissed(true)}
+                      title="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <ul className={dupStyles.dupList}>
+                    {similarMatches.map((m) => (
+                      <li key={m.id} className={dupStyles.dupItem} data-type={m.match_type}>
+                        <div className={dupStyles.dupItemInfo}>
+                          <span className={dupStyles.dupItemBadge} data-type={m.match_type}>
+                            {m.match_type === "exact_url" ? "Exact URL match" :
+                             m.match_type === "likely" ? `${Math.round(m.similarity * 100)}% match` :
+                             `${Math.round(m.similarity * 100)}% similar`}
+                          </span>
+                          <span className={dupStyles.dupItemTitle}>{m.title}</span>
+                          <span className={dupStyles.dupItemCountry}>{m.country}</span>
+                          <span className={dupStyles.dupItemStatus} data-status={m.status}>{m.status}</span>
+                        </div>
+                        <a
+                          href={`/admin/scholarships/${m.id}/edit`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={dupStyles.dupViewBtn}
+                        >
+                          View →
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className={dupStyles.dupFooter}>
+                    Not a duplicate?{" "}
+                    <button type="button" className={dupStyles.dupProceedLink} onClick={() => setDupDismissed(true)}>
+                      Proceed anyway
+                    </button>
+                  </p>
+                </>
+              )}
             </div>
           )}
 
