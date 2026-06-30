@@ -15,7 +15,7 @@ const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangl
 
 Be concise, practical, and encouraging. Always cite specific scholarships or programs when relevant.`;
 
-const MAX_MSG_LENGTH = 4000;
+const MAX_MSG_LENGTH = 8000;
 const MAX_HISTORY = 12;
 const MAX_OUTPUT_TOKENS = 2048;
 
