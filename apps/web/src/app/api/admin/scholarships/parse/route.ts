@@ -37,7 +37,7 @@ Required JSON shape:
   "confidence_note": "1 short sentence on which fields came from knowledge vs source"
 }`;
 
-const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "deepseek-pro", "minimax-m3"];
 
 const extractUrl = (text: string): string | null => {
   const match = text.match(/https?:\/\/[^\s"'<>)）]+/i);

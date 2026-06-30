@@ -66,6 +66,10 @@ export default function AdminDashboard() {
           <span className={styles.linkIcon}>🎓</span>
           <span>Manage Scholarships</span>
         </Link>
+        <Link href="/admin/scholarships/bulk" className={styles.linkCard} style={{ borderColor: "rgba(124, 58, 237, 0.35)" }}>
+          <span className={styles.linkIcon}>🧪</span>
+          <span>Bulk Import (Experimental)</span>
+        </Link>
         <Link href="/scholarships" className={styles.linkCard}>
           <span className={styles.linkIcon}>🌐</span>
           <span>View Public Listing</span>

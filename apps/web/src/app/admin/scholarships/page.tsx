@@ -208,6 +208,9 @@ export default function AdminScholarshipsPage() {
           >
             {ingestingAll ? "Ingesting…" : "⚡ Ingest All"}
           </button>
+          <Link href="/admin/scholarships/bulk" className={styles.actionBtn} style={{ borderColor: "rgba(124, 58, 237, 0.35)", color: "#6d28d9" }}>
+            🧪 Bulk Import
+          </Link>
           <Link href="/admin/scholarships/new" className={styles.primaryBtn}>
             + Add scholarship
           </Link>
