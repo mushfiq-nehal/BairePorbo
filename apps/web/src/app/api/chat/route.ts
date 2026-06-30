@@ -17,7 +17,7 @@ Be concise, practical, and encouraging. Always cite specific scholarships or pro
 
 const MAX_MSG_LENGTH = 4000;
 const MAX_HISTORY = 12;
-const MAX_OUTPUT_TOKENS = 600;
+const MAX_OUTPUT_TOKENS = 2048;
 
 type RateLimitErrorBody = {
   error: string;
