@@ -34,6 +34,9 @@ type CompletionOpts = {
    * meaningful for models in WEB_SEARCH_MODELS; ignored otherwise. */
   webSearch?: boolean;
   webSearchMaxResults?: number;
+  /** Abort the upstream request if it hasn't responded within this many ms.
+   * Unset = no client-side timeout (rely on the platform's own limits). */
+  timeoutMs?: number;
 };
 
 type CompletionResult = {
@@ -59,6 +62,7 @@ const callOpenRouter = async (
   maxTokens: number,
   temperature: number,
   webSearch?: { maxResults: number },
+  timeoutMs?: number,
 ): Promise<{ content: string; citations?: { url: string; title?: string }[] }> => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured.");
@@ -82,11 +86,25 @@ const callOpenRouter = async (
     body.plugins = [{ id: "web", max_results: webSearch.maxResults }];
   }
 
-  const res = await fetch(OPENROUTER_URL, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
+  const controller = timeoutMs ? new AbortController() : undefined;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
+
+  let res: Response;
+  try {
+    res = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: controller?.signal,
+    });
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(`OpenRouter request to ${model} timed out after ${timeoutMs}ms`);
+    }
+    throw err;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 
   if (!res.ok) {
     const text = await res.text();
@@ -146,7 +164,7 @@ const callNim = async (
 };
 
 export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionResult> => {
-  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5 } = opts;
+  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs } = opts;
   const messages: Message[] = [
     { role: "system", content: system },
     { role: "user", content: user },
@@ -172,6 +190,7 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
     maxTokens,
     temperature,
     useWebSearch ? { maxResults: webSearchMaxResults } : undefined,
+    timeoutMs,
   );
   logRequest("ai.completion", { provider: "openrouter", model: orModel, webSearch: useWebSearch });
   return { content, modelUsed: orModel, citations };
@@ -185,4 +204,22 @@ export const parseJsonFromCompletion = <T = Record<string, unknown>>(raw: string
     .replace(/```\s*$/i, "")
     .trim();
   return JSON.parse(cleaned) as T;
+};
+
+/**
+ * Lenient fallback for parseJsonFromCompletion: extracts the outermost
+ * `{...}` block from a response that may have stray prose/preamble around
+ * it (web-search-grounded models sometimes add a sentence before/after the
+ * JSON despite instructions not to). Throws if no balanced object is found
+ * or it still doesn't parse — most commonly because the response was
+ * truncated mid-object by the token budget, which callers should treat as
+ * a signal to retry with a larger maxTokens.
+ */
+export const extractJsonObject = <T = Record<string, unknown>>(raw: string): T => {
+  const start = raw.indexOf("{");
+  const end = raw.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("No JSON object found in response");
+  }
+  return JSON.parse(raw.slice(start, end + 1)) as T;
 };

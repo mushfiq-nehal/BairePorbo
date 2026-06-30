@@ -52,44 +52,73 @@ export default function BulkImportPage() {
     setItems((prev) => prev.filter((it) => it.clientId !== clientId));
   };
 
-  const processOne = async (item: BulkImportItem) => {
-    setResults((prev) => ({ ...prev, [item.clientId]: { status: "processing" } }));
-    setActiveId(item.clientId);
+  // One internal attempt of the request; returns null on success (state is
+  // already updated), or an error string to let the caller decide whether to
+  // retry. Safe to call twice for the same item — the server's duplicate
+  // guard means a retry after a "secretly succeeded but response got lost"
+  // case just reports back as a duplicate instead of double-drafting.
+  const attemptOne = async (item: BulkImportItem): Promise<string | null> => {
+    let res: Response;
     try {
-      const res = await fetch("/api/admin/scholarships/bulk/process-item", {
+      res = await fetch("/api/admin/scholarships/bulk/process-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: item.title, link: item.link, model }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setResults((prev) => ({ ...prev, [item.clientId]: { status: "error", error: data.error ?? "Failed" } }));
-        return;
-      }
-      if (data.skipped && data.reason === "duplicate") {
-        setResults((prev) => ({
-          ...prev,
-          [item.clientId]: {
-            status: "duplicate",
-            existingId: data.existing?.id,
-            existingTitle: data.existing?.title,
-          },
-        }));
-        return;
-      }
+    } catch (err) {
+      return `Network error: ${String(err)}`;
+    }
+
+    let data: Record<string, unknown>;
+    try {
+      data = await res.json();
+    } catch {
+      // Non-JSON body usually means the platform killed the request (e.g. a
+      // function timeout) rather than our route returning a clean error.
+      return res.ok ? "Server returned an unreadable response" : `Server error (${res.status}) — likely timed out`;
+    }
+
+    if (!res.ok) return (data.error as string | undefined) ?? "Failed";
+
+    if (data.skipped && data.reason === "duplicate") {
+      const existing = data.existing as { id?: string; title?: string } | undefined;
       setResults((prev) => ({
         ...prev,
-        [item.clientId]: {
-          status: "done",
-          scholarshipId: data.scholarship?.id,
-          slug: data.scholarship?.slug,
-          resultTitle: data.scholarship?.title,
-          confidenceNote: data.meta?.confidenceNote,
-          scrapeOk: data.meta?.scrape?.ok,
-        },
+        [item.clientId]: { status: "duplicate", existingId: existing?.id, existingTitle: existing?.title },
       }));
-    } catch (err) {
-      setResults((prev) => ({ ...prev, [item.clientId]: { status: "error", error: String(err) } }));
+      return null;
+    }
+
+    const scholarship = data.scholarship as { id?: string; slug?: string | null; title?: string } | undefined;
+    const meta = data.meta as { confidenceNote?: string | null; scrape?: { ok?: boolean } } | undefined;
+    setResults((prev) => ({
+      ...prev,
+      [item.clientId]: {
+        status: "done",
+        scholarshipId: scholarship?.id,
+        slug: scholarship?.slug,
+        resultTitle: scholarship?.title,
+        confidenceNote: meta?.confidenceNote,
+        scrapeOk: meta?.scrape?.ok,
+      },
+    }));
+    return null;
+  };
+
+  const processOne = async (item: BulkImportItem) => {
+    setResults((prev) => ({ ...prev, [item.clientId]: { status: "processing" } }));
+    setActiveId(item.clientId);
+
+    let error = await attemptOne(item);
+    if (error) {
+      // One retry after a short pause — covers transient platform timeouts
+      // and one-off AI JSON truncation that often doesn't repeat.
+      await new Promise((r) => setTimeout(r, 2000));
+      setResults((prev) => ({ ...prev, [item.clientId]: { status: "processing" } }));
+      error = await attemptOne(item);
+    }
+    if (error) {
+      setResults((prev) => ({ ...prev, [item.clientId]: { status: "error", error } }));
     }
   };
 

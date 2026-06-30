@@ -2,14 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
-import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
+import { fetchCompletion, parseJsonFromCompletion, extractJsonObject, type ModelChoice } from "@/lib/ai-completion";
 import { resolveShortlink } from "@/lib/resolve-shortlink";
 import { scrapeUrl } from "@/lib/scrape";
 import { findSimilarScholarships, type ScholarshipRow } from "@/lib/dedupe";
 import { generateScholarshipSlug, makeSlugUnique } from "@/lib/slug";
 
-// Vercel route-segment config: web search + scraping can take a while.
-export const maxDuration = 60;
+// Vercel route-segment config: a reasoning model + web search + a retry can
+// occasionally take a while. Hobby (with Fluid Compute, the default since
+// April 2025) allows up to 300s per function — use generous headroom here
+// rather than the old 60s, since a single slow OpenRouter call was hitting
+// that ceiling and getting hard-killed by the platform.
+export const maxDuration = 180;
 
 const VALID_MODELS: ModelChoice[] = ["deepseek-pro", "minimax-m3"];
 
@@ -31,8 +35,12 @@ CRITICAL ACCURACY RULES:
   in "confidence_note".
 - "raw_description_english" must be a real description (roughly 3-5 sentences / a short paragraph) covering
   what the scholarship is, who funds it, what it covers, and the host country/university — not a one-liner.
+- Keep the ENTIRE response concise: aim for well under 700 words total across all fields combined. You have a
+  limited output budget — a complete, slightly shorter JSON object is far more useful than a longer one that
+  gets cut off. Do not pad any field with repetition or extra commentary.
 
-Respond with ONLY valid JSON, no markdown fences, no explanation. Required JSON shape:
+Respond with ONLY valid JSON, no markdown fences, no explanation, and no text before or after the object.
+Required JSON shape:
 {
   "title": "Full scholarship name in English",
   "country": "Host country in English",
@@ -111,12 +119,16 @@ export async function POST(req: NextRequest) {
     logRequest("admin.bulk.resolve", { ip, title, ok: resolved.ok, via: resolved.via });
   }
 
+  // Kept short on purpose: this almost always targets the same handful of
+  // aggregator domains the model will also find (and use) via web search, so
+  // we don't want to burn most of our request-time budget waiting out a full
+  // scrape timeout on a page that's going to 403 anyway.
   let scrapedBlock = "";
   let scrapeOk = false;
   let scrapeError: string | undefined;
   const scrapeTarget = resolvedUrl ?? sourceLink;
   if (scrapeTarget) {
-    const result = await scrapeUrl(scrapeTarget);
+    const result = await scrapeUrl(scrapeTarget, 4000);
     scrapeOk = result.ok;
     scrapeError = result.error;
     if (result.ok && result.text) {
@@ -152,33 +164,58 @@ ${resolvedUrl && resolvedUrl !== sourceLink ? `It resolves to: ${resolvedUrl}` :
 ${!scrapeOk ? `(That page could not be fetched directly${scrapeError ? ` — ${scrapeError}` : ""}; rely on web search and your knowledge instead, and prefer the most official source you can find.)` : ""}
 Use web search to confirm the official program page, funding type, eligibility, and deadline before answering.${scrapedBlock}`.trim();
 
-  let raw: string;
-  let modelUsed: string;
+  // Up to 2 attempts: reasoning-capable models sometimes spend part of the
+  // output budget "thinking" before writing the JSON, which can truncate the
+  // object on a verbose answer. A retry with a larger budget recovers most
+  // of those without needing the admin to manually re-run the item.
+  const ATTEMPTS = [
+    { maxTokens: 2600 },
+    { maxTokens: 4200 },
+  ];
+
+  let raw = "";
+  let modelUsed = "";
   let citations: { url: string; title?: string }[] | undefined;
-  try {
-    const result = await fetchCompletion({
-      model,
-      system: BULK_SYNTHESIS_SYSTEM,
-      user: userPrompt,
-      maxTokens: 1800,
-      temperature: 0.3,
-      webSearch: true,
-      webSearchMaxResults: 5,
-    });
-    raw = result.content;
-    modelUsed = result.modelUsed;
-    citations = result.citations;
-  } catch (err) {
-    return NextResponse.json({ error: `AI request failed: ${String(err)}` }, { status: 502 });
+  let parsed: SynthesizedFields | null = null;
+  let lastError: string | null = null;
+
+  for (let attempt = 0; attempt < ATTEMPTS.length && !parsed; attempt++) {
+    try {
+      const result = await fetchCompletion({
+        model,
+        system: BULK_SYNTHESIS_SYSTEM,
+        user: attempt === 0 ? userPrompt : `${userPrompt}\n\n(Your previous attempt was cut off before finishing valid JSON — be more concise and make sure the JSON object is fully complete this time.)`,
+        maxTokens: ATTEMPTS[attempt].maxTokens,
+        temperature: 0.3,
+        webSearch: true,
+        webSearchMaxResults: 5,
+        // Bounds each individual attempt so two sequential attempts can't
+        // together exceed the function's own maxDuration.
+        timeoutMs: 75_000,
+      });
+      raw = result.content;
+      modelUsed = result.modelUsed;
+      citations = result.citations;
+    } catch (err) {
+      lastError = `AI request failed: ${String(err)}`;
+      continue;
+    }
+
+    try {
+      parsed = parseJsonFromCompletion<SynthesizedFields>(raw);
+    } catch {
+      try {
+        parsed = extractJsonObject<SynthesizedFields>(raw);
+      } catch {
+        lastError = "AI returned invalid JSON";
+      }
+    }
   }
 
-  logRequest("admin.bulk.synthesize", { ip, title, model: modelUsed });
+  logRequest("admin.bulk.synthesize", { ip, title, model: modelUsed, attempts: parsed ? "ok" : "exhausted" });
 
-  let parsed: SynthesizedFields;
-  try {
-    parsed = parseJsonFromCompletion<SynthesizedFields>(raw);
-  } catch {
-    return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 422 });
+  if (!parsed) {
+    return NextResponse.json({ error: lastError ?? "AI returned invalid JSON", raw }, { status: 422 });
   }
 
   const finalTitle = parsed.title?.trim() || title;

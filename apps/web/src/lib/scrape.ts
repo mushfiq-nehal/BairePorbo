@@ -9,7 +9,7 @@
 
 const MAX_BYTES = 600_000; // ~600KB cap to avoid huge pages
 const MAX_TEXT_CHARS = 8000; // cap text passed to the model
-const FETCH_TIMEOUT_MS = 8000;
+const DEFAULT_FETCH_TIMEOUT_MS = 8000;
 
 export type ScrapeResult = {
   ok: boolean;
@@ -52,13 +52,13 @@ const isValidHttpUrl = (value: string): boolean => {
   }
 };
 
-export const scrapeUrl = async (url: string): Promise<ScrapeResult> => {
+export const scrapeUrl = async (url: string, timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS): Promise<ScrapeResult> => {
   if (!url || !isValidHttpUrl(url)) {
     return { ok: false, text: "", error: "Invalid or missing URL" };
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch(url, {
