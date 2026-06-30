@@ -5,7 +5,7 @@ import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, extractJsonObject, type ModelChoice } from "@/lib/ai-completion";
 import { resolveShortlink } from "@/lib/resolve-shortlink";
 import { scrapeUrl } from "@/lib/scrape";
-import { findSimilarScholarships, type ScholarshipRow } from "@/lib/dedupe";
+import { findSimilarScholarships, STRONG_DUP_SIMILARITY, type ScholarshipRow } from "@/lib/dedupe";
 import { generateScholarshipSlug, makeSlugUnique } from "@/lib/slug";
 
 // Vercel route-segment config: a reasoning model + web search + a retry can
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  let body: { title?: string; link?: string | null; model?: string };
+  let body: { title?: string; link?: string | null; model?: string; force?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -147,7 +147,15 @@ export async function POST(req: NextRequest) {
     title,
     official_url: resolvedUrl ?? sourceLink ?? undefined,
   });
-  const strongDup = dupMatches.find((m) => m.match_type === "exact_url" || m.similarity >= 0.65);
+  // Scholarship titles are heavily templated ("X University ... Government
+  // Scholarship 2027"), so only auto-skip on a near-certain match (exact URL
+  // or very high similarity). Anything weaker is attached as a warning on
+  // the created draft instead of silently discarding a real entry — admins
+  // can pass force:true (from the "create anyway" button) to bypass this
+  // entirely for a specific item.
+  const strongDup = !body.force
+    ? dupMatches.find((m) => m.match_type === "exact_url" || m.similarity >= STRONG_DUP_SIMILARITY)
+    : undefined;
   if (strongDup) {
     return NextResponse.json({
       ok: true,
@@ -273,7 +281,9 @@ Use web search to confirm the official program page, funding type, eligibility, 
       resolvedUrl,
       resolveError,
       scrape: { attempted: Boolean(scrapeTarget), ok: scrapeOk, error: scrapeOk ? undefined : scrapeError },
-      dupWarnings: dupMatches.filter((m) => m.match_type === "possible"),
+      // Anything that scored as a possible/likely match but wasn't strong
+      // enough to auto-skip — surfaced so the admin can sanity-check it.
+      dupWarnings: dupMatches,
     },
   });
 }

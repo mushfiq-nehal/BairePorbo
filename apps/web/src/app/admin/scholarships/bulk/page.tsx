@@ -9,6 +9,8 @@ import { MODEL_OPTIONS, WEB_SEARCH_MODELS, type ModelChoice } from "@/lib/model-
 
 type ItemStatus = "idle" | "processing" | "done" | "duplicate" | "error";
 
+type DupWarning = { id: string; title: string; similarity: number };
+
 type ItemResult = {
   status: ItemStatus;
   scholarshipId?: string;
@@ -19,6 +21,7 @@ type ItemResult = {
   scrapeOk?: boolean;
   existingId?: string;
   existingTitle?: string;
+  dupWarnings?: DupWarning[];
 };
 
 const BULK_MODEL_OPTIONS = MODEL_OPTIONS.filter((m) => WEB_SEARCH_MODELS.includes(m.value));
@@ -57,13 +60,13 @@ export default function BulkImportPage() {
   // retry. Safe to call twice for the same item — the server's duplicate
   // guard means a retry after a "secretly succeeded but response got lost"
   // case just reports back as a duplicate instead of double-drafting.
-  const attemptOne = async (item: BulkImportItem): Promise<string | null> => {
+  const attemptOne = async (item: BulkImportItem, force = false): Promise<string | null> => {
     let res: Response;
     try {
       res = await fetch("/api/admin/scholarships/bulk/process-item", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: item.title, link: item.link, model }),
+        body: JSON.stringify({ title: item.title, link: item.link, model, force }),
       });
     } catch (err) {
       return `Network error: ${String(err)}`;
@@ -90,7 +93,11 @@ export default function BulkImportPage() {
     }
 
     const scholarship = data.scholarship as { id?: string; slug?: string | null; title?: string } | undefined;
-    const meta = data.meta as { confidenceNote?: string | null; scrape?: { ok?: boolean } } | undefined;
+    const meta = data.meta as {
+      confidenceNote?: string | null;
+      scrape?: { ok?: boolean };
+      dupWarnings?: DupWarning[];
+    } | undefined;
     setResults((prev) => ({
       ...prev,
       [item.clientId]: {
@@ -100,9 +107,18 @@ export default function BulkImportPage() {
         resultTitle: scholarship?.title,
         confidenceNote: meta?.confidenceNote,
         scrapeOk: meta?.scrape?.ok,
+        dupWarnings: meta?.dupWarnings,
       },
     }));
     return null;
+  };
+
+  // Manual override for a false-positive duplicate match — re-runs the same
+  // item with force:true so the server skips its own dedupe guard.
+  const forceCreate = async (item: BulkImportItem) => {
+    setResults((prev) => ({ ...prev, [item.clientId]: { status: "processing" } }));
+    const error = await attemptOne(item, true);
+    if (error) setResults((prev) => ({ ...prev, [item.clientId]: { status: "error", error } }));
   };
 
   const processOne = async (item: BulkImportItem) => {
@@ -324,10 +340,33 @@ export default function BulkImportPage() {
                       {result.confidenceNote && <>ℹ {result.confidenceNote}</>}
                     </p>
                   )}
-                  {result.status === "duplicate" && (
-                    <p className={styles.resultMeta}>
-                      Looks like it matches an existing entry: <strong>{result.existingTitle}</strong>. Skipped to avoid a duplicate draft.
+                  {result.status === "done" && result.dupWarnings && result.dupWarnings.length > 0 && (
+                    <p className={styles.resultMeta} style={{ color: "#b45309" }}>
+                      ⚠ Similar to an existing entry — please double-check it&apos;s not a duplicate:{" "}
+                      {result.dupWarnings.map((w, idx) => (
+                        <span key={w.id}>
+                          {idx > 0 && ", "}
+                          <Link href={`/admin/scholarships/${w.id}/edit`} className={styles.resultLink}>
+                            {w.title} ({Math.round(w.similarity * 100)}%)
+                          </Link>
+                        </span>
+                      ))}
                     </p>
+                  )}
+                  {result.status === "duplicate" && (
+                    <>
+                      <p className={styles.resultMeta}>
+                        Looks like it matches an existing entry: <strong>{result.existingTitle}</strong>. Skipped to avoid a duplicate draft.
+                      </p>
+                      <button
+                        type="button"
+                        className={adminStyles.ghostBtn}
+                        style={{ alignSelf: "flex-start", padding: "6px 14px", fontSize: 12 }}
+                        onClick={() => forceCreate(item)}
+                      >
+                        Not a duplicate — create draft anyway
+                      </button>
+                    </>
                   )}
                   {result.status === "error" && (
                     <p className={styles.resultMeta}>{result.error}</p>
