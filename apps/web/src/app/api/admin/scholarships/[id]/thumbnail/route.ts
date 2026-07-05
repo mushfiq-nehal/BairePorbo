@@ -26,12 +26,17 @@ export async function POST(
   const key = `scholarship-thumbnails/${id}/thumbnail.webp`;
 
   try {
-    await uploadToR2(key, compressed, "image/webp");
+    // Long-lived + immutable is safe here because each upload gets a
+    // unique `?v=` query string below, so the URL itself changes whenever
+    // the underlying file changes — no stale-cache risk.
+    await uploadToR2(key, compressed, "image/webp", "public, max-age=31536000, immutable");
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 
-  const publicUrl = getPublicUrl(key);
+  // Append a cache-busting version so browsers/CDNs never keep serving the
+  // previous image after it's replaced at the same object key.
+  const publicUrl = `${getPublicUrl(key)}?v=${Date.now()}`;
 
   try {
     await sql`

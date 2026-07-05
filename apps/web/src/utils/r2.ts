@@ -24,11 +24,13 @@ export const r2 = new S3Client({
  * @param key       Object key, e.g. "scholarship-thumbnails/123/thumbnail.webp"
  * @param body      File buffer
  * @param contentType MIME type
+ * @param cacheControl Optional Cache-Control header for the object
  */
 export async function uploadToR2(
   key: string,
   body: Buffer,
   contentType: string,
+  cacheControl?: string,
 ): Promise<void> {
   await r2.send(
     new PutObjectCommand({
@@ -36,6 +38,7 @@ export async function uploadToR2(
       Key: key,
       Body: body,
       ContentType: contentType,
+      CacheControl: cacheControl,
     }),
   );
 }
