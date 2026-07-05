@@ -599,6 +599,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  margin-left: 8px;
   padding: 2px 9px;
   border-radius: 999px;
   background: var(--sand-200);
@@ -1066,8 +1067,7 @@
   }
 
   .hero .kicker,
-  .hero .subtitle,
-  .heroPanel {
+  .hero .subtitle {
     display: none;
   }
 
@@ -1081,8 +1081,35 @@
 
   .hero h1 {
     font-size: 1.25rem;
-    margin: 0;
+    margin: 0 0 12px;
     line-height: 1.2;
+  }
+
+  /* Keep the snapshot on mobile — without it, "Open Now 29" reads like the
+     total scholarship count instead of a subset. Compact it down so it
+     doesn't compete with the catalog below: smaller number, no shine/breathe
+     animation, tighter padding. */
+  .heroPanel {
+    padding: 14px 16px;
+    border-radius: 16px;
+    animation: none;
+  }
+
+  .heroPanel::after {
+    display: none;
+  }
+
+  .snapshotHeader {
+    margin-bottom: 8px;
+  }
+
+  .countNumber {
+    font-size: 2rem;
+  }
+
+  .snapshotCount {
+    gap: 10px;
+    margin: 2px 0 10px;
   }
 }
 

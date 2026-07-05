@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "../../admin.module.css";
+import { MAX_COVER_IMAGE_BYTES, formatFileSize } from "@/lib/client-image";
 
 type FAQ = { question: string; answer: string };
 
@@ -33,6 +34,7 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
   const [editingFaq, setEditingFaq] = useState<number | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const [coverSizeError, setCoverSizeError] = useState("");
 
   useEffect(() => {
     fetch(`/api/admin/guides/${id}`)
@@ -64,6 +66,14 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
   const onCoverFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+    if (f.size > MAX_COVER_IMAGE_BYTES) {
+      setCoverSizeError(
+        `Image size is too big (${formatFileSize(f.size)}). Please reduce it to under ${formatFileSize(MAX_COVER_IMAGE_BYTES)} and try again.`
+      );
+      e.target.value = "";
+      return;
+    }
+    setCoverSizeError("");
     setCoverFile(f);
     setCoverPreview(URL.createObjectURL(f));
   };
@@ -269,7 +279,10 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
                 Choose image
                 <input type="file" accept="image/*" onChange={onCoverFile} style={{ display: "none" }} />
               </label>
-              <p className={styles.uploadHint}>PNG, JPG, WebP — recommended 1200×630px</p>
+              <p className={styles.uploadHint}>
+                PNG, JPG, WebP — recommended 1200×630px, max {formatFileSize(MAX_COVER_IMAGE_BYTES)}
+              </p>
+              {coverSizeError && <p className={styles.error}>{coverSizeError}</p>}
             </div>
           </div>
         </div>
