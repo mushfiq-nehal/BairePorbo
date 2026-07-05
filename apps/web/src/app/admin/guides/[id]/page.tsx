@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import styles from "../../admin.module.css";
 import { MAX_COVER_IMAGE_BYTES, formatFileSize } from "@/lib/client-image";
+import { MODEL_OPTIONS, type ModelChoice } from "@/lib/model-options";
 
 type FAQ = { question: string; answer: string };
 
@@ -35,6 +36,13 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverSizeError, setCoverSizeError] = useState("");
+
+  // AI-suggested thumbnail prompt
+  const [aiModel, setAiModel] = useState<ModelChoice>("deepseek");
+  const [thumbPrompt, setThumbPrompt] = useState("");
+  const [thumbPromptLoading, setThumbPromptLoading] = useState(false);
+  const [thumbPromptError, setThumbPromptError] = useState("");
+  const [thumbPromptCopied, setThumbPromptCopied] = useState(false);
 
   useEffect(() => {
     fetch(`/api/admin/guides/${id}`)
@@ -76,6 +84,45 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
     setCoverSizeError("");
     setCoverFile(f);
     setCoverPreview(URL.createObjectURL(f));
+  };
+
+  const handleSuggestThumbPrompt = async () => {
+    if (!guide) return;
+    setThumbPromptLoading(true);
+    setThumbPromptError("");
+    try {
+      const res = await fetch("/api/admin/guides/thumbnail-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: guide.title,
+          category: guide.category,
+          intro: guide.intro,
+          content: guide.content,
+          model: aiModel,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setThumbPromptError(json.error ?? "Failed to generate a prompt.");
+        return;
+      }
+      setThumbPrompt(json.prompt as string);
+    } catch (err) {
+      setThumbPromptError(String(err));
+    } finally {
+      setThumbPromptLoading(false);
+    }
+  };
+
+  const copyThumbPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(thumbPrompt);
+      setThumbPromptCopied(true);
+      setTimeout(() => setThumbPromptCopied(false), 1500);
+    } catch {
+      // clipboard may be unavailable — admin can select the text manually
+    }
   };
 
   const updateFaq = (index: number, field: "question" | "answer", value: string) => {
@@ -283,6 +330,87 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
                 PNG, JPG, WebP — recommended 1200×630px, max {formatFileSize(MAX_COVER_IMAGE_BYTES)}
               </p>
               {coverSizeError && <p className={styles.error}>{coverSizeError}</p>}
+            </div>
+
+            {/* AI-suggested thumbnail prompt — paste into an image generator,
+                then upload the result above. */}
+            <div
+              style={{
+                marginTop: 12,
+                padding: 14,
+                borderRadius: 12,
+                border: "1px dashed var(--sand-200, #e8e3db)",
+                background: "var(--sand-50, #faf8f5)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--ink-900)", margin: 0 }}>
+                    Need a thumbnail idea?
+                  </p>
+                  <p style={{ fontSize: 12, color: "var(--ink-500)", margin: "2px 0 0" }}>
+                    Generate an AI image-prompt from this guide, paste it into your image tool, then upload the result above.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <select
+                    value={aiModel}
+                    onChange={(e) => setAiModel(e.target.value as ModelChoice)}
+                    style={{ fontSize: 12, padding: "6px 8px", borderRadius: 8 }}
+                  >
+                    {MODEL_OPTIONS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className={styles.ghostBtn}
+                    onClick={handleSuggestThumbPrompt}
+                    disabled={thumbPromptLoading || !guide.title}
+                    title={!guide.title ? "Add a title first" : undefined}
+                  >
+                    {thumbPromptLoading ? (
+                      <>
+                        <span className={styles.spinner} />
+                        Generating…
+                      </>
+                    ) : (
+                      <>✨ Suggest thumbnail prompt</>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {thumbPromptError && (
+                <p className={styles.error} style={{ marginTop: 10 }}>{thumbPromptError}</p>
+              )}
+
+              {thumbPrompt && (
+                <div style={{ marginTop: 12 }}>
+                  <textarea
+                    readOnly
+                    rows={4}
+                    value={thumbPrompt}
+                    style={{
+                      width: "100%",
+                      resize: "vertical",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      padding: 10,
+                      borderRadius: 8,
+                      border: "1px solid var(--sand-200, #e8e3db)",
+                      background: "#fff",
+                      fontFamily: "inherit",
+                    }}
+                    onFocus={(e) => e.currentTarget.select()}
+                  />
+                  <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                    <button type="button" className={styles.ghostBtn} onClick={copyThumbPrompt}>
+                      {thumbPromptCopied ? "✓ Copied" : "Copy prompt"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
