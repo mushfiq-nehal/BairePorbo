@@ -4,11 +4,24 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import ScholarshipAiPanel from "@/components/scholarship-ai-panel/scholarship-ai-panel";
+import { CompetitivenessGauge } from "./competitiveness-gauge";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import styles from "./detail.module.css";
 
-type SummaryTab = "Overview" | "Eligibility" | "Competitiveness" | "Tips";
+type SummaryTab = "Overview" | "Competitiveness";
+
+const TABS: SummaryTab[] = ["Overview", "Competitiveness"];
+
+// Generic, level-appropriate guidance — the checklist and tips get their own
+// dedicated, always-visible sections below, so this tab focuses purely on
+// interpreting the competitiveness level rather than repeating them.
+const COMPETITIVENESS_BLURB: Record<string, string> = {
+  low: "Fewer applicants compete for each seat here. Meeting the core eligibility requirements gives you a solid shot.",
+  medium:
+    "A moderate number of students apply. Meeting the requirements is a good start — a polished SOP and CV will help you stand out from the pool.",
+  high: "This is a sought-after scholarship with many applicants per seat. A strong academic record and a compelling, well-prepared application matter a lot here.",
+};
 
 export type ScholarshipForClient = {
   id: string;
@@ -25,15 +38,13 @@ export type ScholarshipForClient = {
   ai_summary: string | null;
 };
 
-const TABS: SummaryTab[] = ["Overview", "Eligibility", "Competitiveness", "Tips"];
-
 interface Props {
   scholarship: ScholarshipForClient;
 }
 
 /**
  * Client island for the scholarship detail page.
- * Handles: AI summary tab switching, the AI chat panel, and the mobile sticky bar.
+ * Handles: the AI summary tabs, the AI chat panel, and the mobile sticky bar.
  * Receives all scholarship data as props — no client-side data fetch needed.
  */
 export default function ScholarshipDetailClient({ scholarship }: Props) {
@@ -73,18 +84,6 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
       .catch(() => setProfile(null));
   }, [userId]);
 
-  // On mobile, Tips tab is hidden — fall back to Overview if somehow active
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mql = window.matchMedia("(max-width: 640px)");
-    const sync = () => {
-      if (mql.matches && activeTab === "Tips") setActiveTab("Overview");
-    };
-    sync();
-    mql.addEventListener("change", sync);
-    return () => mql.removeEventListener("change", sync);
-  }, [activeTab]);
-
   const handleBookmark = async () => {
     if (!userId) {
       await dialog.alert({
@@ -116,16 +115,6 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
       await dialog.alert({ title: "Error", description: "Error saving bookmark." });
     }
     setIsBookmarking(false);
-  };
-
-  const tabContent: Record<SummaryTab, string> = {
-    Overview: scholarship.ai_summary ?? "No summary available yet.",
-    Eligibility:
-      scholarship.eligibility_summary ?? "Eligibility details not yet available.",
-    Competitiveness: scholarship.competitiveness
-      ? `Competitiveness: ${scholarship.competitiveness}\n\n${scholarship.tips ?? ""}`
-      : "Competitiveness analysis not yet available.",
-    Tips: scholarship.tips ?? "Application tips not yet available.",
   };
 
   const contextText = [
@@ -161,7 +150,12 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
       {/* ── AI summary tabs ── */}
       <section className={styles.summarySection}>
         <div className={styles.summaryHeader}>
-          <h2>AI summary</h2>
+          <h2>
+            AI summary
+            <span className={styles.aiSparkle} aria-hidden="true">
+              ✨
+            </span>
+          </h2>
           <div className={styles.tabRow}>
             {TABS.map((tab) => (
               <button
@@ -176,18 +170,28 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
             ))}
           </div>
         </div>
-        <div className={styles.summaryBody}>
-          <div className={styles.markdownBody}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {tabContent[activeTab]}
-            </ReactMarkdown>
-          </div>
-          {scholarship.tags && (
-            <div className={styles.tagRow}>
-              {scholarship.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
+
+        {/* Both panels render into the DOM (so Overview stays crawlable for
+            SEO) — only the active one is visually shown. */}
+        <div className={styles.markdownBody} hidden={activeTab !== "Overview"}>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {scholarship.ai_summary ?? "No summary available yet."}
+          </ReactMarkdown>
+        </div>
+
+        <div hidden={activeTab !== "Competitiveness"}>
+          {scholarship.competitiveness ? (
+            <>
+              <CompetitivenessGauge level={scholarship.competitiveness} />
+              <p className={styles.markdownBody} style={{ marginTop: 14 }}>
+                {COMPETITIVENESS_BLURB[scholarship.competitiveness.toLowerCase()] ??
+                  "Review the eligibility checklist and tips below to gauge your fit."}
+              </p>
+            </>
+          ) : (
+            <p className={styles.markdownBody}>
+              Competitiveness analysis not yet available.
+            </p>
           )}
         </div>
       </section>

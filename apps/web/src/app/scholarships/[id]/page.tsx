@@ -27,15 +27,56 @@ const LEVEL_MAP: Record<string, string> = {
   any: "Any level",
 };
 
-function formatDeadline(d: string | null): string {
-  if (!d) return "Open deadline";
+type DeadlineTone = "urgent" | "soon" | "normal" | "closed" | "none";
+
+const DEADLINE_TONE_CLASS: Record<DeadlineTone, string> = {
+  urgent: styles.deadlineUrgent,
+  soon: styles.deadlineSoon,
+  normal: styles.deadlineNormal,
+  closed: styles.deadlineClosed,
+  none: styles.deadlineNone,
+};
+
+function parseEligibilityItems(summary: string | null): string[] {
+  return (summary ?? "")
+    .split(/(?<=\.)\s+(?=[A-Z•])|[•\n]/)
+    .map((item) => item.replace(/\.\s*$/, "").trim())
+    .filter(Boolean);
+}
+
+function parseTipItems(tips: string | null): string[] {
+  return (tips ?? "")
+    .split(/[•\n]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function getDeadlineInfo(d: string | null): { label: string; tone: DeadlineTone } {
+  if (!d) return { label: "Open deadline — apply anytime", tone: "none" };
+
   const date = new Date(d);
-  if (isNaN(date.getTime())) return d;
-  return date.toLocaleDateString("en-US", {
+  if (isNaN(date.getTime())) return { label: d, tone: "normal" };
+
+  const formatted = date.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfDeadline = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const diffDays = Math.round(
+    (startOfDeadline.getTime() - startOfToday.getTime()) / 86_400_000
+  );
+
+  if (diffDays < 0) return { label: `Closed · ${formatted}`, tone: "closed" };
+  if (diffDays === 0) return { label: "Closes today", tone: "urgent" };
+  if (diffDays === 1) return { label: "Closes tomorrow", tone: "urgent" };
+  if (diffDays <= 7) return { label: `Closes in ${diffDays} days`, tone: "urgent" };
+  if (diffDays <= 30)
+    return { label: `Closes in ${diffDays} days — ${formatted}`, tone: "soon" };
+  return { label: `Deadline: ${formatted}`, tone: "normal" };
 }
 
 interface Props {
@@ -82,15 +123,9 @@ export default async function ScholarshipDetailPage({ params }: Props) {
     slug: row.slug as string | null,
   };
 
-  const eligibilityItems = (s.eligibility_summary ?? "")
-    .split(/(?<=\.)\s+(?=[A-Z•])|[•\n]/)
-    .map((item) => item.replace(/\.\s*$/, "").trim())
-    .filter(Boolean);
-
-  const tipItems = (s.tips ?? "")
-    .split(/[•\n]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const deadlineInfo = getDeadlineInfo(s.deadline);
+  const eligibilityItems = parseEligibilityItems(s.eligibility_summary);
+  const tipItems = parseTipItems(s.tips);
 
   return (
     <div className={styles.page}>
@@ -98,12 +133,15 @@ export default async function ScholarshipDetailPage({ params }: Props) {
 
       <main className={styles.main}>
         {/* ── Hero ─────────────────────────────────────────────────────────────
-            Left column: server-rendered.  H1 and meta are always in the HTML
-            so Google indexes the scholarship title on the first crawl.
-            Right column: client island for bookmark / apply buttons.
+            Top row: image (60%) + quick-facts panel (40%).
+            Bottom row: title block spans the full hero width so the H1 gets
+            maximum room instead of being squeezed into one column.
+            H1 and meta are always server-rendered so Google indexes the
+            scholarship title on the first crawl. The panel is a client island
+            for bookmark / apply buttons.
         ─────────────────────────────────────────────────────────────────────── */}
         <section className={styles.hero}>
-          <div>
+          <div className={styles.heroMedia}>
             <Link href="/scholarships" className={styles.mobileBackLink}>
               ← Scholarships
             </Link>
@@ -119,29 +157,9 @@ export default async function ScholarshipDetailPage({ params }: Props) {
                 sizes="(max-width: 768px) 100vw, 640px"
               />
             )}
-
-            <p className={styles.kicker}>Scholarship detail</p>
-            {/* H1 server-rendered — Googlebot sees this on first request */}
-            <h1>{s.title}</h1>
-            <p className={styles.subtitle}>{s.country}</p>
-
-            <div className={styles.metaRow}>
-              <span>{s.country}</span>
-              <span>{LEVEL_MAP[s.degree_level] ?? s.degree_level}</span>
-              <span>{FUNDING_MAP[s.funding_type] ?? s.funding_type}</span>
-              <span>Deadline: {formatDeadline(s.deadline)}</span>
-            </div>
-            {/* Mobile inline meta (hidden from accessibility tree) */}
-            <p className={styles.metaInline} aria-hidden="true">
-              {s.country} · {LEVEL_MAP[s.degree_level] ?? s.degree_level} ·{" "}
-              {FUNDING_MAP[s.funding_type] ?? s.funding_type}
-            </p>
-            <p className={styles.deadlineInline} aria-hidden="true">
-              Deadline {formatDeadline(s.deadline)}
-            </p>
           </div>
 
-          {/* Right column: bookmark / apply / quick-facts — client only */}
+          {/* Quick-facts panel — bookmark / apply — client only */}
           <ScholarshipHeroPanelClient
             scholarship={{
               id: s.id,
@@ -150,9 +168,26 @@ export default async function ScholarshipDetailPage({ params }: Props) {
               tags: s.tags,
             }}
           />
+
+          {/* Title block — full hero width, own row below image + panel */}
+          <div className={styles.heroContent}>
+            <p className={styles.kicker}>Scholarship detail</p>
+            {/* H1 server-rendered — Googlebot sees this on first request */}
+            <h1>{s.title}</h1>
+            <p className={styles.subtitle}>
+              {s.country} · {LEVEL_MAP[s.degree_level] ?? s.degree_level} ·{" "}
+              {FUNDING_MAP[s.funding_type] ?? s.funding_type}
+            </p>
+
+            <span
+              className={`${styles.deadlineBadge} ${DEADLINE_TONE_CLASS[deadlineInfo.tone]}`}
+            >
+              {deadlineInfo.label}
+            </span>
+          </div>
         </section>
 
-        {/* ── AI summary tabs + AI chat panel (client island) ─────────────── */}
+        {/* ── AI summary + AI chat panel (client island) ─────────────── */}
         <ScholarshipDetailClient
           scholarship={{
             id: s.id,
@@ -170,9 +205,11 @@ export default async function ScholarshipDetailPage({ params }: Props) {
           }}
         />
 
-        {/* ── Eligibility + Tips — server-rendered for Google ─────────────── */}
+        {/* ── Eligibility checklist + Application tips — permanent, always
+            visible (not tucked behind a tab) since they're what students
+            most need to act on. Server-rendered for SEO. ─────────────── */}
         <section className={styles.columns}>
-          <div className={styles.panel}>
+          <div className={`${styles.panel} ${styles.panelEligibility}`}>
             <div className={styles.panelHeader}>
               <h2>Eligibility checklist</h2>
             </div>
@@ -180,32 +217,36 @@ export default async function ScholarshipDetailPage({ params }: Props) {
               <ul className={styles.requirementsList}>
                 {eligibilityItems.map((item, i) => (
                   <li key={i}>
-                    <span className={styles.checkDot} />
+                    <span className={styles.checkIcon} aria-hidden="true">
+                      ✓
+                    </span>
                     {item}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p>Eligibility details coming soon.</p>
+              <p className={styles.markdownBody}>Eligibility details coming soon.</p>
             )}
           </div>
 
-          <div className={styles.panel}>
+          <div className={`${styles.panel} ${styles.panelTips}`}>
             <div className={styles.panelHeader}>
               <h2>Application tips</h2>
             </div>
-            <div className={styles.actionList}>
-              {tipItems.length > 0 ? (
-                tipItems.map((tip, i) => (
-                  <div key={i}>
-                    <h3>Tip {i + 1}</h3>
+            {tipItems.length > 0 ? (
+              <div className={styles.actionList}>
+                {tipItems.map((tip, i) => (
+                  <div key={i} className={styles.actionItem}>
+                    <span className={styles.actionNumber}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
                     <p>{tip}</p>
                   </div>
-                ))
-              ) : (
-                <p>Application tips coming soon.</p>
-              )}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.markdownBody}>Application tips not yet available.</p>
+            )}
           </div>
         </section>
 
@@ -241,7 +282,7 @@ export default async function ScholarshipDetailPage({ params }: Props) {
           </div>
 
           <div className={styles.docsColumns}>
-            <div className={styles.docsCard}>
+            <div className={`${styles.docsCard} ${styles.docsCardCore}`}>
               <h3>
                 <span
                   className={styles.docsBadge}
@@ -272,13 +313,13 @@ export default async function ScholarshipDetailPage({ params }: Props) {
               </ul>
             </div>
 
-            <div className={styles.docsCard}>
+            <div className={`${styles.docsCard} ${styles.docsCardAdditional}`}>
               <h3>
                 <span
                   className={styles.docsBadge}
                   style={{
-                    background: "rgba(99,102,241,0.1)",
-                    color: "#4338ca",
+                    background: "rgba(224,110,72,0.12)",
+                    color: "var(--coral-700)",
                   }}
                 >
                   Additional
@@ -294,7 +335,7 @@ export default async function ScholarshipDetailPage({ params }: Props) {
                   <li key={doc}>
                     <span
                       className={styles.docsDot}
-                      style={{ background: "#818cf8" }}
+                      style={{ background: "var(--coral-400)" }}
                     />
                     {doc}
                   </li>

@@ -104,62 +104,221 @@
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  /* Top row: image (60%) + quick-facts panel (40%).
+     Bottom row: title block spans the full hero width so the H1 always
+     gets the most room available instead of being squeezed into one
+     column and wrapping early. */
+  grid-template-columns: 3fr 2fr;
+  grid-template-areas:
+    "media panel"
+    "content content";
   gap: 24px;
-  align-items: center;
+  align-items: start;
+}
+
+.heroMedia {
+  grid-area: media;
+}
+
+.heroContent {
+  grid-area: content;
 }
 
 .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 11px;
   color: var(--teal-700);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+.kicker::after {
+  content: "";
+  width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--teal-500), var(--coral-400));
 }
 
 .hero h1 {
   font-family: var(--font-display), var(--font-bengali), sans-serif;
-  font-size: clamp(2.1rem, 3.6vw, 2.9rem);
-  margin: 12px 0 10px;
+  font-size: clamp(2.3rem, 4vw, 3.2rem);
+  line-height: 1.08;
+  letter-spacing: -0.5px;
+  margin: 14px 0 12px;
 }
 
 .subtitle {
   color: var(--ink-700);
   max-width: 520px;
+  font-size: 14.5px;
 }
 
-.metaRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 12px;
-  color: var(--ink-500);
-  margin-top: 16px;
-}
-
-.metaRow span {
-  padding: 6px 10px;
+.deadlineBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  padding: 7px 14px;
   border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.deadlineBadge::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.deadlineUrgent {
+  background: rgba(220, 53, 69, 0.12);
+  color: #c0392b;
+}
+
+.deadlineSoon {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.deadlineNormal {
+  background: rgba(15, 143, 141, 0.12);
+  color: var(--teal-700);
+}
+
+.deadlineClosed,
+.deadlineNone {
   background: var(--sand-100);
+  color: var(--ink-500);
 }
 
 .heroPanel {
-  background: rgba(255, 255, 255, 0.92);
+  grid-area: panel;
+  background: rgba(255, 255, 255, 0.94);
   border-radius: 20px;
-  padding: 18px;
-  box-shadow: var(--shadow);
+  border-top: 3px solid var(--teal-500);
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
 }
 
 .heroActions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .heroPanel h3 {
-  font-size: 16px;
-  margin-bottom: 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  color: var(--ink-500);
+  margin-bottom: 10px;
+}
+
+/* ── Competitiveness gauge — shared signature element ──
+   Reused in the Quick facts sidebar and the Competitiveness tab. */
+.gauge {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gaugeCompact {
+  gap: 6px;
+}
+
+.gaugeHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gaugeLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  color: var(--ink-500);
+}
+
+.gaugeValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-700);
+}
+
+.gaugeTrack {
+  display: flex;
+  gap: 4px;
+}
+
+.gaugeSegment {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--sand-200);
+  transition: background 0.2s ease;
+}
+
+.gaugeCompact .gaugeTrack {
+  gap: 3px;
+}
+
+.gaugeCompact .gaugeSegment {
+  height: 6px;
+}
+
+.gaugeScale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--ink-400);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.gaugeScaleActive {
+  color: var(--ink-900);
+  font-weight: 700;
+}
+
+.gaugeToneLow.gaugeValue {
+  color: var(--teal-700);
+}
+
+.gaugeToneMedium.gaugeValue {
+  color: #b45309;
+}
+
+.gaugeToneHigh.gaugeValue {
+  color: #c0392b;
+}
+
+.gaugeToneLow.gaugeSegment {
+  background: var(--teal-500);
+}
+
+.gaugeToneMedium.gaugeSegment {
+  background: #f59e0b;
+}
+
+.gaugeToneHigh.gaugeSegment {
+  background: #dc3545;
+}
+
+.heroPanelFooter {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .summarySection {
@@ -171,6 +330,34 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.summarySection h2,
+.docsGuideHeader h2,
+.panelHeader h2 {
+  font-family: var(--font-display), var(--font-bengali), serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--ink-900);
+}
+
+.summarySection h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aiSparkle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  font-size: 11px;
+  background: linear-gradient(135deg, rgba(15, 143, 141, 0.14), rgba(224, 110, 72, 0.14));
+  flex-shrink: 0;
 }
 
 .summaryHeader {
@@ -201,14 +388,6 @@
   background: rgba(15, 143, 141, 0.16);
   color: var(--teal-700);
   font-weight: 600;
-}
-
-.summaryBody {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  color: var(--ink-700);
-  font-size: 14px;
 }
 
 .markdownBody {
@@ -263,24 +442,44 @@
   color: var(--ink-700);
 }
 
+/* ── Eligibility checklist + Application tips ──
+   Paired cards: a colored left accent bar + icon language that signals
+   "these two are a pair, and distinct from the AI-generated content above". */
 .columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  align-items: start;
 }
 
 .panel {
+  position: relative;
   background: rgba(255, 255, 255, 0.92);
   border-radius: 20px;
-  padding: 20px;
+  padding: 22px 22px 22px 26px;
   box-shadow: 0 18px 38px rgba(15, 34, 52, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+.panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+}
+
+.panelEligibility::before {
+  background: var(--teal-500);
+}
+
+.panelTips::before {
+  background: var(--coral-400);
 }
 
 .panelHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 16px;
 }
 
@@ -288,7 +487,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   font-size: 13px;
   color: var(--ink-700);
 }
@@ -296,34 +495,57 @@
 .requirementsList li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
   line-height: 1.55;
 }
 
-.checkDot {
-  width: 8px;
-  height: 8px;
+.checkIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--teal-500);
+  background: rgba(15, 143, 141, 0.14);
+  color: var(--teal-700);
+  font-size: 11px;
+  font-weight: 700;
   flex-shrink: 0;
-  /* Align with the first line of text */
-  margin-top: 7px;
 }
 
 .actionList {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
-.actionList h3 {
-  font-size: 14px;
-  margin-bottom: 6px;
+.actionItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
 }
 
-.actionList p {
-  font-size: 12px;
-  color: var(--ink-500);
+.actionNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(224, 110, 72, 0.14);
+  color: var(--coral-700);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.actionItem p {
+  font-size: 13px;
+  color: var(--ink-700);
+  line-height: 1.55;
+  margin: 0;
+  padding-top: 2px;
 }
 
 /* ── Required Documents Guide ── */
@@ -355,10 +577,7 @@
 }
 
 .docsGuideHeader h2 {
-  font-size: 17px;
-  font-weight: 700;
   margin: 0 0 4px;
-  color: var(--ink-900);
 }
 
 .docsGuideHeader p {
@@ -374,10 +593,29 @@
 }
 
 .docsCard {
+  position: relative;
   background: var(--sand-50, #f9f8f6);
   border: 1px solid var(--sand-200);
   border-radius: 14px;
-  padding: 16px;
+  padding: 16px 16px 16px 20px;
+  overflow: hidden;
+}
+
+.docsCard::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.docsCardCore::before {
+  background: var(--teal-500);
+}
+
+.docsCardAdditional::before {
+  background: var(--coral-400);
 }
 
 .docsCard h3 {
@@ -431,19 +669,19 @@
   margin-top: 16px;
   padding: 10px 12px;
   border-radius: 10px;
-  background: rgba(99, 102, 241, 0.06);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  color: #4338ca;
+  background: rgba(224, 110, 72, 0.07);
+  border: 1px solid rgba(224, 110, 72, 0.18);
+  color: var(--coral-700);
 }
 
 .docsTip svg {
-  color: #6366f1;
+  color: var(--coral-500);
 }
 
 .docsTip p {
   font-size: 12px;
   line-height: 1.6;
-  color: #4338ca;
+  color: var(--coral-700);
   margin: 0;
 }
 
@@ -487,7 +725,14 @@
 }
 
 @media (max-width: 1100px) {
-  .hero,
+  .hero {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "media"
+      "content"
+      "panel";
+  }
+
   .columns {
     grid-template-columns: 1fr;
   }
@@ -526,11 +771,6 @@
     text-decoration: underline;
   }
 }
-.metaInline,
-.deadlineInline {
-  display: none;
-}
-
 .mobileStickyBar {
   display: none;
 }
@@ -538,10 +778,12 @@
 .heroImage {
   display: block;
   width: 100%;
-  max-height: 200px;
+  aspect-ratio: 16 / 9;
+  max-height: 280px;
   object-fit: cover;
   border-radius: 16px;
   margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
 }
 
 @media (max-width: 640px) {
@@ -561,9 +803,14 @@
     margin-bottom: 14px;
   }
 
-  /* Single column, top-aligned, no large default gap */
+  /* Single column, top-aligned, no large default gap.
+     Panel is hidden on mobile (sticky bar takes over), so the areas
+     collapse to just media + content. */
   .hero {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "media"
+      "content";
     align-items: stretch;
     gap: 0;
   }
@@ -581,33 +828,15 @@
     margin: 0 0 6px;
   }
 
-  /* Subtitle (just the country name) is redundant on mobile — country is
-     already in the inline meta line below */
   .subtitle {
-    display: none;
-  }
-
-  /* Replace the chip-y metaRow with a compact inline line */
-  .metaRow {
-    display: none;
-  }
-
-  .metaInline {
-    display: block;
     font-size: 13px;
-    color: var(--ink-700);
     margin: 2px 0 0;
   }
 
-  .deadlineInline {
-    display: inline-block;
-    margin-top: 8px;
-    padding: 5px 10px;
-    border-radius: 999px;
-    background: rgba(15, 143, 141, 0.1);
-    color: var(--teal-700);
+  .deadlineBadge {
+    margin-top: 10px;
     font-size: 12px;
-    font-weight: 600;
+    padding: 6px 12px;
   }
 
   /* Hide the entire hero side panel on mobile — everything in it
@@ -646,18 +875,6 @@
 
   .tabRow > button {
     flex-shrink: 0;
-  }
-
-  /* Tips duplicates the dedicated "Application tips" card below — hide
-     it from the tab row on mobile to avoid confusing users who'd
-     otherwise need to discover both. */
-  .tabRow > button[data-tab="Tips"] {
-    display: none;
-  }
-
-  /* Hide redundant tag row in summary section — already noisy on mobile */
-  .summaryBody .tagRow {
-    display: none;
   }
 
   .heroActions {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { useDialog } from "@/components/ui/dialog-provider";
+import { CompetitivenessGauge } from "./competitiveness-gauge";
 import styles from "./detail.module.css";
 
 export type ScholarshipForPanel = {
@@ -92,20 +93,16 @@ export default function ScholarshipHeroPanelClient({ scholarship }: Props) {
       </div>
 
       <h3>Quick facts</h3>
-      {scholarship.competitiveness && (
-        <p>
-          Competitiveness: <strong>{scholarship.competitiveness}</strong>
-        </p>
-      )}
+      <CompetitivenessGauge level={scholarship.competitiveness} compact />
       {scholarship.tags && scholarship.tags.length > 0 && (
-        <div className={styles.tagRow} style={{ marginTop: 10 }}>
+        <div className={styles.tagRow} style={{ marginTop: 14 }}>
           {scholarship.tags.map((tag) => (
             <span key={tag}>{tag}</span>
           ))}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: "10px", marginTop: 14 }}>
+      <div className={styles.heroPanelFooter}>
         {isBookmarked ? (
           <button
             className={styles.secondaryButton}
