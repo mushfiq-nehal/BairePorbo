@@ -141,7 +141,10 @@ const sections: LegalSection[] = [
         <p>
           BairePorbo is currently free to use. Anonymous visitors get a limited number
           of mentor messages per day; signed-in users get higher limits. Specific
-          quotas are subject to change.
+          quotas are subject to change. The product is partly supported by advertising
+          (Google AdSense) — see our{" "}
+          <Link href="/legal/cookies">Cookie Policy</Link> for how ad cookies work and
+          how to control them.
         </p>
         <p>
           We may introduce paid features in the future (such as transcript review or

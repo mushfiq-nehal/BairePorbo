@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import LegalLayout, { LegalSection } from "../legal-layout";
 
 const SUPPORT_EMAIL = "support@baireporbo.app";
+const DEVELOPER_EMAIL = "hello@mushfiqnehal.dev";
 const FACEBOOK_URL = "https://www.facebook.com/baireporbo/";
+const PORTFOLIO_URL = "https://www.mushfiqnehal.dev/";
+const LINKEDIN_URL = "https://www.linkedin.com/in/mushfiq-nehal/";
 
 export const metadata: Metadata = {
   title: "About Us",
@@ -107,10 +110,51 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          We collect only what we need to run the product. We do not sell your
-          data or use it for advertising. You can read the full details in our{" "}
+          We collect only what we need to run the product, and we never sell your
+          account data or hand it to advertisers. BairePorbo is free to use and is
+          partly supported by ads (Google AdSense) — you can read exactly how that
+          works, and control your cookie choices, in our{" "}
+          <a href="/legal/cookies">Cookie policy</a>. For everything else, see our{" "}
           <a href="/legal/privacy">Privacy policy</a>, or request account
           deletion anytime by emailing us.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "who-runs-this",
+    title: "Who runs BairePorbo",
+    body: (
+      <>
+        <p>
+          BairePorbo is built and maintained by{" "}
+          <strong>Md. Mushfiqur Rahman</strong>, a full-stack developer based in
+          Dhaka, Bangladesh — not a university, government body, or large
+          corporation. It started after seeing how much time students lose
+          piecing together scholarship information from scattered sources, and
+          it&apos;s run as a real, ongoing product rather than a one-off project.
+        </p>
+        <p>
+          You can learn more or verify who&apos;s behind BairePorbo via{" "}
+          <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
+            the developer&apos;s portfolio
+          </a>{" "}
+          or{" "}
+          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+            LinkedIn
+          </a>
+          .
+        </p>
+        <p>
+          I stand behind everything published here. If you spot an error, have a
+          concern, or just want to know more about the product, email{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> for general
+          support, <a href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>{" "}
+          for anything developer-related, or reach out on{" "}
+          <a href={FACEBOOK_URL} target="_blank" rel="noopener noreferrer">
+            Facebook
+          </a>{" "}
+          — a real person reads and replies to every message.
         </p>
       </>
     ),

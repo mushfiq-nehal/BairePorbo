@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import LegalLayout, { LegalSection } from "../legal-layout";
 
 const SUPPORT_EMAIL = "support@baireporbo.app";
+const DEVELOPER_EMAIL = "hello@mushfiqnehal.dev";
 const FACEBOOK_URL = "https://www.facebook.com/baireporbo/";
+const PORTFOLIO_URL = "https://www.mushfiqnehal.dev/";
+const LINKEDIN_URL = "https://www.linkedin.com/in/mushfiq-nehal/";
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -42,6 +45,29 @@ const sections: LegalSection[] = [
           for updates, tips, and community discussion. We check messages there
           regularly, though email is usually quicker for account or technical
           issues.
+        </p>
+      </>
+    ),
+  },
+  {
+    id: "developer",
+    title: "Developer",
+    body: (
+      <>
+        <p>
+          BairePorbo is built by{" "}
+          <strong>Md. Mushfiqur Rahman</strong>, based in Dhaka, Bangladesh. For
+          technical issues, bug reports, or anything developer-related, email{" "}
+          <a href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a> directly, or
+          find more via{" "}
+          <a href={PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
+            portfolio
+          </a>{" "}
+          and{" "}
+          <a href={LINKEDIN_URL} target="_blank" rel="noopener noreferrer">
+            LinkedIn
+          </a>
+          .
         </p>
       </>
     ),

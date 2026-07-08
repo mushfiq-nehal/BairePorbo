@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import LegalLayout, { LegalSection } from "../legal-layout";
 
-const LAST_UPDATED = "May 27, 2026";
+const LAST_UPDATED = "July 8, 2026";
 const SUPPORT_EMAIL = "support@baireporbo.app";
 
 export const metadata: Metadata = {
@@ -24,7 +25,8 @@ const sections: LegalSection[] = [
         <ul>
           <li>We only collect what you give us (account info, profile fields, chat questions).</li>
           <li>We use that data to operate the product — finding scholarships, generating AI summaries, and improving matching.</li>
-          <li>We don&apos;t sell your data. We don&apos;t use it for advertising.</li>
+          <li>We don&apos;t sell your account data, and advertisers never see it.</li>
+          <li>BairePorbo shows ads (Google AdSense) to stay free — cookies for that only load if you accept our cookie banner. See our <Link href="/legal/cookies">Cookie Policy</Link> for details.</li>
           <li>You can delete your account and data at any time by emailing us.</li>
         </ul>
         <p>
@@ -70,9 +72,13 @@ const sections: LegalSection[] = [
 
         <h3>What we don&apos;t collect</h3>
         <ul>
-          <li>We do not use third-party advertising trackers or analytics that share data with advertisers.</li>
           <li>We do not collect biometric data, location data, or device sensor data.</li>
           <li>We do not require you to upload identity documents or transcripts.</li>
+          <li>
+            We do not let advertisers see your account data (email, profile fields,
+            chat history) — see &ldquo;Advertising cookies&rdquo; below for what
+            advertising cookies actually do.
+          </li>
         </ul>
       </>
     ),
@@ -92,8 +98,11 @@ const sections: LegalSection[] = [
           <li>Communicate operational messages such as email confirmation and password resets.</li>
         </ul>
         <p>
-          We do <strong>not</strong> use your personal data for advertising, profiling
-          for third parties, or any commercial purpose beyond running BairePorbo.
+          We do <strong>not</strong> sell your account data, profile, or chat history
+          to advertisers, and we don&apos;t hand it to any advertising network. Ads on
+          BairePorbo are served by Google AdSense using their own advertising cookies —
+          see &ldquo;Advertising cookies&rdquo; below for exactly how that works and how
+          to control it.
         </p>
       </>
     ),
@@ -130,11 +139,70 @@ const sections: LegalSection[] = [
             <strong>Email delivery</strong> (Supabase or our SMTP provider) sends
             confirmation, password reset, and operational emails.
           </li>
+          <li>
+            <strong>Google AdSense</strong> serves the ads on BairePorbo. If you accept
+            our cookie banner, Google and its advertising partners may set cookies to
+            measure and personalise ads based on your visits to this and other sites.
+          </li>
+          <li>
+            <strong>Meta Pixel</strong> helps us understand traffic from Facebook and,
+            if you accept cookies, supports better-targeted campaigns there.
+          </li>
         </ul>
         <p>
           Each provider has its own privacy practices. We pick providers that publish
           clear policies and don&apos;t retain user prompts to train their models.
         </p>
+      </>
+    ),
+  },
+  {
+    id: "advertising-cookies",
+    title: "Advertising cookies",
+    body: (
+      <>
+        <p>
+          BairePorbo is free to use and is partly supported by advertising. We show a
+          cookie banner on your first visit with <strong>Accept</strong> and{" "}
+          <strong>Reject</strong> options. Advertising cookies from Google AdSense and
+          the Meta Pixel only load if you click Accept — before that, we tell Google
+          (via Google Consent Mode v2) that ad and analytics storage are denied.
+        </p>
+        <p>
+          Google and other third-party vendors use cookies — including Google&apos;s
+          own cookies — to serve ads to you based on your prior visits to BairePorbo or
+          other websites. You can control this at any time:
+        </p>
+        <ul>
+          <li>
+            Reopen our cookie banner via the &ldquo;Cookie settings&rdquo; link in the
+            footer, or read the full{" "}
+            <Link href="/legal/cookies">Cookie Policy</Link> for details on every
+            cookie we use.
+          </li>
+          <li>
+            Opt out of personalised Google ads at{" "}
+            <a
+              href="https://adssettings.google.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              adssettings.google.com
+            </a>
+            .
+          </li>
+          <li>
+            Opt out of interest-based ads from participating networks at{" "}
+            <a
+              href="https://www.aboutads.info/choices/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              aboutads.info/choices
+            </a>
+            .
+          </li>
+        </ul>
       </>
     ),
   },

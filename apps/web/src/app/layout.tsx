@@ -7,6 +7,7 @@ import { headers, cookies } from "next/headers";
 import "./globals.css";
 import Providers from "./providers";
 import MobileTabBar from "@/components/layout/mobile-tab-bar";
+import CookieConsentBanner from "@/components/consent/cookie-consent-banner";
 
 const displayFont = Fraunces({
   variable: "--font-display",
@@ -118,47 +119,111 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BairePorbo" />
         <link rel="apple-touch-icon" href="/logo.png" />
-        <script
-          async
+        {/*
+          Google Consent Mode v2 — must be defined before the AdSense tag
+          loads. Ad/analytics storage default to "denied" until the visitor
+          accepts the cookie banner; if they already accepted on a previous
+          visit, grant immediately so returning visitors don't get downgraded
+          ads on every page load.
+        */}
+        <Script id="consent-mode-default" strategy="beforeInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            var storedConsent = null;
+            try { storedConsent = window.localStorage.getItem('bp_cookie_consent'); } catch (e) {}
+            var granted = storedConsent === 'accepted' ? 'granted' : 'denied';
+            gtag('consent', 'default', {
+              ad_storage: granted,
+              analytics_storage: granted,
+              ad_user_data: granted,
+              ad_personalization: granted,
+              wait_for_update: 500
+            });
+          `}
+        </Script>
+        <Script
+          id="adsbygoogle-init"
+          strategy="beforeInteractive"
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1817502704498215"
           crossOrigin="anonymous"
         />
-        {/* Meta Pixel noscript fallback */}
-        <noscript>
-          <img
-            height="1"
-            width="1"
-            style={{ display: "none" }}
-            src="https://www.facebook.com/tr?id=1567668045069288&ev=PageView&noscript=1"
-            alt=""
-          />
-        </noscript>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "BairePorbo",
+              url: BASE_URL,
+              logo: `${BASE_URL}/logo.png`,
+              description:
+                "AI-powered scholarship guidance for Bangladeshi students seeking international scholarships.",
+              email: "support@baireporbo.app",
+              sameAs: ["https://www.facebook.com/baireporbo/"],
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: "Dhaka",
+                addressCountry: "BD",
+              },
+              founder: {
+                "@type": "Person",
+                name: "Md. Mushfiqur Rahman",
+                url: "https://www.mushfiqnehal.dev/",
+                sameAs: [
+                  "https://www.mushfiqnehal.dev/",
+                  "https://www.linkedin.com/in/mushfiq-nehal/",
+                ],
+              },
+              contactPoint: {
+                "@type": "ContactPoint",
+                email: "support@baireporbo.app",
+                contactType: "customer support",
+                areaServed: "BD",
+                availableLanguage: ["English", "Bengali"],
+              },
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Person",
+              name: "Md. Mushfiqur Rahman",
+              url: "https://www.mushfiqnehal.dev/",
+              email: "hello@mushfiqnehal.dev",
+              jobTitle: "Founder & Developer",
+              sameAs: [
+                "https://www.mushfiqnehal.dev/",
+                "https://www.linkedin.com/in/mushfiq-nehal/",
+              ],
+              worksFor: {
+                "@type": "Organization",
+                name: "BairePorbo",
+                url: BASE_URL,
+              },
+              homeLocation: {
+                "@type": "Place",
+                address: {
+                  "@type": "PostalAddress",
+                  addressLocality: "Dhaka",
+                  addressCountry: "BD",
+                },
+              },
+            }),
+          }}
+        />
       </head>
       <body>
         <Providers defaultLang={defaultLang}>
           {children}
           <MobileTabBar />
+          <CookieConsentBanner />
         </Providers>
         <Analytics />
-        {/* Meta Pixel */}
-        <Script
-          id="meta-pixel"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              !function(f,b,e,v,n,t,s)
-              {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-              n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-              if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-              n.queue=[];t=b.createElement(e);t.async=!0;
-              t.src=v;s=b.getElementsByTagName(e)[0];
-              s.parentNode.insertBefore(t,s)}(window, document,'script',
-              'https://connect.facebook.net/en_US/fbevents.js');
-              fbq('init', '1567668045069288');
-              fbq('track', 'PageView');
-            `,
-          }}
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

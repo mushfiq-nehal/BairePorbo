@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
+import { openCookieSettings } from "@/lib/consent";
 import styles from "./shared-footer.module.css";
 
 export default function SharedFooter() {
@@ -35,6 +36,24 @@ export default function SharedFooter() {
           <p className={styles.footerCopyright}>
             © {new Date().getFullYear()} BairePorbo. {t("footer.copyright")}
           </p>
+          <button
+            type="button"
+            onClick={openCookieSettings}
+            className={styles.footerCookieSettings}
+          >
+            {t("footer.cookieSettings")}
+          </button>
+          <p className={styles.footerBuiltBy}>
+            {t("footer.builtBy")}{" "}
+            <a
+              href="https://www.mushfiqnehal.dev/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Md. Mushfiqur Rahman
+            </a>
+            {" · "}Dhaka, Bangladesh
+          </p>
         </div>
 
         <div className={styles.footerColumns}>
@@ -55,6 +74,7 @@ export default function SharedFooter() {
             <Link href="/legal/about">{t("footer.aboutUs")}</Link>
             <Link href="/legal/contact">{t("footer.contactUs")}</Link>
             <Link href="/legal/privacy">{t("footer.privacyPolicy")}</Link>
+            <Link href="/legal/cookies">{t("footer.cookiePolicy")}</Link>
             <Link href="/legal/terms">{t("footer.termsOfService")}</Link>
             <Link href="/legal/partner">{t("footer.partnerWithUs")}</Link>
           </div>
