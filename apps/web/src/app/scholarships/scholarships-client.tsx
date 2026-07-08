@@ -369,7 +369,12 @@ function ScholarshipCard({
 
       {s.tags && s.tags.length > 0 && (
         <div className={styles.tagRow}>
-          {s.tags.map((tag) => <span key={tag}>{tag}</span>)}
+          {s.tags.slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}
+          {s.tags.length > 4 && (
+            <span className={styles.tagMore} title={s.tags.slice(4).join(", ")}>
+              +{s.tags.length - 4}
+            </span>
+          )}
         </div>
       )}
 

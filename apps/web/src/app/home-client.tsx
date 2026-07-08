@@ -509,7 +509,7 @@ function ProductPreview() {
 
       <div className={styles.previewBadge}>
         <span className={styles.previewBadgePulse} />
-        Powered by Deepseek V4
+        Powered by Advanced AI
       </div>
     </div>
   );
