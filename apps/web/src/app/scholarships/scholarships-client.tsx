@@ -137,6 +137,26 @@ const LEVEL_MAP: Record<string, string> = {
   any: "Any",
 };
 
+// Canonical order/subset shown in the Level filter dropdown.
+const LEVEL_FILTER_ORDER = ["Any", "Bachelors", "Masters", "PhD"];
+
+// Some records store combined values like "masters | phd" or "masters, phd"
+// instead of a single enum value. Split those into their constituent levels
+// so they can be matched against the (single-value) Level filter options.
+function normalizeLevels(raw: string): string[] {
+  if (!raw) return [];
+  const tokens = raw
+    .toLowerCase()
+    .split(/[|,/]|\band\b|\bor\b/i)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const labels = tokens
+    .map((tok) => LEVEL_MAP[tok])
+    .filter((label): label is string => Boolean(label));
+  if (labels.length) return Array.from(new Set(labels));
+  return [LEVEL_MAP[raw.toLowerCase().trim()] ?? raw];
+}
+
 const FUNDING_PRIORITY: Record<string, number> = {
   Full: 1, Partial: 2, Tuition: 3, Stipend: 4,
 };
@@ -361,7 +381,7 @@ function ScholarshipCard({
           <p className={styles.cardLabel}>{s.country}</p>
           <h3>{s.title}</h3>
           <p className={styles.cardMeta}>
-            {LEVEL_MAP[s.degree_level] ?? s.degree_level} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
+            {normalizeLevels(s.degree_level).join(" / ")} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
           </p>
         </div>
         <span className={`${styles.deadline} ${deadlineClass()}`}>{deadlineBadge()}</span>
@@ -447,7 +467,10 @@ function ScholarshipsContent() {
   // Derive filter options from real data
   const countries = useMemo(() => [...new Set(scholarships.map((s) => s.country))].sort(), [scholarships]);
   const fundingOptions = useMemo(() => [...new Set(scholarships.map((s) => FUNDING_MAP[s.funding_type] ?? s.funding_type))].sort(), [scholarships]);
-  const levelOptions = useMemo(() => [...new Set(scholarships.map((s) => LEVEL_MAP[s.degree_level] ?? s.degree_level))].sort(), [scholarships]);
+  const levelOptions = useMemo(() => {
+    const present = new Set(scholarships.flatMap((s) => normalizeLevels(s.degree_level)));
+    return LEVEL_FILTER_ORDER.filter((lvl) => present.has(lvl));
+  }, [scholarships]);
 
   const applyFiltersAndSort = (list: Scholarship[]) => {
     const q = searchTerm.trim().toLowerCase();
@@ -455,10 +478,10 @@ function ScholarshipsContent() {
       if (selectedCountries.length && !selectedCountries.includes(s.country)) return false;
       const fundLabel = FUNDING_MAP[s.funding_type] ?? s.funding_type;
       if (selectedFunding.length && !selectedFunding.includes(fundLabel)) return false;
-      const levelLabel = LEVEL_MAP[s.degree_level] ?? s.degree_level;
-      if (selectedLevels.length && !selectedLevels.includes(levelLabel)) return false;
+      const levelLabels = normalizeLevels(s.degree_level);
+      if (selectedLevels.length && !selectedLevels.some((l) => levelLabels.includes(l))) return false;
       if (!q) return true;
-      const haystack = [s.title, s.country, fundLabel, levelLabel, ...(s.tags ?? [])].join(" ").toLowerCase();
+      const haystack = [s.title, s.country, fundLabel, ...levelLabels, ...(s.tags ?? [])].join(" ").toLowerCase();
       return haystack.includes(q);
     });
 
