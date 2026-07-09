@@ -5,7 +5,9 @@ import { fetchPublishedDbGuides, sortGuides } from "@/lib/guides-db";
 import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+// ISR: the guide index is cached and refreshed hourly rather than rebuilt on
+// every request.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "Study Abroad Guides & FAQs for Bangladeshi Students",

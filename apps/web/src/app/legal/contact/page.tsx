@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "Contact Us",
   description:
     "Get in touch with the BairePorbo team for support, feedback, or partnership inquiries.",
+  alternates: { canonical: "https://baireporbo.app/legal/contact" },
 };
 
 const sections: LegalSection[] = [

@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   title: "About Us",
   description:
     "Learn about BairePorbo — AI-powered scholarship guidance built for Bangladeshi students pursuing study abroad.",
+  alternates: { canonical: "https://baireporbo.app/legal/about" },
 };
 
 const sections: LegalSection[] = [

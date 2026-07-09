@@ -1,9 +1,7 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Fraunces, Manrope, Hind_Siliguri } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { headers, cookies } from "next/headers";
 import "./globals.css";
 import Providers from "./providers";
 import MobileTabBar from "@/components/layout/mobile-tab-bar";
@@ -50,16 +48,22 @@ export const metadata: Metadata = {
   creator: "BairePorbo",
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    shortcut: ["/logo.png"],
+    shortcut: ["/icon-32.png"],
     apple: [
-      { url: "/logo.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
   openGraph: {
     type: "website",
-    locale: "bn_BD",
+    // The server-rendered (crawlable) content is English; Bangla is applied
+    // client-side. Declare English as primary with Bangla as an alternate so
+    // the OG locale matches what crawlers actually see.
+    locale: "en_US",
+    alternateLocale: ["bn_BD"],
     url: BASE_URL,
     siteName: "BairePorbo",
     title: "BairePorbo — AI Scholarship Guidance for Bangladeshi Students",
@@ -93,32 +97,32 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+// Next 16 wants viewport / theme-color declared via the `viewport` export
+// rather than inside `metadata`.
+export const viewport: Viewport = {
+  themeColor: "#0f8f8d",
+  width: "device-width",
+  initialScale: 1,
+};
+
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [headersList, cookieStore] = await Promise.all([headers(), cookies()]);
-
-  // Respect an explicit user preference set via the language toggle
-  const storedLang = cookieStore.get("bp_lang")?.value;
-  const preferredLang =
-    storedLang === "bn" || storedLang === "en" ? storedLang : undefined;
-
-  // Fall back to geo-based default: Bangla for Bangladesh, English everywhere else
-  const country = headersList.get("x-vercel-ip-country");
-  const defaultLang: "bn" | "en" = preferredLang ?? (country === "BD" ? "bn" : "en");
-
+  // NOTE: This layout is intentionally NOT async and does NOT read headers()/
+  // cookies(). Doing so would opt the entire app into dynamic rendering and
+  // disable SSG/ISR everywhere. Locale detection now happens client-side in
+  // LangProvider (localStorage preference → navigator.language heuristic).
+  // `lang="en"` is the crawlable default (Googlebot crawls the English SSR).
   return (
-    <html lang={defaultLang} className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable} ${bengaliFont.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#0f8f8d" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BairePorbo" />
-        <link rel="apple-touch-icon" href="/logo.png" />
         {/*
           Google Consent Mode v2 — must be defined before the AdSense tag
           loads. Ad/analytics storage default to "denied" until the visitor
@@ -186,6 +190,33 @@ export default async function RootLayout({
             }),
           }}
         />
+        {/*
+          WebSite + SearchAction — powers the Google sitelinks search box and
+          gives search engines / AI assistants a machine-readable way to query
+          the scholarship catalog. inLanguage declares bilingual coverage.
+        */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "BairePorbo",
+              alternateName: "BairePorbo — AI Scholarship Guidance",
+              url: BASE_URL,
+              inLanguage: ["en", "bn"],
+              publisher: { "@type": "Organization", name: "BairePorbo", url: BASE_URL },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: {
+                  "@type": "EntryPoint",
+                  urlTemplate: `${BASE_URL}/scholarships?q={search_term_string}`,
+                },
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -218,7 +249,7 @@ export default async function RootLayout({
         />
       </head>
       <body>
-        <Providers defaultLang={defaultLang}>
+        <Providers>
           {children}
           <MobileTabBar />
           <CookieConsentBanner />

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
     "How BairePorbo collects, uses, and protects information you share when using our scholarship guidance product.",
+  alternates: { canonical: "https://baireporbo.app/legal/privacy" },
 };
 
 const sections: LegalSection[] = [

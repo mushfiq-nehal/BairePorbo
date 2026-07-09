@@ -10,7 +10,16 @@ import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
 
-export const dynamic = "force-dynamic";
+// ISR instead of force-dynamic: prerender each published guide and refresh
+// hourly. Guides change rarely, so serving cached HTML massively improves
+// TTFB/LCP and lets crawlers index stable markup.
+export const revalidate = 3600;
+export const dynamicParams = true;
+
+export async function generateStaticParams() {
+  const guides = await fetchPublishedDbGuides();
+  return guides.map((g) => ({ slug: g.slug }));
+}
 
 interface Props {
   params: Promise<{ slug: string }>;

@@ -17,24 +17,42 @@ const LangContext = createContext<LangContextType>({
 
 export function LangProvider({
   children,
-  defaultLang = "bn",
+  defaultLang = "en",
+  forced = false,
 }: {
   children: ReactNode;
   defaultLang?: Lang;
+  /**
+   * When true, the locale is dictated by the route (e.g. the /bn subtree) and
+   * must NOT be overridden by localStorage/navigator. This keeps the SSR output
+   * deterministic and identical to what crawlers index — no client-side flash.
+   */
+  forced?: boolean;
 }) {
+  // Start from English so the server-rendered (crawlable) markup matches the
+  // <html lang="en"> attribute — this keeps hydration deterministic and lets
+  // every page render statically (no headers()/cookies() on the server).
   const [lang, setLangState] = useState<Lang>(defaultLang);
 
   useEffect(() => {
-    // Explicit user preference (localStorage) overrides the geo-based default
+    if (forced) return; // route-driven locale — never auto-switch
     try {
+      // 1) Explicit user preference always wins.
       const stored = localStorage.getItem("bp_lang") as Lang | null;
       if (stored === "bn" || stored === "en") {
         setLangState(stored);
+        return;
+      }
+      // 2) No stored preference → infer from the browser locale. This replaces
+      //    the old server-side geo detection while keeping the app static:
+      //    Bangla-locale visitors (e.g. bn-BD) still get Bangla automatically.
+      if (typeof navigator !== "undefined" && navigator.language?.toLowerCase().startsWith("bn")) {
+        setLangState("bn");
       }
     } catch {
       // ignore
     }
-  }, []);
+  }, [forced]);
 
   const setLang = (l: Lang) => {
     setLangState(l);

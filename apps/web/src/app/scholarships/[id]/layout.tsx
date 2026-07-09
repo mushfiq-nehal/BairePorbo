@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { sql } from "@/utils/db";
+import { getScholarshipByIdOrSlug } from "@/lib/scholarships-db";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -36,40 +36,34 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = await params;
 
-    // Accept both slug and UUID in the URL
-    const rows = await sql`
-      SELECT title, country, degree_level, funding_type, ai_summary, thumbnail_url, slug
-      FROM scholarships
-      WHERE (slug = ${id} OR id::text = ${id})
-        AND status = 'published'
-      LIMIT 1
-    `;
-    const s = rows[0];
+    // Shared, request-memoised fetch — the page component reuses this exact
+    // result, so we don't hit Neon twice per render.
+    const s = await getScholarshipByIdOrSlug(id);
 
-    if (!s) return { title: "Scholarship Not Found" };
+    if (!s) return { title: "Scholarship Not Found", robots: { index: false, follow: true } };
 
-    const level = LEVEL_MAP[s.degree_level as string] ?? (s.degree_level as string);
-    const funding = FUNDING_MAP[s.funding_type as string] ?? (s.funding_type as string);
+    const level = LEVEL_MAP[s.degree_level] ?? s.degree_level;
+    const funding = FUNDING_MAP[s.funding_type] ?? s.funding_type;
 
     const rawDescription =
-      (s.ai_summary as string | null) ??
+      s.ai_summary ??
       `${level} scholarship in ${s.country} — ${funding}. Get AI-powered eligibility summaries and application tips on BairePorbo.`;
-    const description = truncateDescription(rawDescription);
+    const description = truncateDescription(rawDescription.replace(/\s+/g, " ").trim());
 
     // Always use the slug URL as canonical (never the UUID)
-    const canonicalId = (s.slug as string | null) ?? id;
+    const canonicalId = s.slug ?? id;
     const pageUrl = `${BASE_URL}/scholarships/${canonicalId}`;
 
     const images = s.thumbnail_url
-      ? [{ url: s.thumbnail_url as string, width: 1200, height: 630, alt: s.title as string }]
+      ? [{ url: s.thumbnail_url, width: 1200, height: 630, alt: `${s.title} — ${s.country} scholarship` }]
       : [{ url: "/og-image.png", width: 1200, height: 630, alt: "BairePorbo" }];
 
     return {
-      title: `${s.title as string} (${s.country as string})`,
+      title: `${s.title} (${s.country})`,
       description,
       alternates: { canonical: pageUrl },
       openGraph: {
-        title: `${s.title as string} | Study in ${s.country as string}`,
+        title: `${s.title} | Study in ${s.country}`,
         description,
         url: pageUrl,
         type: "article",
@@ -77,7 +71,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
       twitter: {
         card: "summary_large_image",
-        title: `${s.title as string} | BairePorbo`,
+        title: `${s.title} | BairePorbo`,
         description,
         images: images.map((img) => img.url),
       },

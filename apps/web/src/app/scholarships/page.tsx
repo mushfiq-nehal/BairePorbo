@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import ScholarshipsClient from "./scholarships-client";
+import ScholarshipDirectory from "./scholarship-directory";
 
 const BASE_URL = "https://baireporbo.app";
+
+// ISR — the crawlable directory below is server-rendered and cached, refreshed
+// hourly so new scholarships get discoverable internal links without a rebuild.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "International Scholarships for Bangladeshi Students",
@@ -35,5 +40,11 @@ export const metadata: Metadata = {
 };
 
 export default function ScholarshipsPage() {
-  return <ScholarshipsClient />;
+  return (
+    <>
+      <ScholarshipsClient />
+      {/* Server-rendered crawlable index of every scholarship (see component). */}
+      <ScholarshipDirectory />
+    </>
+  );
 }

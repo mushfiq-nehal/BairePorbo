@@ -1,6 +1,7 @@
 import { MetadataRoute } from "next";
 import { sql } from "@/utils/db";
 import { fetchPublishedDbGuides } from "@/lib/guides-db";
+import { languageAlternates, bnUrl } from "@/lib/i18n";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -12,6 +13,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 1.0,
+      // Reciprocal hreflang cluster for the homepage (en ↔ bn, x-default → en).
+      alternates: { languages: languageAlternates("/") },
+    },
+    {
+      // Bangla homepage — the only localized page today. It carries the same
+      // hreflang cluster so the pair is reciprocal.
+      url: bnUrl("/"),
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+      alternates: { languages: languageAlternates("/") },
     },
     {
       url: `${BASE_URL}/scholarships`,

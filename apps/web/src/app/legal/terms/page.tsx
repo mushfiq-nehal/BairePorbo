@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   title: "Terms of Service",
   description:
     "The terms governing your use of BairePorbo's scholarship guidance and AI mentor services.",
+  alternates: { canonical: "https://baireporbo.app/legal/terms" },
 };
 
 const sections: LegalSection[] = [

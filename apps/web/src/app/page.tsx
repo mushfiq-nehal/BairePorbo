@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import HomeClient from "./home-client";
+import { alternatesFor } from "@/lib/i18n";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -7,9 +8,8 @@ export const metadata: Metadata = {
   title: "Find International Scholarships for Bangladeshi Students",
   description:
     "Discover 300+ fully funded and partial scholarships for students from Bangladesh. Browse Masters, PhD, and Bachelors opportunities in the UK, USA, Germany, Canada, and more — with AI-powered eligibility summaries.",
-  alternates: {
-    canonical: BASE_URL,
-  },
+  // Self-canonical (English, unprefixed) + reciprocal hreflang to /bn + x-default.
+  alternates: alternatesFor("/", "en"),
   openGraph: {
     title: "Find International Scholarships for Bangladeshi Students | BairePorbo",
     description:
