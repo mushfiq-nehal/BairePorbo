@@ -22,6 +22,7 @@ export const translations = {
 
   // ── Mobile tab bar ───────────────────────────────────────────────────────
   "tab.home": { en: "Home", bn: "হোম" },
+  "tab.guide": { en: "Guide", bn: "গাইড" },
   "tab.mentor": { en: "Mentor", bn: "মেন্টর" },
   "tab.signUp": { en: "Sign up", bn: "সাইন আপ" },
 

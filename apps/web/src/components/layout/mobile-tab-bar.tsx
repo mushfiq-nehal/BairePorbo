@@ -29,6 +29,13 @@ const BookIcon = () => (
   </svg>
 );
 
+const GuideIcon = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M15.5 8.5 L13 13 L8.5 15.5 L11 11 Z" />
+  </svg>
+);
+
 const MentorIcon = () => (
   <svg viewBox="0 0 24 24" aria-hidden="true">
     <path d="M21 12 A8 8 0 1 1 12.5 4 H13 A8 8 0 0 1 21 12 Z" />
@@ -76,6 +83,7 @@ export default function MobileTabBar() {
       icon: <BookIcon />,
       matchPrefix: "/scholarships",
     },
+    { href: "/guide", label: t("tab.guide"), icon: <GuideIcon />, matchPrefix: "/guide" },
     { href: "/chat", label: t("tab.mentor"), icon: <MentorIcon />, matchPrefix: "/chat" },
     {
       // Logged-in users go to the dashboard. Anonymous users go to signup
