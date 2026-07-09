@@ -25,6 +25,38 @@ const bengaliFont = Hind_Siliguri({
 
 const BASE_URL = "https://baireporbo.app";
 
+// Keep in sync with DEVICES in scripts/generate-splash-screens.py.
+const APPLE_SPLASH_DEVICES: Array<[width: number, height: number, dpr: number]> = [
+  [320, 568, 2],
+  [375, 667, 2],
+  [414, 736, 3],
+  [375, 812, 3],
+  [414, 896, 2],
+  [414, 896, 3],
+  [360, 780, 3],
+  [390, 844, 3],
+  [428, 926, 3],
+  [393, 852, 3],
+  [430, 932, 3],
+  [768, 1024, 2],
+  [810, 1080, 2],
+  [820, 1180, 2],
+  [834, 1112, 2],
+  [834, 1194, 2],
+  [744, 1133, 2],
+  [1024, 1366, 2],
+];
+
+const APPLE_SPLASH_SCREENS = APPLE_SPLASH_DEVICES.flatMap(([width, height, dpr]) =>
+  ([
+    ["portrait", width, height],
+    ["landscape", height, width],
+  ] as const).map(([orientation, w, h]) => ({
+    href: `/splash/apple-splash-${w * dpr}-${h * dpr}.png`,
+    media: `(device-width: ${w}px) and (device-height: ${h}px) and (-webkit-device-pixel-ratio: ${dpr}) and (orientation: ${orientation})`,
+  })),
+);
+
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
   title: {
@@ -123,6 +155,15 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="BairePorbo" />
+        {/*
+          iOS PWA launch splash screens. Safari doesn't read the manifest's
+          icon/background_color for the launch screen like Android does, so
+          each device resolution needs its own pre-rendered image (generated
+          via scripts/generate-splash-screens.py from public/splashscreen.png).
+        */}
+        {APPLE_SPLASH_SCREENS.map(({ href, media }) => (
+          <link key={href} rel="apple-touch-startup-image" href={href} media={media} />
+        ))}
         {/*
           Google Consent Mode v2 — must be defined before the AdSense tag
           loads. Ad/analytics storage default to "denied" until the visitor
