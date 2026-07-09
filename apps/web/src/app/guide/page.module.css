@@ -327,6 +327,12 @@
     padding: 1.75rem 1.25rem 1.5rem;
   }
 
+  .breadcrumb,
+  .kicker,
+  .subtitle {
+    display: none;
+  }
+
   .gridSection {
     padding: 2rem 1.25rem 2.5rem;
   }
