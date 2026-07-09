@@ -317,13 +317,14 @@ export default async function ScholarshipDetailPage({ params }: Props) {
           }}
         />
 
-        {/* ── Eligibility checklist + Application tips — permanent, always
-            visible (not tucked behind a tab) since they're what students
-            most need to act on. Server-rendered for SEO. ─────────────── */}
-        <section className={styles.columns}>
-          <div className={`${styles.panel} ${styles.panelEligibility}`}>
+        {/* ── Eligibility checklist + Application timeline — permanent,
+            always visible (not tucked behind a tab) since they're what
+            students most need to act on. Server-rendered for SEO. ────── */}
+        <section className={`${styles.columns} ${styles.sectionRule}`}>
+          <div className={styles.panel}>
             <div className={styles.panelHeader}>
-              <h2>Eligibility checklist</h2>
+              <span className={styles.eyebrow}>Requirements</span>
+              <h2 className={styles.sectionHeading}>Eligibility checklist</h2>
             </div>
             {eligibilityItems.length > 0 ? (
               <ul className={styles.requirementsList}>
@@ -343,7 +344,8 @@ export default async function ScholarshipDetailPage({ params }: Props) {
 
           <div className={`${styles.panel} ${styles.panelTips}`}>
             <div className={styles.panelHeader}>
-              <h2>Application tips</h2>
+              <span className={styles.eyebrow}>How to apply</span>
+              <h2 className={styles.sectionHeading}>Application tips</h2>
             </div>
             {tipItems.length > 0 ? (
               <div className={styles.actionList}>

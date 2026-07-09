@@ -93,6 +93,14 @@
     text-align: left;
   }
 
+  /* .text's base flex-basis (320px) sizes the row-layout *width* on desktop,
+     but once .card switches to a column, the main axis becomes vertical —
+     the same 320px basis then forces the paragraph to stretch to a 320px
+     *height*, creating a huge whitespace gap under the copy. */
+  .text {
+    flex: none;
+  }
+
   .actions {
     width: 100%;
   }

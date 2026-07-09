@@ -321,18 +321,48 @@
   margin-top: 16px;
 }
 
-.summarySection {
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: 0 18px 38px rgba(15, 34, 52, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+/* ── Section rhythm primitives ──────────────────────────────────────────
+   Shared across the editorial sections below instead of re-wrapping each
+   one in its own bordered/shadowed card. A hairline rule + generous
+   padding-top does the separating work; weight comes from type, not chrome. */
+.sectionRule {
+  border-top: 1px solid var(--sand-200);
+  padding-top: 36px;
 }
 
-.summarySection h2,
+.eyebrow {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--teal-700);
+  margin-bottom: 10px;
+}
+
+.sectionHeading {
+  font-family: var(--font-display), var(--font-bengali), serif;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--ink-900);
+  margin: 0;
+}
+
+.sectionLede {
+  font-size: 13.5px;
+  color: var(--ink-500);
+  margin: 6px 0 0;
+  max-width: 60ch;
+}
+
+/* ── AI summary — reads as an article intro, not a tool output ── */
+.summarySection {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .docsGuideHeader h2,
 .panelHeader h2 {
   font-family: var(--font-display), var(--font-bengali), serif;
@@ -342,58 +372,52 @@
   color: var(--ink-900);
 }
 
-.summarySection h2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.aiSparkle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  font-size: 11px;
-  background: linear-gradient(135deg, rgba(15, 143, 141, 0.14), rgba(224, 110, 72, 0.14));
-  flex-shrink: 0;
-}
-
 .summaryHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
 }
 
+.summaryHeaderText {
+  min-width: 0;
+}
+
+/* Underline segmented control (Linear-style) instead of pill buttons on
+   a white card — reads as a view switch, not decoration. */
 .tabRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 20px;
+  border-bottom: 1px solid var(--sand-200);
+  flex-shrink: 0;
 }
 
 .tabButton,
 .tabActive {
-  border: 1px solid var(--sand-200);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 12px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 10px;
+  font-size: 13px;
+  color: var(--ink-500);
   cursor: pointer;
-  background: #ffffff;
+  margin-bottom: -1px;
 }
 
 .tabActive {
-  background: rgba(15, 143, 141, 0.16);
   color: var(--teal-700);
   font-weight: 600;
+  border-bottom-color: var(--teal-500);
 }
 
 .markdownBody {
-  font-size: 14px;
+  font-size: 15px;
   color: var(--ink-700);
-  line-height: 1.65;
+  line-height: 1.7;
+  max-width: 72ch;
 }
 
 .markdownBody > * + * {
@@ -442,53 +466,38 @@
   color: var(--ink-700);
 }
 
-/* ── Eligibility checklist + Application tips ──
-   Paired cards: a colored left accent bar + icon language that signals
-   "these two are a pair, and distinct from the AI-generated content above". */
+/* ── Eligibility checklist + Application timeline ──
+   No boxed panels: a shared hairline divider carries both, and a single
+   vertical rule between the two columns is the only "border" doing work —
+   it separates without adding another rounded rectangle. */
 .columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 48px;
   align-items: start;
 }
 
 .panel {
-  position: relative;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 20px;
-  padding: 22px 22px 22px 26px;
-  box-shadow: 0 18px 38px rgba(15, 34, 52, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  overflow: hidden;
+  min-width: 0;
 }
 
-.panel::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-}
-
-.panelEligibility::before {
-  background: var(--teal-500);
-}
-
-.panelTips::before {
-  background: var(--coral-400);
+.panelTips {
+  padding-left: 48px;
+  border-left: 1px solid var(--sand-200);
 }
 
 .panelHeader {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
+/* Checklist — plain content, checkmark does the "requirement met" signalling
+   instead of a card border. */
 .requirementsList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  font-size: 13px;
+  gap: 16px;
+  font-size: 14px;
   color: var(--ink-700);
 }
 
@@ -496,202 +505,203 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  line-height: 1.55;
+  line-height: 1.6;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--sand-100);
+}
+
+.requirementsList li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 .checkIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: rgba(15, 143, 141, 0.14);
+  border: 1.5px solid var(--teal-500);
   color: var(--teal-700);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   flex-shrink: 0;
+  margin-top: 2px;
 }
 
+/* Application tips — vertical timeline: a connecting spine ties the steps
+   together so the section reads as a sequence, not a stack of cards. */
 .actionList {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 22px;
+}
+
+.actionList::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 6px;
+  bottom: 6px;
+  width: 1px;
+  background: var(--sand-200);
 }
 
 .actionItem {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 16px;
 }
 
 .actionNumber {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
-  background: rgba(224, 110, 72, 0.14);
+  background: var(--sand-50, #faf9f7);
+  border: 1.5px solid var(--coral-400);
   color: var(--coral-700);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.3px;
   flex-shrink: 0;
 }
 
 .actionItem p {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-700);
-  line-height: 1.55;
+  line-height: 1.6;
   margin: 0;
-  padding-top: 2px;
+  padding-top: 3px;
 }
 
-/* ── Required Documents Guide ── */
+/* ── Required Documents — categorized documentation, not two equal cards.
+   Core docs get the primary column and full typographic weight; the
+   "sometimes required" list is demoted to a narrower side note so the
+   hierarchy matches how often a student actually needs each one. ── */
 .docsGuide {
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 18px 38px rgba(15, 34, 52, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  display: block;
 }
 
 .docsGuideHeader {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.docsGuideIcon {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  background: rgba(15, 143, 141, 0.1);
-  color: var(--teal-700);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .docsGuideHeader h2 {
-  margin: 0 0 4px;
+  margin: 0 0 6px;
 }
 
 .docsGuideHeader p {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ink-500);
   margin: 0;
+  max-width: 60ch;
 }
 
 .docsColumns {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: start;
 }
 
 .docsCard {
-  position: relative;
-  background: var(--sand-50, #f9f8f6);
-  border: 1px solid var(--sand-200);
-  border-radius: 14px;
-  padding: 16px 16px 16px 20px;
-  overflow: hidden;
+  min-width: 0;
 }
 
-.docsCard::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-}
-
-.docsCardCore::before {
-  background: var(--teal-500);
-}
-
-.docsCardAdditional::before {
-  background: var(--coral-400);
+.docsCardAdditional {
+  padding-left: 32px;
+  border-left: 1px solid var(--sand-200);
 }
 
 .docsCard h3 {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--ink-900);
   margin: 0 0 14px;
   display: flex;
   align-items: center;
   gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.docsBadge {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
+.docsCardCore h3 {
+  font-size: 14px;
 }
 
 .docsList {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  font-size: 13px;
+  gap: 12px;
+  font-size: 14px;
   color: var(--ink-700);
+}
+
+.docsCardAdditional .docsList {
+  font-size: 13px;
+  gap: 10px;
 }
 
 .docsList li {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .docsDot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--teal-500);
+  background: var(--ink-300);
   flex-shrink: 0;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
+/* Shared minimal callout — a colored left rule carries the meaning, not a
+   filled rounded box. Used for the "pro tip" and the AI disclaimer alike. */
 .docsTip {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: 16px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: rgba(224, 110, 72, 0.07);
-  border: 1px solid rgba(224, 110, 72, 0.18);
+  margin-top: 18px;
+  padding: 2px 0 2px 12px;
+  border-left: 2px solid var(--coral-400);
   color: var(--coral-700);
-}
-
-.docsTip svg {
-  color: var(--coral-500);
 }
 
 .docsTip p {
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.6;
-  color: var(--coral-700);
+  color: var(--ink-700);
   margin: 0;
 }
 
 .docsTip strong {
   font-weight: 700;
+  color: var(--coral-700);
 }
 
 @media (max-width: 640px) {
   .docsColumns {
     grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .docsCardAdditional {
+    padding-left: 16px;
+    padding-top: 20px;
+    border-left: none;
+    border-top: 1px solid var(--sand-200);
   }
 
   .docsGuideHeader h2 {
@@ -703,10 +713,8 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: rgba(245, 158, 11, 0.06);
-  border: 1px solid rgba(245, 158, 11, 0.2);
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid #d97706;
   color: #92400e;
 }
 
@@ -715,13 +723,14 @@
 }
 
 .aiDisclaimer p {
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.6;
-  color: #92400e;
+  color: var(--ink-500);
 }
 
 .aiDisclaimer strong {
   font-weight: 600;
+  color: #92400e;
 }
 
 @media (max-width: 1100px) {
@@ -735,6 +744,14 @@
 
   .columns {
     grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  .panelTips {
+    padding-left: 0;
+    padding-top: 32px;
+    border-left: none;
+    border-top: 1px solid var(--sand-200);
   }
 }
 
@@ -863,9 +880,7 @@
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -ms-overflow-style: none;
-    padding: 4px 20px;
-    margin: 0 -20px;          /* break out of .summarySection's 20px padding */
-    width: calc(100% + 40px);  /* fill the broken-out width */
+    padding: 4px 0;
     min-width: 0;
   }
 
@@ -984,42 +999,47 @@
   font-weight: 600;
 }
 
-/* ── SEO: official outbound link ─────────────────────────────────────────── */
+/* ── SEO: official outbound link — a slim side note, not a boxed CTA.
+   The Apply button already lives in the hero panel and the mobile sticky
+   bar; repeating it here as a second filled card was pure redundancy. ── */
 .officialLinkCard {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 18px 20px;
-  border: 1px solid rgba(15, 143, 141, 0.22);
-  border-radius: 16px;
-  background: rgba(15, 143, 141, 0.06);
+  gap: 8px 14px;
+  padding-top: 16px;
+  border-top: 1px solid var(--sand-200);
 }
 
 .officialLinkCard p {
   margin: 0;
-  font-size: 14px;
-  color: var(--ink-600, #4a453f);
+  font-size: 13.5px;
+  color: var(--ink-500);
   max-width: 58ch;
+  min-width: 0;
 }
 
 .officialLinkBtn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 18px;
-  border-radius: 12px;
-  background: var(--teal-500, #0f8f8d);
-  color: #fff;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13.5px;
+  color: var(--teal-700);
   text-decoration: none;
-  white-space: nowrap;
+  max-width: 100%;
 }
 
 .officialLinkBtn:hover {
-  background: var(--teal-700, #0b6d6b);
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  .officialLinkCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 /* ── SEO: FAQ ─────────────────────────────────────────────────────────────── */

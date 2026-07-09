@@ -633,20 +633,31 @@
   transform: translateY(-1px);
 }
 
-.secondaryButton {
-  background: var(--ink-900);
-  color: #ffffff;
-  border: none;
-  padding: 10px 16px;
+/* Icon-only bookmark action next to "View details" — a text pill here
+   duplicated the primary CTA's visual weight for a secondary action.
+   The icon communicates "save" at a glance without competing for attention. */
+.bookmarkActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   border-radius: 12px;
-  font-size: 13px;
-  font-family: inherit;
+  background: var(--sand-100);
+  border: 1px solid var(--sand-200);
+  color: var(--ink-700);
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.secondaryButton:hover {
-  opacity: 0.82;
+.bookmarkActionBtn:hover {
+  background: var(--sand-200);
+}
+
+.bookmarkActionBtn:active {
+  transform: scale(0.93);
 }
 
 .bookmarkActive {
@@ -808,6 +819,21 @@
   margin-bottom: 6px;
 }
 
+/* Reserve space for 2 lines up front — titles that fit on 1 line no longer
+   leave the row shorter than a 2-line neighbor, which is what was causing
+   the action row to land at a different height card to card. */
+.card h3 {
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  min-height: calc(1.35em * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .cardMeta {
   font-size: 12px;
   color: var(--ink-500);
@@ -879,8 +905,13 @@
 
 .cardActions {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  /* Push the action row to the bottom of the card regardless of how many
+     lines the title/tags above take up, so buttons line up across a grid
+     row even when neighboring cards have 1-line vs 2-line titles. */
+  margin-top: auto;
 }
 
 .emptyState {
@@ -954,6 +985,29 @@
   font-size: 13px;
   color: var(--ink-500);
   margin: 2px 0 0;
+}
+
+/* Mobile-only stand-in for the hero snapshot panel's total count — hidden
+   on desktop where the panel itself already shows it. Styled as a small
+   pulsing "live" chip (echoing .sectionLiveDot / .liveBadge) rather than
+   plain text, so it reads as a highlight instead of filler copy. */
+.mobileTrackedNote {
+  display: none;
+}
+
+.mobileTrackedNote strong {
+  font-weight: 800;
+  color: var(--teal-800);
+}
+
+.mobileTrackedDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal-500);
+  box-shadow: 0 0 0 3px rgba(15, 143, 141, 0.18);
+  animation: livePulse 2s ease-in-out infinite;
+  flex-shrink: 0;
 }
 
 /* Upcoming card variant — slightly muted */
@@ -1045,6 +1099,14 @@
   .cardGrid {
     grid-template-columns: 1fr;
   }
+
+  /* The 2-line reservation on the title only earns its keep in the 2-column
+     grid above, where sibling cards sit side by side and need matching
+     heights. Single-column below this point — no neighbor to align with,
+     so a 1-line title shouldn't carry a phantom second line of blank space. */
+  .card h3 {
+    min-height: 0;
+  }
 }
 
 @media (max-width: 820px) {
@@ -1092,31 +1154,35 @@
     line-height: 1.2;
   }
 
-  /* Keep the snapshot on mobile — without it, "Open Now 29" reads like the
-     total scholarship count instead of a subset. Compact it down so it
-     doesn't compete with the catalog below: smaller number, no shine/breathe
-     animation, tighter padding. */
+  /* Drop the snapshot panel on mobile — it competes with the catalog below
+     for the same real estate the first tap should go to. The one figure
+     worth keeping (total tracked count) moves into the "Open Now" header
+     instead, via .mobileTrackedNote. */
   .heroPanel {
-    padding: 14px 16px;
-    border-radius: 16px;
-    animation: none;
-  }
-
-  .heroPanel::after {
     display: none;
   }
 
-  .snapshotHeader {
-    margin-bottom: 8px;
+  /* Force the chip onto its own full-width line above the heading, whether
+     .resultsHeader is currently row (tablet) or column (phone) layout. */
+  .resultsHeader {
+    flex-wrap: wrap;
   }
 
-  .countNumber {
-    font-size: 2rem;
-  }
-
-  .snapshotCount {
-    gap: 10px;
-    margin: 2px 0 10px;
+  .mobileTrackedNote {
+    display: inline-flex;
+    order: -1;
+    flex-basis: 100%;
+    align-items: center;
+    gap: 7px;
+    align-self: flex-start;
+    margin: 0 0 10px;
+    padding: 6px 13px 6px 10px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(15, 143, 141, 0.14), rgba(15, 143, 141, 0.05));
+    border: 1px solid rgba(15, 143, 141, 0.22);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--teal-700);
   }
 }
 
@@ -1134,6 +1200,13 @@
   .resultsHeader {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* .resultsHeader is now a column, so the main axis is vertical — the
+     100% flex-basis set at 720px (meant to force a full-width row in the
+     tablet row-layout) would otherwise be read as a 100%-height basis here. */
+  .mobileTrackedNote {
+    flex-basis: auto;
   }
 
   /* ── Compact card for mobile ────────────────────────────────────────── */
@@ -1224,7 +1297,7 @@
     gap: 0;
   }
 
-  .cardActions .secondaryButton {
+  .cardActions .bookmarkActionBtn {
     display: none;
   }
 

@@ -147,15 +147,13 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
 
   return (
     <>
-      {/* ── AI summary tabs ── */}
-      <section className={styles.summarySection}>
+      {/* ── AI summary — framed as the article intro, not a tool output ── */}
+      <section className={`${styles.summarySection} ${styles.sectionRule}`}>
         <div className={styles.summaryHeader}>
-          <h2>
-            AI summary
-            <span className={styles.aiSparkle} aria-hidden="true">
-              ✨
-            </span>
-          </h2>
+          <div className={styles.summaryHeaderText}>
+            <span className={styles.eyebrow}>Overview</span>
+            <h2 className={styles.sectionHeading}>What this scholarship offers</h2>
+          </div>
           <div className={styles.tabRow}>
             {TABS.map((tab) => (
               <button

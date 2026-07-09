@@ -65,50 +65,22 @@ export default function ScholarshipDocuments({ apiId, title, initial }: Props) {
   }, [apiId, initial]);
 
   return (
-    <section className={styles.docsGuide}>
+    <section className={`${styles.docsGuide} ${styles.sectionRule}`}>
       <div className={styles.docsGuideHeader}>
-        <div className={styles.docsGuideIcon} aria-hidden="true">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" />
-            <line x1="16" y1="17" x2="8" y2="17" />
-            <polyline points="10 9 9 9 8 9" />
-          </svg>
-        </div>
-        <div>
-          <h2>Documents required for {title}</h2>
-          <p>
-            {isTailored
-              ? "AI-tailored to this scholarship's level, field, and country. Always confirm the exact list on the official website."
-              : generating
-                ? "Preparing a list tailored to this scholarship…"
-                : "A general guide to documents commonly needed when applying for scholarships abroad."}
-          </p>
-        </div>
+        <span className={styles.eyebrow}>Documentation</span>
+        <h2 className={styles.sectionHeading}>Documents required for {title}</h2>
+        <p>
+          {isTailored
+            ? "AI-tailored to this scholarship's level, field, and country. Always confirm the exact list on the official website."
+            : generating
+              ? "Preparing a list tailored to this scholarship…"
+              : "A general guide to documents commonly needed when applying for scholarships abroad."}
+        </p>
       </div>
 
       <div className={styles.docsColumns}>
         <div className={`${styles.docsCard} ${styles.docsCardCore}`}>
-          <h3>
-            <span
-              className={styles.docsBadge}
-              style={{ background: "rgba(15,143,141,0.12)", color: "var(--teal-700)" }}
-            >
-              Core
-            </span>
-            Core Documents
-          </h3>
+          <h3>Core documents</h3>
           <ul className={styles.docsList}>
             {data.core.map((doc) => (
               <li key={doc}>
@@ -121,19 +93,11 @@ export default function ScholarshipDocuments({ apiId, title, initial }: Props) {
 
         {data.additional.length > 0 && (
           <div className={`${styles.docsCard} ${styles.docsCardAdditional}`}>
-            <h3>
-              <span
-                className={styles.docsBadge}
-                style={{ background: "rgba(224,110,72,0.12)", color: "var(--coral-700)" }}
-              >
-                Additional
-              </span>
-              Sometimes Required
-            </h3>
+            <h3>Sometimes required</h3>
             <ul className={styles.docsList}>
               {data.additional.map((doc) => (
                 <li key={doc}>
-                  <span className={styles.docsDot} style={{ background: "var(--coral-400)" }} />
+                  <span className={styles.docsDot} />
                   {doc}
                 </li>
               ))}
@@ -141,24 +105,8 @@ export default function ScholarshipDocuments({ apiId, title, initial }: Props) {
 
             {data.note && (
               <div className={styles.docsTip}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{ flexShrink: 0, marginTop: 1 }}
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
                 <p>
-                  <strong>Pro tip:</strong> {data.note}
+                  <strong>Pro tip.</strong> {data.note}
                 </p>
               </div>
             )}

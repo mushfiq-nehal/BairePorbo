@@ -403,12 +403,29 @@ function ScholarshipCard({
           {t("scholarships.viewDetails")}
         </Link>
         <button
-          className={`${styles.secondaryButton} ${bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""}`}
+          className={`${styles.bookmarkActionBtn} ${bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""}`}
           type="button"
           onClick={() => toggleBookmark(s.id)}
           disabled={bookmarkingId === s.id}
+          aria-label={
+            bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")
+          }
+          aria-pressed={bookmarkedIds.includes(s.id)}
+          title={bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
         >
-          {bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill={bookmarkedIds.includes(s.id) ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
         </button>
       </div>
     </article>
@@ -790,6 +807,15 @@ function ScholarshipsContent() {
         {/* ── Live Scholarships Section ── */}
         <section className={styles.results}>
           <div className={styles.resultsHeader}>
+            {/* Mobile-only — replaces the hero snapshot panel (hidden on
+                mobile) as the one place the total tracked count still shows.
+                Rendered first so it sits above the heading on mobile. */}
+            {!loading && scholarships.length > 0 && (
+              <p className={styles.mobileTrackedNote}>
+                <span className={styles.mobileTrackedDot} aria-hidden="true" />
+                <strong>{displayCount}</strong> scholarships tracked
+              </p>
+            )}
             <h2>
               <span className={styles.sectionLiveDot} aria-hidden="true" />
               Open Now
