@@ -89,7 +89,6 @@ export const translations = {
   "footer.cookieSettings": { en: "Cookie settings", bn: "Cookie সেটিংস" },
   "footer.connectSupport": { en: "Connect & Support", bn: "যোগাযোগ ও সহায়তা" },
   "footer.replyTime": { en: "We typically reply within 24 hours.", bn: "আমরা সাধারণত ২৪ ঘণ্টার মধ্যে উত্তর দিই।" },
-  "footer.builtBy": { en: "Built by", bn: "তৈরি করেছেন" },
 
   // ── Android banner ────────────────────────────────────────────────────────
   "banner.title": { en: "Get the BairePorbo app", bn: "BairePorbo app নিন" },

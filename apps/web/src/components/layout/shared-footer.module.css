@@ -69,23 +69,6 @@
   color: var(--teal-700);
 }
 
-.footerBuiltBy {
-  font-size: 11px;
-  color: var(--ink-400, #9aa8b8);
-  margin-top: 6px;
-}
-
-.footerBuiltBy a {
-  color: var(--ink-500);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.2s ease;
-}
-
-.footerBuiltBy a:hover {
-  color: var(--teal-700);
-}
-
 .footerColumns {
   display: flex;
   gap: 48px;

@@ -43,17 +43,6 @@ export default function SharedFooter() {
           >
             {t("footer.cookieSettings")}
           </button>
-          <p className={styles.footerBuiltBy}>
-            {t("footer.builtBy")}{" "}
-            <a
-              href="https://www.mushfiqnehal.dev/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Md. Mushfiqur Rahman
-            </a>
-            {" · "}Dhaka, Bangladesh
-          </p>
         </div>
 
         <div className={styles.footerColumns}>
