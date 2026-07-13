@@ -3,6 +3,12 @@
   height: 100dvh;
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
+  /* Without an explicit row track, the implicit "auto" row sizes to the
+     tallest child's content height (e.g. a long session history list)
+     instead of shrinking to fit the viewport — the grid equivalent of the
+     flex min-height:0 issue below. That pushes/clips the sidebar and chat
+     window past the visible page instead of letting them scroll internally. */
+  grid-template-rows: minmax(0, 1fr);
   background: rgba(255, 255, 255, 0.6);
   overflow: hidden;
 }
@@ -817,7 +823,7 @@
 @media (max-width: 1100px) {
   .page {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .sidebarBackdrop {
