@@ -18,6 +18,13 @@
   font-size: 14px;
 }
 
+/* Compact = thumbnail preview (fills its scaled wrapper, no chrome) */
+.compact {
+  max-width: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
 /* ── Classic (serif, centered header) ────────────────────────────────────── */
 .classic {
   font-family: "Fraunces", Georgia, "Times New Roman", serif;

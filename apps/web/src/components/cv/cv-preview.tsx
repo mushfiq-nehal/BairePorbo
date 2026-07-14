@@ -13,6 +13,8 @@ type CVPreviewProps = {
   template: CVTemplateId;
   /** Marks this instance as the print target (only one should be on a page). */
   printable?: boolean;
+  /** Fill-width, no shadow/rounding — for scaled thumbnail previews. */
+  compact?: boolean;
 };
 
 const dateRange = (start: string, end: string): string => {
@@ -105,7 +107,7 @@ function EducationList({ entries }: { entries: EducationEntry[] }) {
   );
 }
 
-export default function CVPreview({ data, template, printable }: CVPreviewProps) {
+export default function CVPreview({ data, template, printable, compact }: CVPreviewProps) {
   const contactBits = [data.email, data.phone, data.location].filter(hasContent);
   const links = [
     ...(hasContent(data.website) ? [{ label: data.website, url: data.website }] : []),
@@ -125,7 +127,9 @@ export default function CVPreview({ data, template, printable }: CVPreviewProps)
 
   return (
     <article
-      className={`${styles.page} ${styles[template]} ${printable ? styles.printable : ""}`}
+      className={`${styles.page} ${styles[template]} ${printable ? styles.printable : ""} ${
+        compact ? styles.compact : ""
+      }`}
       data-cv-print={printable ? "true" : undefined}
     >
       <header className={styles.cvHeader}>

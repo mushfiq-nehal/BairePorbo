@@ -130,12 +130,10 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius-md);
   padding: 14px;
-  cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.1s ease;
+  transition: border-color 0.15s ease;
 }
 .templateCard:hover {
   border-color: var(--teal-500);
-  transform: translateY(-2px);
 }
 .templateCard strong {
   font-size: 15px;
@@ -143,43 +141,51 @@
 .templateDesc {
   font-size: 13px;
   color: var(--ink-500);
+  flex-grow: 1;
 }
-.templateThumb {
-  height: 96px;
+.templateChoose {
+  margin-top: 10px;
+  align-self: flex-start;
+  background: var(--teal-600);
+  color: #fff;
+  border: none;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.templateChoose:hover {
+  background: var(--teal-700);
+}
+.templateChoose:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.templatePickerHint {
+  margin: -8px 0 14px;
+  font-size: 13px;
+  color: var(--ink-500);
+}
+/* Scaled live preview of the demo CV. The inner element is laid out at 250%
+   width then scaled to 0.4, so it renders at exactly the frame width and is
+   responsive. Overflow is clipped to show the top of the page. */
+.previewFrame {
+  display: block;
+  height: 300px;
+  overflow: hidden;
   border-radius: 6px;
-  background: #fff;
   border: 1px solid var(--border-default);
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 6px;
+  background: #fff;
+  margin-bottom: 10px;
+  pointer-events: none;
 }
-.thumbBar {
-  height: 12px;
-  border-radius: 3px;
-  background: var(--ink-300);
-  width: 60%;
-}
-.thumb_classic .thumbBar {
-  align-self: center;
-  background: var(--ink-700);
-}
-.thumb_modern .thumbBar {
-  background: var(--teal-500);
-  border-left: 3px solid var(--teal-700);
-}
-.thumbLine {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--sand-300);
-  width: 100%;
-}
-.thumbLineShort {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--sand-300);
-  width: 55%;
+.previewScale {
+  display: block;
+  width: 250%;
+  transform: scale(0.4);
+  transform-origin: top left;
 }
 
 /* ── Saved list ── */

@@ -140,6 +140,86 @@ export const EMPTY_REFERENCE: ReferenceEntry = {
 
 export const EMPTY_TEXT: TextEntry = { text: "" };
 
+/**
+ * A realistic standard academic CV used to preview templates. Intentionally
+ * omits `website`/`links` so the preview renders no <a> tags (it's shown
+ * inside a <button> in the template picker, where nested anchors are invalid).
+ */
+export const DEMO_CV: CVData = {
+  fullName: "Ayesha Rahman",
+  headline: "Prospective PhD Student in Computer Science",
+  email: "ayesha.rahman@example.com",
+  phone: "+880 1XXX-XXXXXX",
+  location: "Dhaka, Bangladesh",
+  website: "",
+  links: [],
+  researchInterests:
+    "Machine learning for healthcare, natural language processing, and low-resource language modelling.",
+  summary: "",
+  education: [
+    {
+      institution: "Bangladesh University of Engineering & Technology",
+      degree: "BSc",
+      field: "Computer Science & Engineering",
+      location: "Dhaka",
+      startDate: "2020",
+      endDate: "2024",
+      gpa: "3.88 / 4.00",
+      details: "Thesis: Cross-lingual transfer learning for Bengali clinical text.",
+    },
+  ],
+  researchExperience: [
+    {
+      role: "Undergraduate Research Assistant",
+      organization: "BUET NLP Lab",
+      location: "Dhaka",
+      startDate: "Jan 2023",
+      endDate: "Present",
+      description:
+        "Built a Bengali medical NER dataset; improved baseline F1 by 11 points using multilingual transformers.",
+    },
+  ],
+  workExperience: [],
+  teachingExperience: [
+    {
+      role: "Teaching Assistant — Data Structures",
+      organization: "Dept. of CSE, BUET",
+      location: "Dhaka",
+      startDate: "2023",
+      endDate: "2024",
+      description: "Led weekly lab sections and graded assignments for 60+ students.",
+    },
+  ],
+  publications: [
+    {
+      text: "Rahman, A., & Karim, S. (2024). Low-resource clinical NER for Bengali. Proc. of ACL Student Workshop.",
+    },
+  ],
+  presentations: [
+    { text: "\u201cNLP for Bengali healthcare\u201d — National AI Symposium, Dhaka, 2024." },
+  ],
+  awards: [
+    {
+      title: "Dean's List Award",
+      issuer: "BUET",
+      year: "2022, 2023",
+      description: "",
+    },
+    {
+      title: "Champion, National Hackathon",
+      issuer: "ICT Division",
+      year: "2023",
+      description: "",
+    },
+  ],
+  skills: [
+    { category: "Programming", items: "Python, C++, JavaScript, SQL" },
+    { category: "ML / Tools", items: "PyTorch, Hugging Face, scikit-learn, Git" },
+  ],
+  languages: [{ text: "Bengali (native)" }, { text: "English (IELTS 7.5)" }],
+  references: [],
+};
+
 export function emptyCV(): CVData {
   return {
     fullName: "",

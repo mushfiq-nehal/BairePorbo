@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
-import { CV_TEMPLATES, type CVTemplateId } from "@/lib/cv-types";
+import CVPreview from "@/components/cv/cv-preview";
+import { CV_TEMPLATES, DEMO_CV, type CVTemplateId } from "@/lib/cv-types";
 import styles from "./cv-builder.module.css";
 
 type CVListItem = {
@@ -123,24 +124,28 @@ export default function CVBuilderPage() {
           {pickerOpen && (
             <section className={styles.templatePicker}>
               <h3>Choose a template</h3>
+              <p className={styles.templatePickerHint}>
+                Live preview of a sample academic CV in each style.
+              </p>
               <div className={styles.templateGrid}>
                 {CV_TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    type="button"
-                    className={styles.templateCard}
-                    onClick={() => createCV(tpl.id)}
-                    disabled={creating}
-                  >
-                    <span className={`${styles.templateThumb} ${styles[`thumb_${tpl.id}`]}`} aria-hidden="true">
-                      <span className={styles.thumbBar} />
-                      <span className={styles.thumbLine} />
-                      <span className={styles.thumbLine} />
-                      <span className={styles.thumbLineShort} />
+                  <div key={tpl.id} className={styles.templateCard}>
+                    <span className={styles.previewFrame} aria-hidden="true">
+                      <span className={styles.previewScale}>
+                        <CVPreview data={DEMO_CV} template={tpl.id} compact />
+                      </span>
                     </span>
                     <strong>{tpl.name}</strong>
                     <span className={styles.templateDesc}>{tpl.description}</span>
-                  </button>
+                    <button
+                      type="button"
+                      className={styles.templateChoose}
+                      onClick={() => createCV(tpl.id)}
+                      disabled={creating}
+                    >
+                      {creating ? "Creating…" : "Use this template"}
+                    </button>
+                  </div>
                 ))}
               </div>
             </section>
