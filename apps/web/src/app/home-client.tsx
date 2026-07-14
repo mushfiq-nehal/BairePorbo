@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useT, useLang } from "@/lib/lang-context";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
 import SharedFooter from "@/components/layout/shared-footer";
+import ScholarshipDetailLink from "@/components/scholarships/scholarship-detail-link";
 import type { Guide } from "./guide/data/types";
 import styles from "./page.module.css";
 
@@ -297,7 +298,7 @@ export default function HomeClient() {
           ) : (
             <div className={styles.closingGrid}>
               {closingSoon.map((s) => (
-                <Link
+                <ScholarshipDetailLink
                   key={s.id}
                   href={`/scholarships/${s.slug ?? s.id}`}
                   className={styles.closingCard}
@@ -344,7 +345,7 @@ export default function HomeClient() {
                     style={{ background: getUrgencyColor(s.deadline) }}
                     aria-hidden="true"
                   />
-                </Link>
+                </ScholarshipDetailLink>
               ))}
             </div>
           )}

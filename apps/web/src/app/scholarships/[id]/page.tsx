@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
+import ScholarshipDetailLink from "@/components/scholarships/scholarship-detail-link";
 import {
   getScholarshipByIdOrSlug,
   getPublishedScholarshipParams,
@@ -401,7 +402,7 @@ export default async function ScholarshipDetailPage({ params }: Props) {
             </div>
             <div className={styles.relatedGrid}>
               {related.map((r) => (
-                <Link
+                <ScholarshipDetailLink
                   key={r.id}
                   href={`/scholarships/${r.slug ?? r.id}`}
                   className={styles.relatedCardLink}
@@ -412,7 +413,7 @@ export default async function ScholarshipDetailPage({ params }: Props) {
                     {LEVEL_MAP[r.degree_level] ?? r.degree_level} ·{" "}
                     {FUNDING_MAP[r.funding_type] ?? r.funding_type}
                   </span>
-                </Link>
+                </ScholarshipDetailLink>
               ))}
             </div>
             <p style={{ margin: 0, fontSize: 14 }}>

@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState, useRef, useCallback } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useT, useLang } from "@/lib/lang-context";
 import type { TranslationKey } from "@/lib/translations";
 import AppNavbar, { NavAction } from "@/components/layout/app-navbar";
+import ScholarshipDetailLink from "@/components/scholarships/scholarship-detail-link";
 import styles from "./scholarships.module.css";
 
 const POPUP_STORAGE_KEY = "bp_telegram_popup_v2";
@@ -328,7 +328,7 @@ function ScholarshipCard({
 
   return (
     <article className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${isUpcoming ? styles.cardUpcoming : ""} ${isClosed ? styles.cardClosed : ""}`}>
-      <Link
+      <ScholarshipDetailLink
         href={`/scholarships/${s.slug ?? s.id}`}
         className={styles.cardLink}
         aria-label={`View ${s.title}`}
@@ -399,9 +399,9 @@ function ScholarshipCard({
       )}
 
       <div className={styles.cardActions}>
-        <Link className={styles.primaryButton} href={`/scholarships/${s.slug ?? s.id}`}>
+        <ScholarshipDetailLink className={styles.primaryButton} href={`/scholarships/${s.slug ?? s.id}`}>
           {t("scholarships.viewDetails")}
-        </Link>
+        </ScholarshipDetailLink>
         <button
           className={`${styles.bookmarkActionBtn} ${bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""}`}
           type="button"

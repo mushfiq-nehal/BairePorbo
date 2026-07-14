@@ -1,4 +1,4 @@
-import Link from "next/link";
+import ScholarshipDetailLink from "@/components/scholarships/scholarship-detail-link";
 import { getAllPublishedScholarshipCards } from "@/lib/scholarships-db";
 import styles from "./scholarship-directory.module.css";
 
@@ -58,13 +58,13 @@ export default async function ScholarshipDirectory() {
           <ul className={styles.linkList}>
             {byCountry.get(country)!.map((s) => (
               <li key={s.id}>
-                <Link href={`/scholarships/${s.slug ?? s.id}`}>
+                <ScholarshipDetailLink href={`/scholarships/${s.slug ?? s.id}`}>
                   {s.title}{" "}
                   <span className={styles.meta}>
                     — {LEVEL_MAP[s.degree_level] ?? s.degree_level},{" "}
                     {FUNDING_MAP[s.funding_type] ?? s.funding_type}
                   </span>
-                </Link>
+                </ScholarshipDetailLink>
               </li>
             ))}
           </ul>
