@@ -153,3 +153,26 @@ select:focus-visible {
   }
 }
 
+/* ── CV Builder print isolation ────────────────────────────
+   When any element opts into printing via [data-cv-print="true"]
+   (the CV Builder preview), hide everything else and print only
+   the CV, positioned at the top-left of the page. */
+@media print {
+  body:has([data-cv-print="true"]) * {
+    visibility: hidden;
+  }
+  body:has([data-cv-print="true"]) [data-cv-print="true"],
+  body:has([data-cv-print="true"]) [data-cv-print="true"] * {
+    visibility: visible;
+  }
+  [data-cv-print="true"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
+

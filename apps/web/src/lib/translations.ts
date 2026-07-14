@@ -10,6 +10,7 @@ export const translations = {
   "nav.guideline": { en: "Guideline", bn: "গাইডলাইন" },
   "nav.dashboard": { en: "Dashboard", bn: "ড্যাশবোর্ড" },
   "nav.aiMentor": { en: "AI Mentor", bn: "এআই মেন্টর" },
+  "nav.cvBuilder": { en: "CV Builder", bn: "সিভি বিল্ডার" },
   "nav.admin": { en: "Admin", bn: "এডমিন" },
   "nav.signIn": { en: "Sign in", bn: "সাইন ইন" },
   "nav.signOut": { en: "Sign out", bn: "সাইন আউট" },

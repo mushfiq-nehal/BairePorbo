@@ -297,6 +297,21 @@ export default function DashboardPage() {
             )}
           </section>
 
+          {/* ── CV Builder promo ── */}
+          <Link href="/cv-builder" className={styles.cvPromo}>
+            <div className={styles.cvPromoBody}>
+              <p className={styles.cvPromoKicker}>New · AI-powered</p>
+              <h3>Build a standout academic CV</h3>
+              <p className={styles.cvPromoDesc}>
+                Analyze your current CV for instant feedback, then create a committee-ready CV
+                from a proven template.
+              </p>
+            </div>
+            <span className={styles.cvPromoCta} aria-hidden="true">
+              Open CV Builder →
+            </span>
+          </Link>
+
           {/* Mobile-only segmented control — desktop hides this and shows all sections */}
           <nav
             className={styles.mobileTabs}

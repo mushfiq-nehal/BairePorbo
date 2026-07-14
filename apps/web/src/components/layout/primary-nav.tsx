@@ -23,6 +23,7 @@ export default function PrimaryNav({ className, orientation = "horizontal", onNa
     { label: t("nav.guideline"), href: "/guide", desktopOnly: true },
     { label: t("nav.dashboard"), href: "/dashboard" },
     { label: t("nav.aiMentor"), href: "/chat" },
+    { label: t("nav.cvBuilder"), href: "/cv-builder" },
     ...(role === "admin" ? [{ label: t("nav.admin"), href: "/admin" }] : []),
   ].filter((link) => !(link.desktopOnly && orientation === "vertical"));
 

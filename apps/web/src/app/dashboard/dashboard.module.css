@@ -812,3 +812,50 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── CV Builder promo ─────────────────────────────────────── */
+.cvPromo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  text-decoration: none;
+  background: linear-gradient(135deg, var(--teal-700), var(--teal-500));
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.cvPromo:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.cvPromoBody h3 {
+  margin: 2px 0 4px;
+  font-size: 20px;
+}
+.cvPromoKicker {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.cvPromoDesc {
+  margin: 0;
+  opacity: 0.92;
+  font-size: 14px;
+  max-width: 560px;
+}
+.cvPromoCta {
+  flex-shrink: 0;
+  background: #fff;
+  color: var(--teal-700);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+}

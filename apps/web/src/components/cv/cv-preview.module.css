@@ -1,0 +1,209 @@
+/* ── CV page (A4-ish canvas) ─────────────────────────────────────────────── */
+.page {
+  --cv-accent: var(--teal-700);
+  --cv-ink: #1a1a1a;
+  --cv-muted: #555;
+  --cv-rule: #cfcfcf;
+
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  background: #fff;
+  color: var(--cv-ink);
+  box-shadow: var(--shadow-md);
+  border-radius: 6px;
+  padding: 56px 60px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+/* ── Classic (serif, centered header) ────────────────────────────────────── */
+.classic {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+}
+.classic .cvHeader {
+  text-align: center;
+  border-bottom: 2px solid var(--cv-ink);
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+}
+.classic .name {
+  font-size: 30px;
+  letter-spacing: 0.02em;
+}
+.classic .sectionTitle {
+  text-align: left;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 14px;
+  border-bottom: 1px solid var(--cv-rule);
+}
+
+/* ── Modern (sans, left header, teal accent) ─────────────────────────────── */
+.modern {
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+}
+.modern .cvHeader {
+  text-align: left;
+  border-left: 5px solid var(--cv-accent);
+  padding-left: 16px;
+  margin-bottom: 24px;
+}
+.modern .name {
+  font-size: 30px;
+  color: var(--cv-accent);
+}
+.modern .sectionTitle {
+  color: var(--cv-accent);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--teal-200);
+}
+
+/* ── Shared header ───────────────────────────────────────────────────────── */
+.name {
+  margin: 0 0 4px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.headline {
+  margin: 0 0 8px;
+  font-size: 15px;
+  color: var(--cv-muted);
+  font-style: italic;
+}
+.contactLine {
+  margin: 2px 0;
+  font-size: 12.5px;
+  color: var(--cv-muted);
+}
+.contactLine a {
+  color: var(--cv-accent);
+  text-decoration: none;
+}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.section {
+  margin-bottom: 18px;
+  break-inside: avoid;
+}
+.sectionTitle {
+  margin: 0 0 8px;
+  padding-bottom: 3px;
+  font-weight: 700;
+}
+.paragraph {
+  margin: 0;
+  color: var(--cv-ink);
+}
+
+/* ── Entries ─────────────────────────────────────────────────────────────── */
+.entryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.entry {
+  break-inside: avoid;
+}
+.entryHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.entryTitle {
+  font-weight: 600;
+}
+.entryOrg {
+  font-weight: 500;
+}
+.entryMeta {
+  color: var(--cv-muted);
+  font-size: 12.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.entrySub {
+  margin-top: 2px;
+}
+.entryLocation {
+  display: block;
+  color: var(--cv-muted);
+  font-size: 12.5px;
+}
+.entryDesc {
+  margin: 4px 0 0;
+  white-space: pre-line;
+}
+
+/* ── Lists ───────────────────────────────────────────────────────────────── */
+.bulletList {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.bulletList li {
+  padding-left: 2px;
+}
+
+/* ── Skills ──────────────────────────────────────────────────────────────── */
+.skillList {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.skillRow {
+  display: flex;
+  gap: 8px;
+}
+.skillCategory {
+  font-weight: 600;
+  flex-shrink: 0;
+  margin: 0;
+}
+.skillItems {
+  margin: 0;
+}
+
+/* ── References ──────────────────────────────────────────────────────────── */
+.refGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.refItem {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+.refEmail {
+  color: var(--cv-accent);
+}
+
+/* ── Print ───────────────────────────────────────────────────────────────── */
+@media print {
+  .printable {
+    box-shadow: none;
+    border-radius: 0;
+    max-width: none;
+    width: 100%;
+    padding: 0;
+    font-size: 11.5pt;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 32px 24px;
+    font-size: 13px;
+  }
+  .refGrid {
+    grid-template-columns: 1fr;
+  }
+}
