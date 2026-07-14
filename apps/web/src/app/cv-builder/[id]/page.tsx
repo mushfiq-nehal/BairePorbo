@@ -4,8 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
-import AppNavbar from "@/components/layout/app-navbar";
-import { useAuth } from "@/lib/auth";
+import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import CVPreview from "@/components/cv/cv-preview";
 import {
@@ -26,7 +25,6 @@ import styles from "./editor.module.css";
 export default function CVEditorPage() {
   const params = useParams<{ id: string }>();
   const id = params?.id;
-  const { signOut } = useAuth();
   const dialog = useDialog();
 
   const [title, setTitle] = useState("Untitled CV");
@@ -115,7 +113,7 @@ export default function CVEditorPage() {
     return (
       <AuthGuard>
         <div className={styles.page}>
-          <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+          <NavbarWithAuth />
           <main className={styles.main}>
             <p className={styles.muted}>This CV could not be found.</p>
             <Link href="/cv-builder" className={styles.back}>
@@ -131,7 +129,7 @@ export default function CVEditorPage() {
     <AuthGuard>
       <div className={styles.page}>
         <div data-noprint>
-          <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+          <NavbarWithAuth />
         </div>
 
         {/* ── Toolbar ── */}

@@ -103,7 +103,7 @@ export async function analyzeCVText(
     user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
     maxTokens: 2600,
     temperature: 0.3,
-    timeoutMs: 90_000,
+    timeoutMs: 55_000,
   });
 
   let parsed: Record<string, unknown>;

@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
-import AppNavbar from "@/components/layout/app-navbar";
-import { useAuth } from "@/lib/auth";
+import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import type { CVAnalysis, SectionFeedback } from "@/lib/cv-analyze";
 import styles from "./analyze.module.css";
 
@@ -17,7 +16,6 @@ const RATING_LABEL: Record<SectionFeedback["rating"], string> = {
 };
 
 export default function CVAnalyzePage() {
-  const { signOut } = useAuth();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -117,7 +115,7 @@ export default function CVAnalyzePage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+        <NavbarWithAuth />
 
         <main className={styles.main}>
           <Link href="/cv-builder" className={styles.back}>

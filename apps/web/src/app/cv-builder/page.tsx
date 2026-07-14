@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
-import AppNavbar from "@/components/layout/app-navbar";
-import { useAuth } from "@/lib/auth";
+import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import { CV_TEMPLATES, type CVTemplateId } from "@/lib/cv-types";
 import styles from "./cv-builder.module.css";
@@ -18,7 +17,6 @@ type CVListItem = {
 };
 
 export default function CVBuilderPage() {
-  const { signOut } = useAuth();
   const router = useRouter();
   const dialog = useDialog();
 
@@ -73,7 +71,7 @@ export default function CVBuilderPage() {
   return (
     <AuthGuard>
       <div className={styles.page}>
-        <AppNavbar actions={[{ label: "Sign out", onClick: signOut }]} />
+        <NavbarWithAuth />
 
         <main className={styles.main}>
           <section className={styles.hero}>

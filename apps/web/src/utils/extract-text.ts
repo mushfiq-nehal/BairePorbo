@@ -1,4 +1,3 @@
-import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 
 export const MAX_CV_FILE_BYTES = 8 * 1024 * 1024; // 8 MB
@@ -12,6 +11,17 @@ export const ACCEPTED_CV_TYPES = [
 
 export class UnsupportedFileError extends Error {}
 
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  // `unpdf` ships a serverless-friendly build of pdf.js (no canvas / worker
+  // native deps), which is why it works reliably on Vercel where `pdf-parse`
+  // crashes the function at import.
+  const { extractText, getDocumentProxy } = await import("unpdf");
+  const pdf = await getDocumentProxy(new Uint8Array(buffer));
+  // With `mergePages: true`, `text` is a single concatenated string.
+  const { text } = await extractText(pdf, { mergePages: true });
+  return String(text).trim();
+}
+
 /**
  * Extract plain text from an uploaded CV file (PDF / DOCX / TXT).
  * Throws {@link UnsupportedFileError} for unknown types so the caller can
@@ -23,13 +33,7 @@ export async function extractTextFromFile(file: File): Promise<string> {
   const type = file.type;
 
   if (type === "application/pdf" || name.endsWith(".pdf")) {
-    const parser = new PDFParse({ data: new Uint8Array(buffer) });
-    try {
-      const result = await parser.getText();
-      return result.text.trim();
-    } finally {
-      await parser.destroy();
-    }
+    return extractPdfText(buffer);
   }
 
   if (

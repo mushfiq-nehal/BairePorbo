@@ -8,9 +8,10 @@ import {
 } from "@/utils/extract-text";
 import { analyzeCVText } from "@/lib/cv-analyze";
 
-// pdf-parse (pdfjs) + the AI call need the Node runtime and a longer budget.
+// Text extraction (unpdf/mammoth) + the AI call need the Node runtime and a
+// longer budget. 60s is the max on Vercel's Hobby plan; raise on Pro if needed.
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 60;
 export const dynamic = "force-dynamic";
 
 /** Return the user's most recent analysis, if any. */
@@ -34,6 +35,19 @@ export async function GET() {
  * field (PDF/DOCX/TXT) or JSON `{ text }` with pasted CV text.
  */
 export async function POST(req: NextRequest) {
+  try {
+    return await handleAnalyze(req);
+  } catch (err) {
+    // Last-resort guard so the client always gets JSON instead of a bare 500.
+    console.error("CV analyze route crashed:", err);
+    return NextResponse.json(
+      { error: "Something went wrong analyzing your CV. Please try again." },
+      { status: 500 },
+    );
+  }
+}
+
+async function handleAnalyze(req: NextRequest) {
   const auth = await getUser();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
