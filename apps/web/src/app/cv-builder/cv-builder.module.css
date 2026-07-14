@@ -1,12 +1,13 @@
 .page {
   min-height: 100vh;
   background: var(--bg-body);
+  padding: 16px 8vw 64px;
 }
 
 .main {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 40px 20px 96px;
+  padding: 24px 0 32px;
 }
 
 /* ── Hero ── */
