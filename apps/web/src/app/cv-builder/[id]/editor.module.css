@@ -236,6 +236,11 @@
   min-width: 0;
 }
 .previewScroll {
+  /* Lets the CV page (a fixed-width, print-accurate canvas) query its own
+     available width so it can shrink to fit — see .printable in
+     cv-preview.module.css. Without this, the page would render at full
+     print size and look oversized squeezed into this narrower column. */
+  container-type: inline-size;
   max-height: calc(100vh - 96px);
   overflow: auto;
   background: var(--sand-100);
