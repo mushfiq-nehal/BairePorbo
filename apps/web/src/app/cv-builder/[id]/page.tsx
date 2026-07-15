@@ -13,11 +13,14 @@ import {
   EMPTY_AWARD,
   EMPTY_EDUCATION,
   EMPTY_EXPERIENCE,
+  EMPTY_PROJECT,
+  EMPTY_PUBLICATION,
   EMPTY_REFERENCE,
   EMPTY_SKILL,
   EMPTY_TEXT,
   emptyCV,
   normalizeCV,
+  templateAllowsPhoto,
   type CVData,
   type CVTemplateId,
   type SectionKey,
@@ -93,6 +96,13 @@ export default function CVEditorPage() {
   // ── field update helpers ──
   const setField = <K extends keyof CVData>(key: K, value: CVData[K]) =>
     setData((d) => ({ ...d, [key]: value }));
+
+  // Europass never shows a photo (see templateAllowsPhoto) — keep the
+  // editor's toggle in sync so it doesn't look "on" for a hidden photo.
+  const handleTemplateChange = (t: CVTemplateId) => {
+    setTemplate(t);
+    if (!templateAllowsPhoto(t)) setField("showPhoto", false);
+  };
 
   type ListKeys = {
     [K in keyof CVData]: CVData[K] extends unknown[] ? K : never;
@@ -203,17 +213,16 @@ export default function CVEditorPage() {
         <RepeatGroup
           title="Publications"
           count={data.publications.length}
-          onAdd={() => addItem("publications", EMPTY_TEXT)}
-          hint="One entry per publication. Use your target citation style."
+          onAdd={() => addItem("publications", EMPTY_PUBLICATION)}
         >
           {data.publications.map((p, i) => (
             <Entry key={i} onRemove={() => removeItem("publications", i)}>
-              <Area
-                label={`Publication ${i + 1}`}
-                value={p.text}
-                onChange={(v) => updateItem("publications", i, { text: v })}
-                placeholder="Author(s). (Year). Title. Venue."
-              />
+              <Text label="Paper title" value={p.title} onChange={(v) => updateItem("publications", i, { title: v })} placeholder="Low-resource clinical NER for Bengali" />
+              <Text label="Journal / proceedings" value={p.venue} onChange={(v) => updateItem("publications", i, { venue: v })} placeholder="Proc. of ACL Student Workshop" />
+              <Row>
+                <Text label="Date" value={p.date} onChange={(v) => updateItem("publications", i, { date: v })} placeholder="2024" />
+                <Text label="DOI / link" value={p.doi} onChange={(v) => updateItem("publications", i, { doi: v })} placeholder="10.1109/xyz or full URL" />
+              </Row>
             </Entry>
           ))}
         </RepeatGroup>
@@ -245,6 +254,32 @@ export default function CVEditorPage() {
           removeItem={removeItem}
           updateItem={updateItem}
         />
+      ),
+    },
+    {
+      key: "projects",
+      title: "Projects",
+      node: (
+        <RepeatGroup
+          title="Projects"
+          count={data.projects.length}
+          onAdd={() => addItem("projects", EMPTY_PROJECT)}
+        >
+          {data.projects.map((p, i) => (
+            <Entry key={i} onRemove={() => removeItem("projects", i)}>
+              <Row>
+                <Text label="Title" value={p.title} onChange={(v) => updateItem("projects", i, { title: v })} placeholder="Bengali Clinical NER Toolkit" />
+                <Text label="Context (optional)" value={p.organization} onChange={(v) => updateItem("projects", i, { organization: v })} placeholder="Course project, hackathon, company…" />
+              </Row>
+              <Row>
+                <Text label="Link (optional)" value={p.link} onChange={(v) => updateItem("projects", i, { link: v })} placeholder="https://github.com/…" />
+                <Text label="Start" value={p.startDate} onChange={(v) => updateItem("projects", i, { startDate: v })} placeholder="2023" />
+                <Text label="End" value={p.endDate} onChange={(v) => updateItem("projects", i, { endDate: v })} placeholder="2023 (or Present)" />
+              </Row>
+              <Area label="Description" value={p.description} onChange={(v) => updateItem("projects", i, { description: v })} placeholder="What it does and what you built. One point per line." />
+            </Entry>
+          ))}
+        </RepeatGroup>
       ),
     },
     {
@@ -321,15 +356,20 @@ export default function CVEditorPage() {
       key: "references",
       title: "References",
       node: (
-        <RepeatGroup title="References" count={data.references.length} onAdd={() => addItem("references", EMPTY_REFERENCE)}>
+        <RepeatGroup
+          title="References"
+          count={data.references.length}
+          onAdd={() => addItem("references", EMPTY_REFERENCE)}
+          hint="Name, affiliation, and how they know you — e.g. “Prof. Karim, Dept. of CSE, BUET, Thesis supervisor”."
+        >
           {data.references.map((r, i) => (
             <Entry key={i} onRemove={() => removeItem("references", i)}>
               <Row>
                 <Text label="Name" value={r.name} onChange={(v) => updateItem("references", i, { name: v })} />
-                <Text label="Title" value={r.title} onChange={(v) => updateItem("references", i, { title: v })} placeholder="Professor" />
+                <Text label="Affiliation" value={r.affiliation} onChange={(v) => updateItem("references", i, { affiliation: v })} placeholder="Professor, Dept. of CSE, BUET" />
               </Row>
               <Row>
-                <Text label="Organization" value={r.organization} onChange={(v) => updateItem("references", i, { organization: v })} />
+                <Text label="Relation" value={r.relation} onChange={(v) => updateItem("references", i, { relation: v })} placeholder="Thesis supervisor" />
                 <Text label="Email" value={r.email} onChange={(v) => updateItem("references", i, { email: v })} />
               </Row>
             </Entry>
@@ -381,7 +421,7 @@ export default function CVEditorPage() {
             />
           </div>
           <div className={styles.toolbarRight}>
-            <TemplateSelect value={template} onChange={setTemplate} />
+            <TemplateSelect value={template} onChange={handleTemplateChange} />
             <div className={styles.viewToggle}>
               <button
                 className={view === "edit" ? styles.viewActive : styles.viewBtn}
@@ -426,7 +466,21 @@ export default function CVEditorPage() {
                   <Text label="Location" value={data.location} onChange={(v) => setField("location", v)} placeholder="Dhaka, Bangladesh" />
                   <Text label="Website / LinkedIn" value={data.website} onChange={(v) => setField("website", v)} />
                 </Row>
-                <PhotoField value={data.photo} onChange={(v) => setField("photo", v)} />
+                <Row>
+                  <Text label="GitHub" value={data.githubUrl} onChange={(v) => setField("githubUrl", v)} placeholder="https://github.com/username" />
+                  <Text label="Google Scholar" value={data.googleScholarUrl} onChange={(v) => setField("googleScholarUrl", v)} placeholder="https://scholar.google.com/citations?user=…" />
+                </Row>
+                <Row>
+                  <Text label="ORCID" value={data.orcid} onChange={(v) => setField("orcid", v)} placeholder="https://orcid.org/0000-0000-0000-0000" />
+                  <Text label="Kaggle" value={data.kaggleUrl} onChange={(v) => setField("kaggleUrl", v)} placeholder="https://kaggle.com/username" />
+                </Row>
+                <PhotoField
+                  value={data.photo}
+                  onChange={(v) => setField("photo", v)}
+                  show={data.showPhoto}
+                  onShowChange={(v) => setField("showPhoto", v)}
+                  disabled={!templateAllowsPhoto(template)}
+                />
               </Group>
 
               {/* Everything below is reorderable — drag the grip handle or use
@@ -731,8 +785,22 @@ function Text({
 }
 
 /** Profile photo picker. Resizes the chosen image in the browser and stores
- * it inline as a data URL on `data.photo` (used by the "Spotlight" template). */
-function PhotoField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+ * it inline as a data URL on `data.photo` (used by the "Spotlight" template).
+ * `show`/`onShowChange` let the photo stay uploaded but hidden from the CV;
+ * `disabled` is set for templates (Europass) that never render a photo. */
+function PhotoField({
+  value,
+  onChange,
+  show,
+  onShowChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onShowChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -754,6 +822,17 @@ function PhotoField({ value, onChange }: { value: string; onChange: (v: string) 
       if (inputRef.current) inputRef.current.value = "";
     }
   };
+
+  if (disabled) {
+    return (
+      <div className={styles.photoField}>
+        <span className={styles.label}>Profile photo</span>
+        <p className={styles.photoDisabledHint}>
+          The Europass format is standardized and never includes a photo.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.photoField}>
@@ -788,6 +867,12 @@ function PhotoField({ value, onChange }: { value: string; onChange: (v: string) 
             <button type="button" className={styles.photoRemove} onClick={() => onChange("")}>
               Remove
             </button>
+          )}
+          {value && (
+            <label className={styles.photoToggle}>
+              <input type="checkbox" checked={show} onChange={(e) => onShowChange(e.target.checked)} />
+              Show photo on CV
+            </label>
           )}
           <p className={styles.photoHint}>
             {error || "Shown on the “Spotlight” template. Square images work best."}

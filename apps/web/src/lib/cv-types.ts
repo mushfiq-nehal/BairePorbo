@@ -44,14 +44,35 @@ export type SkillGroup = {
   items: string;
 };
 
+/** Referee contact — shown as "Name, Affiliation, Relation to you". */
 export type ReferenceEntry = {
   name: string;
-  title: string;
-  organization: string;
+  affiliation: string;
+  relation: string;
   email: string;
 };
 
-/** Sections that are just a list of free-text lines (e.g. publications). */
+export type PublicationEntry = {
+  title: string;
+  /** Journal or conference proceedings name. */
+  venue: string;
+  date: string;
+  /** DOI (bare, e.g. "10.1109/xyz") or a full link — either renders as a link. */
+  doi: string;
+};
+
+export type ProjectEntry = {
+  title: string;
+  /** Optional context, e.g. "Course project", "Hackathon", a company/team name. */
+  organization: string;
+  /** Repo, demo, or write-up URL. */
+  link: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+};
+
+/** Sections that are just a list of free-text lines (e.g. presentations). */
 export type TextEntry = {
   text: string;
 };
@@ -65,6 +86,7 @@ export type SectionKey =
   | "publications"
   | "teachingExperience"
   | "workExperience"
+  | "projects"
   | "presentations"
   | "awards"
   | "skills"
@@ -79,6 +101,7 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   "publications",
   "teachingExperience",
   "workExperience",
+  "projects",
   "presentations",
   "awards",
   "skills",
@@ -91,10 +114,18 @@ export type CVData = {
   headline: string;
   /** Optional profile photo, stored inline as a resized data URL (see the "photo" template). */
   photo: string;
+  /** Whether the photo (if any) should actually render — lets users keep an
+   * uploaded photo but hide it without deleting it. Templates that never
+   * show a photo (see `templateAllowsPhoto`) ignore this. */
+  showPhoto: boolean;
   email: string;
   phone: string;
   location: string;
   website: string;
+  githubUrl: string;
+  googleScholarUrl: string;
+  orcid: string;
+  kaggleUrl: string;
   links: ContactLink[];
   researchInterests: string;
   summary: string;
@@ -102,7 +133,8 @@ export type CVData = {
   researchExperience: ExperienceEntry[];
   workExperience: ExperienceEntry[];
   teachingExperience: ExperienceEntry[];
-  publications: TextEntry[];
+  projects: ProjectEntry[];
+  publications: PublicationEntry[];
   presentations: TextEntry[];
   awards: AwardEntry[];
   skills: SkillGroup[];
@@ -113,6 +145,11 @@ export type CVData = {
 };
 
 export type CVTemplateId = "classic" | "modern" | "europass" | "photo";
+
+/** Europass is a standardized EU format that never includes a photo. */
+export function templateAllowsPhoto(template: CVTemplateId): boolean {
+  return template !== "europass";
+}
 
 export type CVRecord = {
   id: string;
@@ -177,9 +214,25 @@ export const EMPTY_SKILL: SkillGroup = { category: "", items: "" };
 
 export const EMPTY_REFERENCE: ReferenceEntry = {
   name: "",
+  affiliation: "",
+  relation: "",
+  email: "",
+};
+
+export const EMPTY_PUBLICATION: PublicationEntry = {
+  title: "",
+  venue: "",
+  date: "",
+  doi: "",
+};
+
+export const EMPTY_PROJECT: ProjectEntry = {
   title: "",
   organization: "",
-  email: "",
+  link: "",
+  startDate: "",
+  endDate: "",
+  description: "",
 };
 
 export const EMPTY_TEXT: TextEntry = { text: "" };
@@ -193,10 +246,15 @@ export const DEMO_CV: CVData = {
   fullName: "Ayesha Rahman",
   headline: "Prospective PhD Student in Computer Science",
   photo: "",
+  showPhoto: true,
   email: "ayesha.rahman@example.com",
   phone: "+880 1XXX-XXXXXX",
   location: "Dhaka, Bangladesh",
   website: "",
+  githubUrl: "",
+  googleScholarUrl: "",
+  orcid: "",
+  kaggleUrl: "",
   links: [],
   researchInterests:
     "Machine learning for healthcare, natural language processing, and low-resource language modelling.",
@@ -235,9 +293,22 @@ export const DEMO_CV: CVData = {
       description: "Led weekly lab sections and graded assignments for 60+ students.",
     },
   ],
+  projects: [
+    {
+      title: "Bengali Clinical NER Toolkit",
+      organization: "Course project",
+      link: "",
+      startDate: "2023",
+      endDate: "2023",
+      description: "Open-source annotation toolkit and baseline models for Bengali clinical named-entity recognition.",
+    },
+  ],
   publications: [
     {
-      text: "Rahman, A., & Karim, S. (2024). Low-resource clinical NER for Bengali. Proc. of ACL Student Workshop.",
+      title: "Low-resource clinical NER for Bengali",
+      venue: "Proc. of ACL Student Workshop",
+      date: "2024",
+      doi: "",
     },
   ],
   presentations: [
@@ -271,10 +342,15 @@ export function emptyCV(): CVData {
     fullName: "",
     headline: "",
     photo: "",
+    showPhoto: true,
     email: "",
     phone: "",
     location: "",
     website: "",
+    githubUrl: "",
+    googleScholarUrl: "",
+    orcid: "",
+    kaggleUrl: "",
     links: [],
     researchInterests: "",
     summary: "",
@@ -282,6 +358,7 @@ export function emptyCV(): CVData {
     researchExperience: [],
     workExperience: [],
     teachingExperience: [],
+    projects: [],
     publications: [],
     presentations: [],
     awards: [],
@@ -319,14 +396,37 @@ export function normalizeCV(input: unknown): CVData {
     if (!seen.has(k)) sectionOrder.push(k);
   }
 
+  // Publications used to be free-text lines (`{ text }`); fold any old-shape
+  // entries into `title` so previously saved CVs don't lose their content.
+  const publications = arr<Record<string, unknown>>(raw.publications).map((p) => ({
+    title: str(p.title) || str(p.text),
+    venue: str(p.venue),
+    date: str(p.date),
+    doi: str(p.doi),
+  }));
+
+  // References used to be `{ name, title, organization, email }`; map the
+  // old `organization` into the new `affiliation` field.
+  const references = arr<Record<string, unknown>>(raw.references).map((r) => ({
+    name: str(r.name),
+    affiliation: str(r.affiliation) || str(r.organization),
+    relation: str(r.relation),
+    email: str(r.email),
+  }));
+
   return {
     fullName: str(raw.fullName),
     headline: str(raw.headline),
     photo: str(raw.photo),
+    showPhoto: typeof raw.showPhoto === "boolean" ? raw.showPhoto : true,
     email: str(raw.email),
     phone: str(raw.phone),
     location: str(raw.location),
     website: str(raw.website),
+    githubUrl: str(raw.githubUrl),
+    googleScholarUrl: str(raw.googleScholarUrl),
+    orcid: str(raw.orcid),
+    kaggleUrl: str(raw.kaggleUrl),
     links: arr<ContactLink>(raw.links),
     researchInterests: str(raw.researchInterests),
     summary: str(raw.summary),
@@ -334,12 +434,13 @@ export function normalizeCV(input: unknown): CVData {
     researchExperience: arr<ExperienceEntry>(raw.researchExperience),
     workExperience: arr<ExperienceEntry>(raw.workExperience),
     teachingExperience: arr<ExperienceEntry>(raw.teachingExperience),
-    publications: arr<TextEntry>(raw.publications),
+    projects: arr<ProjectEntry>(raw.projects),
+    publications,
     presentations: arr<TextEntry>(raw.presentations),
     awards: arr<AwardEntry>(raw.awards),
     skills: arr<SkillGroup>(raw.skills),
     languages: arr<TextEntry>(raw.languages),
-    references: arr<ReferenceEntry>(raw.references),
+    references,
     sectionOrder,
   };
 }

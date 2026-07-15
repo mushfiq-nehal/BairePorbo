@@ -1,12 +1,14 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { DEFAULT_SECTION_ORDER } from "@/lib/cv-types";
+import { DEFAULT_SECTION_ORDER, templateAllowsPhoto } from "@/lib/cv-types";
 import type {
   CVData,
   CVTemplateId,
   ExperienceEntry,
   EducationEntry,
+  ProjectEntry,
+  PublicationEntry,
   SectionKey,
 } from "@/lib/cv-types";
 import styles from "./cv-preview.module.css";
@@ -92,6 +94,12 @@ function hasContent(v: string | undefined): boolean {
   return Boolean(v && v.trim());
 }
 
+/** Bare DOIs (e.g. "10.1109/xyz") link to doi.org; full URLs pass through as-is. */
+function doiHref(doi: string): string {
+  const d = doi.trim();
+  return /^https?:\/\//i.test(d) ? d : `https://doi.org/${d}`;
+}
+
 function ExperienceList({ entries }: { entries: ExperienceEntry[] }) {
   const shown = entries.filter((e) => e.role || e.organization || e.description);
   if (shown.length === 0) return null;
@@ -171,11 +179,73 @@ function EducationList({ entries }: { entries: EducationEntry[] }) {
   );
 }
 
+function ProjectList({ entries }: { entries: ProjectEntry[] }) {
+  const shown = entries.filter((p) => p.title || p.description);
+  if (shown.length === 0) return null;
+  return (
+    <div className={styles.entryList}>
+      {shown.map((p, i) => (
+        <div key={i} className={styles.entry}>
+          <div className={styles.entryHead}>
+            <span className={styles.entryTitle}>
+              {p.title}
+              {p.title && p.organization ? ", " : ""}
+              <span className={styles.entryOrg}>{p.organization}</span>
+            </span>
+            <span className={styles.entryMeta}>{dateRange(p.startDate, p.endDate)}</span>
+          </div>
+          {(p.link || p.description) && (
+            <div className={styles.entrySub}>
+              {hasContent(p.link) && (
+                <a className={styles.entryLink} href={p.link}>
+                  {p.link}
+                </a>
+              )}
+              {hasContent(p.description) && <p className={styles.entryDesc}>{p.description}</p>}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function PublicationList({ entries }: { entries: PublicationEntry[] }) {
+  const shown = entries.filter((p) => p.title || p.venue || p.doi);
+  if (shown.length === 0) return null;
+  return (
+    <div className={styles.entryList}>
+      {shown.map((p, i) => (
+        <div key={i} className={styles.entry}>
+          <div className={styles.entryHead}>
+            <span className={styles.entryTitle}>{p.title}</span>
+            <span className={styles.entryMeta}>{p.date}</span>
+          </div>
+          {(p.venue || p.doi) && (
+            <div className={styles.entrySub}>
+              {hasContent(p.venue) && <em className={styles.entryLocation}>{p.venue}</em>}
+              {hasContent(p.doi) && (
+                <a className={styles.entryLink} href={doiHref(p.doi)}>
+                  {p.doi}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CVPreview({ data, template, printable, compact }: CVPreviewProps) {
   const { ref: pageRef, zoom } = usePageFitZoom(Boolean(printable));
   const contactBits = [data.email, data.phone, data.location].filter(hasContent);
   const links = [
     ...(hasContent(data.website) ? [{ label: data.website, url: data.website }] : []),
+    ...(hasContent(data.githubUrl) ? [{ label: "GitHub", url: data.githubUrl }] : []),
+    ...(hasContent(data.googleScholarUrl) ? [{ label: "Google Scholar", url: data.googleScholarUrl }] : []),
+    ...(hasContent(data.orcid) ? [{ label: "ORCID", url: data.orcid }] : []),
+    ...(hasContent(data.kaggleUrl) ? [{ label: "Kaggle", url: data.kaggleUrl }] : []),
     ...data.links.filter((l) => hasContent(l.url)),
   ];
 
@@ -183,7 +253,8 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
   const hasWork = data.workExperience.some((e) => e.role || e.organization);
   const hasTeaching = data.teachingExperience.some((e) => e.role || e.organization);
   const hasEducation = data.education.some((e) => e.institution || e.degree);
-  const hasPublications = data.publications.some((p) => hasContent(p.text));
+  const hasProjects = data.projects.some((p) => p.title || p.description);
+  const hasPublications = data.publications.some((p) => p.title || p.venue || p.doi);
   const hasPresentations = data.presentations.some((p) => hasContent(p.text));
   const hasAwards = data.awards.some((a) => hasContent(a.title));
   const hasSkills = data.skills.some((s) => hasContent(s.category) || hasContent(s.items));
@@ -217,7 +288,7 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
     publications: hasPublications ? (
       <Section title="Publications" key="publications">
-        <TextLines items={data.publications} />
+        <PublicationList entries={data.publications} />
       </Section>
     ) : null,
 
@@ -230,6 +301,12 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
     workExperience: hasWork ? (
       <Section title="Professional Experience" key="workExperience">
         <ExperienceList entries={data.workExperience} />
+      </Section>
+    ) : null,
+
+    projects: hasProjects ? (
+      <Section title="Projects" key="projects">
+        <ProjectList entries={data.projects} />
       </Section>
     ) : null,
 
@@ -296,8 +373,8 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
             .map((r, i) => (
               <div key={i} className={styles.refItem}>
                 <strong>{r.name}</strong>
-                {hasContent(r.title) && <span>{r.title}</span>}
-                {hasContent(r.organization) && <span>{r.organization}</span>}
+                {hasContent(r.affiliation) && <span>{r.affiliation}</span>}
+                {hasContent(r.relation) && <span>{r.relation}</span>}
                 {hasContent(r.email) && <span className={styles.refEmail}>{r.email}</span>}
               </div>
             ))}
@@ -308,9 +385,11 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
   const order = data.sectionOrder?.length ? data.sectionOrder : DEFAULT_SECTION_ORDER;
 
-  // Show a photo whenever one is set, or an empty placeholder slot on the
-  // photo-first template so the header layout is obvious before uploading.
-  const showAvatar = hasContent(data.photo) || template === "photo";
+  // Show a photo whenever one is set (and not hidden via the toggle), or an
+  // empty placeholder slot on the photo-first template so the header layout
+  // is obvious before uploading. Europass never shows a photo, full stop.
+  const showAvatar =
+    templateAllowsPhoto(template) && data.showPhoto && (hasContent(data.photo) || template === "photo");
 
   return (
     <article
