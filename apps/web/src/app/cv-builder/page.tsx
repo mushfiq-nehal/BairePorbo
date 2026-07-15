@@ -17,6 +17,219 @@ type CVListItem = {
   updated_at: string;
 };
 
+function AnalyzeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 4.5A1.5 1.5 0 0 1 5.5 3H11v3.25A1.75 1.75 0 0 0 12.75 8H17v10.5A1.5 1.5 0 0 1 15.5 20h-10A1.5 1.5 0 0 1 4 18.5v-14Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M16 3v4h4" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="m8.5 13.8 2.3 2.3 4.7-5.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BuildIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 4.5A1.5 1.5 0 0 1 6.5 3h8.379a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 19.5 7.622V19.5A1.5 1.5 0 0 1 18 21H6.5A1.5 1.5 0 0 1 5 19.5v-15Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M8 11h8M8 14.5h8M8 18h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5 13.6 8.4 18.5 10 13.6 11.6 12 16.5 10.4 11.6 5.5 10l4.9-1.6L12 3.5Z"
+        fill="currentColor"
+      />
+      <path
+        d="M18 15.5 18.7 17.3 20.5 18 18.7 18.7 18 20.5 17.3 18.7 15.5 18 17.3 17.3 18 15.5Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function TemplateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="3.5"
+        y="4.5"
+        width="7"
+        height="9"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="13.5"
+        y="4.5"
+        width="7"
+        height="5"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="13.5"
+        y="12.5"
+        width="7"
+        height="7"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <rect
+        x="3.5"
+        y="16.5"
+        width="7"
+        height="3"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.6" />
+      <path
+        d="M12 8v4.2l2.6 1.8"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function PdfIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 3.5h7.379a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 19 8.122V18a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 5 18V5.5A2 2 0 0 1 7 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M8.5 14v4M8.5 16h2M13 18h2a1.5 1.5 0 0 0 0-3h-2v5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M5 7h14M9 7V5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 5v2m-7 0v11.5A1.5 1.5 0 0 0 9.5 20h5a1.5 1.5 0 0 0 1.5-1.5V7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CvSheetIllustration() {
+  return (
+    <svg
+      viewBox="0 0 320 240"
+      role="presentation"
+      aria-hidden="true"
+      className={styles.heroIllustration}
+    >
+      <defs>
+        <linearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ffffff" />
+          <stop offset="100%" stopColor="#f4f1ed" />
+        </linearGradient>
+        <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#0f8f8d" />
+          <stop offset="100%" stopColor="#0a6d6b" />
+        </linearGradient>
+      </defs>
+
+      {/* Back sheet */}
+      <rect
+        x="62"
+        y="32"
+        width="200"
+        height="184"
+        rx="10"
+        fill="#ffffff"
+        opacity="0.7"
+      />
+      <rect
+        x="62"
+        y="32"
+        width="200"
+        height="184"
+        rx="10"
+        fill="none"
+        stroke="#e8e3db"
+        strokeWidth="1"
+      />
+
+      {/* Front sheet */}
+      <rect
+        x="42"
+        y="44"
+        width="208"
+        height="176"
+        rx="10"
+        fill="url(#sheetGrad)"
+        stroke="#e8e3db"
+        strokeWidth="1"
+      />
+      <rect x="42" y="44" width="208" height="32" rx="10" fill="url(#accentGrad)" />
+      <rect x="42" y="64" width="208" height="12" fill="url(#accentGrad)" />
+
+      {/* Header text rows */}
+      <circle cx="60" cy="60" r="9" fill="#ffffff" opacity="0.85" />
+      <rect x="76" y="55" width="90" height="6" rx="3" fill="#ffffff" opacity="0.85" />
+      <rect x="76" y="64" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" />
+
+      {/* Body lines */}
+      <rect x="56" y="92" width="64" height="6" rx="3" fill="#0c7b79" />
+      <rect x="56" y="104" width="180" height="3" rx="1.5" fill="#d4cfc7" />
+      <rect x="56" y="112" width="170" height="3" rx="1.5" fill="#d4cfc7" />
+      <rect x="56" y="120" width="150" height="3" rx="1.5" fill="#d4cfc7" />
+
+      <rect x="56" y="138" width="80" height="6" rx="3" fill="#0c7b79" />
+      <rect x="56" y="150" width="180" height="3" rx="1.5" fill="#d4cfc7" />
+      <rect x="56" y="158" width="160" height="3" rx="1.5" fill="#d4cfc7" />
+
+      <rect x="56" y="176" width="60" height="6" rx="3" fill="#0c7b79" />
+      <rect x="56" y="188" width="140" height="3" rx="1.5" fill="#d4cfc7" />
+      <rect x="56" y="196" width="170" height="3" rx="1.5" fill="#d4cfc7" />
+      <rect x="56" y="204" width="120" height="3" rx="1.5" fill="#d4cfc7" />
+    </svg>
+  );
+}
+
 export default function CVBuilderPage() {
   const router = useRouter();
   const dialog = useDialog();
@@ -57,17 +270,24 @@ export default function CVBuilderPage() {
     }
   };
 
-  const deleteCV = async (id: string, title: string) => {
+  const deleteCV = async (cv: CVListItem) => {
     const ok = await dialog.confirm({
       title: "Delete CV",
-      description: `Delete "${title}"? This can't be undone.`,
+      description: `Delete "${cv.title || "Untitled CV"}"? This can't be undone.`,
       confirmText: "Delete",
       isDestructive: true,
     });
     if (!ok) return;
-    await fetch(`/api/cv/${id}`, { method: "DELETE" });
-    setCvs((prev) => prev.filter((c) => c.id !== id));
+    await fetch(`/api/cv/${cv.id}`, { method: "DELETE" });
+    setCvs((prev) => prev.filter((c) => c.id !== cv.id));
   };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
 
   return (
     <AuthGuard>
@@ -75,39 +295,98 @@ export default function CVBuilderPage() {
         <NavbarWithAuth />
 
         <main className={styles.main}>
+          {/* ── Hero ── */}
           <section className={styles.hero}>
-            <p className={styles.kicker}>CV Builder</p>
-            <h1>Build an academic CV that opens doors</h1>
-            <p className={styles.subtitle}>
-              Create a polished, committee-ready academic CV from a proven template — or let our
-              AI review your current CV first and show you exactly what to improve.
-            </p>
+            <div className={styles.heroCopy}>
+              <span className={styles.kicker}>
+                <SparkleIcon /> CV Builder
+              </span>
+              <h1>
+                An academic CV that <span className={styles.heroAccent}>opens doors</span>.
+              </h1>
+              <p className={styles.subtitle}>
+                Start from a proven template — or let our AI review your current CV first
+                and tell you exactly what to improve. Then export a print-ready PDF in
+                one click.
+              </p>
+
+              <div className={styles.heroActions}>
+                <button
+                  type="button"
+                  className={styles.primaryBtn}
+                  onClick={() => setPickerOpen(true)}
+                  disabled={creating}
+                >
+                  {creating ? "Creating…" : "Create new CV"}
+                </button>
+                <Link href="/cv-builder/analyze" className={styles.secondaryBtn}>
+                  Analyze my current CV
+                </Link>
+              </div>
+
+              <ul className={styles.heroBadges}>
+                <li>
+                  <span className={styles.heroBadgeDot} data-color="teal" />
+                  Print-ready PDF
+                </li>
+                <li>
+                  <span className={styles.heroBadgeDot} data-color="coral" />
+                  AI feedback in seconds
+                </li>
+                <li>
+                  <span className={styles.heroBadgeDot} data-color="sand" />
+                  100% private
+                </li>
+              </ul>
+            </div>
+
+            <div className={styles.heroVisual} aria-hidden="true">
+              <CvSheetIllustration />
+            </div>
           </section>
 
           {/* ── Two entry points ── */}
-          <section className={styles.choices}>
-            <div className={styles.choiceCard}>
-              <div className={styles.choiceBadge} data-variant="analyze">
+          <section className={styles.choices} aria-label="Get started">
+            <article
+              className={styles.choiceCard}
+              data-variant="analyze"
+              onClick={() => router.push("/cv-builder/analyze")}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  router.push("/cv-builder/analyze");
+                }
+              }}
+            >
+              <span className={styles.choiceIconWrap} aria-hidden="true">
+                <AnalyzeIcon />
+              </span>
+              <span className={styles.choiceBadge} data-variant="analyze">
                 Step 1 · Optional
-              </div>
+              </span>
               <h2>Analyze your current CV</h2>
               <p>
-                Already have a CV? Upload it and our AI (DeepSeek V4 Pro) will score it and give
-                section-by-section suggestions — so your new one is even stronger.
+                Already have a CV? Upload it and our AI (DeepSeek V4 Pro) will score it and
+                give section-by-section suggestions — so your new one is even stronger.
               </p>
-              <Link href="/cv-builder/analyze" className={styles.primaryBtn}>
-                Analyze my CV
-              </Link>
-            </div>
+              <span className={styles.choiceLink}>
+                Analyze my CV <span aria-hidden="true">→</span>
+              </span>
+            </article>
 
-            <div className={styles.choiceCard}>
-              <div className={styles.choiceBadge} data-variant="build">
+            <article className={styles.choiceCard} data-variant="build">
+              <span className={styles.choiceIconWrap} aria-hidden="true">
+                <BuildIcon />
+              </span>
+              <span className={styles.choiceBadge} data-variant="build">
                 Step 2
-              </div>
+              </span>
               <h2>Build a new academic CV</h2>
               <p>
-                Fill in your details in a guided form and watch a clean, print-ready CV take shape
-                in real time. Export to PDF with one click.
+                Fill in your details in a guided form and watch a clean, print-ready CV
+                take shape in real time. Pick from classic and modern academic templates.
               </p>
               <button
                 type="button"
@@ -115,18 +394,30 @@ export default function CVBuilderPage() {
                 onClick={() => setPickerOpen((v) => !v)}
                 disabled={creating}
               >
-                {creating ? "Creating…" : "Create new CV"}
+                {pickerOpen ? "Hide templates" : creating ? "Creating…" : "Choose a template"}
               </button>
-            </div>
+            </article>
           </section>
 
           {/* ── Template picker ── */}
           {pickerOpen && (
             <section className={styles.templatePicker}>
-              <h3>Choose a template</h3>
-              <p className={styles.templatePickerHint}>
-                Live preview of a sample academic CV in each style.
-              </p>
+              <div className={styles.templatePickerHeader}>
+                <div>
+                  <h3>Choose a template</h3>
+                  <p className={styles.templatePickerHint}>
+                    Live preview of a sample academic CV in each style.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className={styles.pickerClose}
+                  onClick={() => setPickerOpen(false)}
+                  aria-label="Close template picker"
+                >
+                  ✕
+                </button>
+              </div>
               <div className={styles.templateGrid}>
                 {CV_TEMPLATES.map((tpl) => (
                   <div key={tpl.id} className={styles.templateCard}>
@@ -135,59 +426,174 @@ export default function CVBuilderPage() {
                         <CVPreview data={DEMO_CV} template={tpl.id} compact />
                       </span>
                     </span>
-                    <strong>{tpl.name}</strong>
-                    <span className={styles.templateDesc}>{tpl.description}</span>
-                    <button
-                      type="button"
-                      className={styles.templateChoose}
-                      onClick={() => createCV(tpl.id)}
-                      disabled={creating}
-                    >
-                      {creating ? "Creating…" : "Use this template"}
-                    </button>
+                    <div className={styles.templateBody}>
+                      <strong>{tpl.name}</strong>
+                      <span className={styles.templateDesc}>{tpl.description}</span>
+                      <button
+                        type="button"
+                        className={styles.templateChoose}
+                        onClick={() => createCV(tpl.id)}
+                        disabled={creating}
+                      >
+                        {creating ? "Creating…" : "Use this template"}
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             </section>
           )}
 
+          {/* ── Features strip ── */}
+          <section className={styles.features} aria-label="Why use this builder">
+            <div className={styles.featureItem}>
+              <span className={styles.featureIcon} data-color="teal">
+                <TemplateIcon />
+              </span>
+              <div>
+                <strong>Committee-ready templates</strong>
+                <p>Two formats vetted by grad-school admissions — classic serif or modern sans.</p>
+              </div>
+            </div>
+            <div className={styles.featureItem}>
+              <span className={styles.featureIcon} data-color="coral">
+                <SparkleIcon />
+              </span>
+              <div>
+                <strong>AI feedback you can trust</strong>
+                <p>DeepSeek V4 Pro reviews your CV section by section, in under 30 seconds.</p>
+              </div>
+            </div>
+            <div className={styles.featureItem}>
+              <span className={styles.featureIcon} data-color="sand">
+                <ClockIcon />
+              </span>
+              <div>
+                <strong>Autosaved as you type</strong>
+                <p>Drafts persist across devices — pick up exactly where you left off.</p>
+              </div>
+            </div>
+            <div className={styles.featureItem}>
+              <span className={styles.featureIcon} data-color="teal">
+                <PdfIcon />
+              </span>
+              <div>
+                <strong>One-click PDF export</strong>
+                <p>Pixel-perfect print output — no broken line breaks, no missing glyphs.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* ── How it works ── */}
+          <section className={styles.howItWorks} aria-label="How it works">
+            <h2 className={styles.sectionTitle}>How it works</h2>
+            <ol className={styles.stepList}>
+              <li className={styles.step}>
+                <span className={styles.stepNumber}>1</span>
+                <h3>Pick your starting point</h3>
+                <p>
+                  Either analyze an existing CV for instant feedback, or jump straight into
+                  building from a template.
+                </p>
+              </li>
+              <li className={styles.step}>
+                <span className={styles.stepNumber}>2</span>
+                <h3>Fill the guided form</h3>
+                <p>
+                  Education, research, awards, publications — every section is structured
+                  the way admissions committees expect.
+                </p>
+              </li>
+              <li className={styles.step}>
+                <span className={styles.stepNumber}>3</span>
+                <h3>Preview & export</h3>
+                <p>
+                  See your CV update live. Export a print-ready PDF and share your
+                  application link.
+                </p>
+              </li>
+            </ol>
+          </section>
+
           {/* ── Saved CVs ── */}
-          <section className={styles.savedSection}>
-            <h2 className={styles.savedTitle}>Your CVs</h2>
+          <section className={styles.savedSection} aria-label="Your saved CVs">
+            <div className={styles.savedHeader}>
+              <h2 className={styles.sectionTitle}>Your CVs</h2>
+              {!loading && cvs.length > 0 && (
+                <span className={styles.savedCount}>
+                  {cvs.length} {cvs.length === 1 ? "draft" : "drafts"}
+                </span>
+              )}
+            </div>
+
             {loading ? (
-              <p className={styles.muted}>Loading…</p>
+              <div className={styles.savedGrid}>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className={`${styles.savedCard} ${styles.savedCardSkeleton}`} />
+                ))}
+              </div>
             ) : cvs.length === 0 ? (
-              <p className={styles.muted}>
-                You haven&apos;t created any CVs yet. Start with a template above.
-              </p>
+              <div className={styles.savedEmpty}>
+                <span className={styles.savedEmptyIcon} aria-hidden="true">
+                  <BuildIcon />
+                </span>
+                <div>
+                  <strong>No CVs yet</strong>
+                  <p>
+                    Click <em>Create new CV</em> above to start your first academic CV from
+                    a template.
+                  </p>
+                </div>
+              </div>
             ) : (
-              <ul className={styles.cvList}>
-                {cvs.map((cv) => (
-                  <li key={cv.id} className={styles.cvRow}>
-                    <Link href={`/cv-builder/${cv.id}`} className={styles.cvRowMain}>
-                      <span className={styles.cvRowTitle}>{cv.title || "Untitled CV"}</span>
-                      <span className={styles.cvRowMeta}>
-                        {CV_TEMPLATES.find((t) => t.id === cv.template)?.name ?? cv.template} ·
-                        Updated {new Date(cv.updated_at).toLocaleDateString()}
-                      </span>
-                    </Link>
-                    <div className={styles.cvRowActions}>
-                      <Link href={`/cv-builder/${cv.id}`} className={styles.ghostBtn}>
-                        Open
+              <ul className={styles.savedGrid}>
+                {cvs.map((cv) => {
+                  const tplName =
+                    CV_TEMPLATES.find((t) => t.id === cv.template)?.name ?? cv.template;
+                  return (
+                    <li key={cv.id} className={styles.savedCard}>
+                      <Link href={`/cv-builder/${cv.id}`} className={styles.savedCardLink}>
+                        <span className={styles.savedPreview} aria-hidden="true">
+                          <span className={styles.savedPreviewScale}>
+                            <CVPreview
+                              data={DEMO_CV}
+                              template={cv.template}
+                              compact
+                            />
+                          </span>
+                        </span>
+                        <span className={styles.savedCardBody}>
+                          <strong className={styles.savedCardTitle}>
+                            {cv.title || "Untitled CV"}
+                          </strong>
+                          <span className={styles.savedCardMeta}>
+                            {tplName} · Updated {formatDate(cv.updated_at)}
+                          </span>
+                          <span className={styles.savedCardCta}>
+                            Open <span aria-hidden="true">→</span>
+                          </span>
+                        </span>
                       </Link>
                       <button
                         type="button"
-                        className={styles.dangerBtn}
-                        onClick={() => deleteCV(cv.id, cv.title)}
+                        className={styles.savedCardDelete}
+                        onClick={() => deleteCV(cv)}
+                        aria-label={`Delete ${cv.title || "Untitled CV"}`}
                       >
-                        Delete
+                        <TrashIcon />
                       </button>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>
+
+          <footer className={styles.pageFooter}>
+            Stuck? Try the{" "}
+            <Link href="/cv-builder/analyze">AI analyzer</Link> for a free review of any
+            CV draft — even a Word document.
+          </footer>
         </main>
       </div>
     </AuthGuard>
