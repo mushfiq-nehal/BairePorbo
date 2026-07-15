@@ -58,12 +58,115 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+/* ── Template select (custom dropdown, replaces the native <select>) ── */
 .templateSelect {
+  position: relative;
+}
+.templateSelectTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
-  padding: 8px 12px;
+  padding: 8px 8px 8px 16px;
   font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-900);
   background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.templateSelectTrigger:hover {
+  border-color: var(--teal-500);
+}
+.templateSelectTrigger:focus-visible {
+  outline: none;
+  border-color: var(--teal-500);
+  box-shadow: var(--focus-ring-offset);
+}
+.templateSelectChevron,
+.templateSelectChevronOpen {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sand-100);
+  color: var(--ink-500);
+  transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease;
+}
+.templateSelectChevron svg,
+.templateSelectChevronOpen svg {
+  width: 14px;
+  height: 14px;
+}
+.templateSelectChevronOpen {
+  transform: rotate(180deg);
+  background: var(--teal-100);
+  color: var(--teal-700);
+}
+.templateSelectMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 260px;
+  background: #fff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  box-shadow: var(--shadow-lg);
+}
+.templateSelectOption,
+.templateSelectOptionActive {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.templateSelectOption:hover {
+  background: var(--sand-100);
+}
+.templateSelectOptionActive {
+  background: var(--teal-100);
+}
+.templateSelectOptionText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.templateSelectOptionName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-900);
+}
+.templateSelectOptionDesc {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-500);
+}
+.templateSelectCheck {
+  flex-shrink: 0;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  color: var(--teal-700);
+}
+.templateSelectCheck svg {
+  width: 100%;
+  height: 100%;
 }
 .viewToggle {
   display: inline-flex;
@@ -152,6 +255,9 @@
   margin: 0 0 4px;
   font-size: 16px;
   color: var(--ink-900);
+  /* Reserve room so long titles don't run under the drag-handle rail that
+     sortableSection overlays in the top-right corner of the card. */
+  padding-right: 84px;
 }
 .groupHint,
 .emptyHint {
@@ -207,6 +313,84 @@
 .addBtn:hover {
   border-color: var(--teal-500);
   background: var(--teal-100);
+}
+
+/* ── Sortable sections (drag handle + ↑/↓ buttons) ── */
+.sortableSection {
+  position: relative;
+  border-radius: var(--radius-lg);
+  transition: opacity 0.15s ease, box-shadow 0.15s ease;
+}
+.sortableDragging {
+  opacity: 0.45;
+}
+.sortableDragOver {
+  box-shadow: 0 0 0 2px var(--teal-500);
+}
+.sortableHandleRail {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--sand-50);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+}
+.dragHandle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-400);
+  cursor: grab;
+}
+.dragHandle:hover {
+  background: #fff;
+  color: var(--teal-700);
+}
+.dragHandle:active {
+  cursor: grabbing;
+}
+.dragHandle svg {
+  width: 15px;
+  height: 15px;
+}
+.moveButtons {
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border-default);
+  padding-left: 3px;
+  margin-left: 1px;
+}
+.moveButtons button {
+  width: 20px;
+  height: 15px;
+  border: none;
+  background: transparent;
+  color: var(--ink-400);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.moveButtons button:hover:not(:disabled) {
+  background: #fff;
+  color: var(--teal-700);
+}
+.moveButtons button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 /* ── Fields ── */

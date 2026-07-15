@@ -1,10 +1,12 @@
 "use client";
 
+import { DEFAULT_SECTION_ORDER } from "@/lib/cv-types";
 import type {
   CVData,
   CVTemplateId,
   ExperienceEntry,
   EducationEntry,
+  SectionKey,
 } from "@/lib/cv-types";
 import styles from "./cv-preview.module.css";
 
@@ -125,6 +127,124 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
   const hasLanguages = data.languages.some((l) => hasContent(l.text));
   const hasReferences = data.references.some((r) => hasContent(r.name));
 
+  const sectionNodes: Record<SectionKey, React.ReactNode> = {
+    researchInterests: hasContent(data.researchInterests) ? (
+      <Section title="Research Interests" key="researchInterests">
+        <p className={styles.paragraph}>{data.researchInterests}</p>
+      </Section>
+    ) : null,
+
+    summary: hasContent(data.summary) ? (
+      <Section title="Profile" key="summary">
+        <p className={styles.paragraph}>{data.summary}</p>
+      </Section>
+    ) : null,
+
+    education: hasEducation ? (
+      <Section title="Education" key="education">
+        <EducationList entries={data.education} />
+      </Section>
+    ) : null,
+
+    researchExperience: hasResearch ? (
+      <Section title="Research Experience" key="researchExperience">
+        <ExperienceList entries={data.researchExperience} />
+      </Section>
+    ) : null,
+
+    publications: hasPublications ? (
+      <Section title="Publications" key="publications">
+        <TextLines items={data.publications} />
+      </Section>
+    ) : null,
+
+    teachingExperience: hasTeaching ? (
+      <Section title="Teaching Experience" key="teachingExperience">
+        <ExperienceList entries={data.teachingExperience} />
+      </Section>
+    ) : null,
+
+    workExperience: hasWork ? (
+      <Section title="Professional Experience" key="workExperience">
+        <ExperienceList entries={data.workExperience} />
+      </Section>
+    ) : null,
+
+    presentations: hasPresentations ? (
+      <Section title="Conferences & Presentations" key="presentations">
+        <TextLines items={data.presentations} />
+      </Section>
+    ) : null,
+
+    awards: hasAwards ? (
+      <Section title="Awards & Honours" key="awards">
+        <div className={styles.entryList}>
+          {data.awards
+            .filter((a) => hasContent(a.title))
+            .map((a, i) => (
+              <div key={i} className={styles.entry}>
+                <div className={styles.entryHead}>
+                  <span className={styles.entryTitle}>
+                    {a.title}
+                    {a.issuer ? <span className={styles.entryOrg}>, {a.issuer}</span> : null}
+                  </span>
+                  <span className={styles.entryMeta}>{a.year}</span>
+                </div>
+                {hasContent(a.description) && (
+                  <p className={styles.entryDesc}>{a.description}</p>
+                )}
+              </div>
+            ))}
+        </div>
+      </Section>
+    ) : null,
+
+    skills: hasSkills ? (
+      <Section title="Skills" key="skills">
+        <dl className={styles.skillList}>
+          {data.skills
+            .filter((s) => hasContent(s.category) || hasContent(s.items))
+            .map((s, i) => (
+              <div key={i} className={styles.skillRow}>
+                {hasContent(s.category) && <dt className={styles.skillCategory}>{s.category}:</dt>}
+                <dd className={styles.skillItems}>{s.items}</dd>
+              </div>
+            ))}
+        </dl>
+      </Section>
+    ) : null,
+
+    languages: hasLanguages ? (
+      <Section title="Languages" key="languages">
+        <p className={styles.paragraph}>
+          {data.languages
+            .filter((l) => hasContent(l.text))
+            .map((l) => l.text)
+            .join("  \u2022  ")}
+        </p>
+      </Section>
+    ) : null,
+
+    references: hasReferences ? (
+      <Section title="References" key="references">
+        <div className={styles.refGrid}>
+          {data.references
+            .filter((r) => hasContent(r.name))
+            .map((r, i) => (
+              <div key={i} className={styles.refItem}>
+                <strong>{r.name}</strong>
+                {hasContent(r.title) && <span>{r.title}</span>}
+                {hasContent(r.organization) && <span>{r.organization}</span>}
+                {hasContent(r.email) && <span className={styles.refEmail}>{r.email}</span>}
+              </div>
+            ))}
+        </div>
+      </Section>
+    ) : null,
+  };
+
+  const order = data.sectionOrder?.length ? data.sectionOrder : DEFAULT_SECTION_ORDER;
+
   return (
     <article
       className={`${styles.page} ${styles[template]} ${printable ? styles.printable : ""} ${
@@ -150,119 +270,7 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
         )}
       </header>
 
-      {hasContent(data.researchInterests) && (
-        <Section title="Research Interests">
-          <p className={styles.paragraph}>{data.researchInterests}</p>
-        </Section>
-      )}
-
-      {hasContent(data.summary) && (
-        <Section title="Profile">
-          <p className={styles.paragraph}>{data.summary}</p>
-        </Section>
-      )}
-
-      {hasEducation && (
-        <Section title="Education">
-          <EducationList entries={data.education} />
-        </Section>
-      )}
-
-      {hasResearch && (
-        <Section title="Research Experience">
-          <ExperienceList entries={data.researchExperience} />
-        </Section>
-      )}
-
-      {hasPublications && (
-        <Section title="Publications">
-          <TextLines items={data.publications} />
-        </Section>
-      )}
-
-      {hasTeaching && (
-        <Section title="Teaching Experience">
-          <ExperienceList entries={data.teachingExperience} />
-        </Section>
-      )}
-
-      {hasWork && (
-        <Section title="Professional Experience">
-          <ExperienceList entries={data.workExperience} />
-        </Section>
-      )}
-
-      {hasPresentations && (
-        <Section title="Conferences & Presentations">
-          <TextLines items={data.presentations} />
-        </Section>
-      )}
-
-      {hasAwards && (
-        <Section title="Awards & Honours">
-          <div className={styles.entryList}>
-            {data.awards
-              .filter((a) => hasContent(a.title))
-              .map((a, i) => (
-                <div key={i} className={styles.entry}>
-                  <div className={styles.entryHead}>
-                    <span className={styles.entryTitle}>
-                      {a.title}
-                      {a.issuer ? <span className={styles.entryOrg}>, {a.issuer}</span> : null}
-                    </span>
-                    <span className={styles.entryMeta}>{a.year}</span>
-                  </div>
-                  {hasContent(a.description) && (
-                    <p className={styles.entryDesc}>{a.description}</p>
-                  )}
-                </div>
-              ))}
-          </div>
-        </Section>
-      )}
-
-      {hasSkills && (
-        <Section title="Skills">
-          <dl className={styles.skillList}>
-            {data.skills
-              .filter((s) => hasContent(s.category) || hasContent(s.items))
-              .map((s, i) => (
-                <div key={i} className={styles.skillRow}>
-                  {hasContent(s.category) && <dt className={styles.skillCategory}>{s.category}:</dt>}
-                  <dd className={styles.skillItems}>{s.items}</dd>
-                </div>
-              ))}
-          </dl>
-        </Section>
-      )}
-
-      {hasLanguages && (
-        <Section title="Languages">
-          <p className={styles.paragraph}>
-            {data.languages
-              .filter((l) => hasContent(l.text))
-              .map((l) => l.text)
-              .join("  \u2022  ")}
-          </p>
-        </Section>
-      )}
-
-      {hasReferences && (
-        <Section title="References">
-          <div className={styles.refGrid}>
-            {data.references
-              .filter((r) => hasContent(r.name))
-              .map((r, i) => (
-                <div key={i} className={styles.refItem}>
-                  <strong>{r.name}</strong>
-                  {hasContent(r.title) && <span>{r.title}</span>}
-                  {hasContent(r.organization) && <span>{r.organization}</span>}
-                  {hasContent(r.email) && <span className={styles.refEmail}>{r.email}</span>}
-                </div>
-              ))}
-          </div>
-        </Section>
-      )}
+      {order.map((key) => sectionNodes[key])}
     </article>
   );
 }

@@ -56,6 +56,36 @@ export type TextEntry = {
   text: string;
 };
 
+/** Reorderable CV sections (everything except the pinned header/contact block). */
+export type SectionKey =
+  | "researchInterests"
+  | "summary"
+  | "education"
+  | "researchExperience"
+  | "publications"
+  | "teachingExperience"
+  | "workExperience"
+  | "presentations"
+  | "awards"
+  | "skills"
+  | "languages"
+  | "references";
+
+export const DEFAULT_SECTION_ORDER: SectionKey[] = [
+  "researchInterests",
+  "summary",
+  "education",
+  "researchExperience",
+  "publications",
+  "teachingExperience",
+  "workExperience",
+  "presentations",
+  "awards",
+  "skills",
+  "languages",
+  "references",
+];
+
 export type CVData = {
   fullName: string;
   headline: string;
@@ -76,6 +106,8 @@ export type CVData = {
   skills: SkillGroup[];
   languages: TextEntry[];
   references: ReferenceEntry[];
+  /** User-customized section order. Drives render order in both the editor and the preview. */
+  sectionOrder: SectionKey[];
 };
 
 export type CVTemplateId = "classic" | "modern";
@@ -218,6 +250,7 @@ export const DEMO_CV: CVData = {
   ],
   languages: [{ text: "Bengali (native)" }, { text: "English (IELTS 7.5)" }],
   references: [],
+  sectionOrder: [...DEFAULT_SECTION_ORDER],
 };
 
 export function emptyCV(): CVData {
@@ -241,6 +274,7 @@ export function emptyCV(): CVData {
     skills: [],
     languages: [],
     references: [],
+    sectionOrder: [...DEFAULT_SECTION_ORDER],
   };
 }
 
@@ -254,6 +288,23 @@ export function normalizeCV(input: unknown): CVData {
   const raw = input as Record<string, unknown>;
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
+
+  // Keep any known keys in the saved order, then append newly-introduced or
+  // missing keys at the end — handles both older CVs saved before this field
+  // existed and any future sections added to DEFAULT_SECTION_ORDER.
+  const validKeys = new Set<string>(DEFAULT_SECTION_ORDER);
+  const seen = new Set<string>();
+  const sectionOrder: SectionKey[] = [];
+  for (const k of arr<unknown>(raw.sectionOrder)) {
+    if (typeof k === "string" && validKeys.has(k) && !seen.has(k)) {
+      sectionOrder.push(k as SectionKey);
+      seen.add(k);
+    }
+  }
+  for (const k of DEFAULT_SECTION_ORDER) {
+    if (!seen.has(k)) sectionOrder.push(k);
+  }
+
   return {
     fullName: str(raw.fullName),
     headline: str(raw.headline),
@@ -274,5 +325,6 @@ export function normalizeCV(input: unknown): CVData {
     skills: arr<SkillGroup>(raw.skills),
     languages: arr<TextEntry>(raw.languages),
     references: arr<ReferenceEntry>(raw.references),
+    sectionOrder,
   };
 }
