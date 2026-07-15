@@ -68,7 +68,12 @@
 
 /* ── Base Reset ───────────────────────────────────────────── */
 html {
-  height: 100%;
+  /* min-height (not height): a fixed height here combined with the
+     overflow-x: hidden below forces html to become its own internally
+     scrolling box (overflow-y computes to auto per spec whenever
+     overflow-x isn't "visible"), which renders a second scrollbar
+     alongside the normal document scrollbar in some browsers. */
+  min-height: 100%;
   scroll-behavior: smooth;
 }
 

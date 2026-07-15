@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
@@ -193,6 +193,16 @@ export default function CVBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const templatePickerRef = useRef<HTMLDivElement>(null);
+
+  // Opening the picker renders it further down the page — without this,
+  // clicking "Create new CV" appears to do nothing if it lands below the
+  // fold, since the page itself doesn't scroll to reveal it.
+  useEffect(() => {
+    if (pickerOpen) {
+      templatePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [pickerOpen]);
 
   const loadCVs = () => {
     fetch("/api/cv")
@@ -356,7 +366,7 @@ export default function CVBuilderPage() {
 
           {/* ── Template picker ── */}
           {pickerOpen && (
-            <section className={styles.templatePicker}>
+            <section className={styles.templatePicker} ref={templatePickerRef}>
               <div className={styles.templatePickerHeader}>
                 <div>
                   <h3>Choose a template</h3>
