@@ -3,7 +3,7 @@ import { sql } from "@/utils/db";
 import { getUser } from "@/utils/api-auth";
 import { normalizeCV, type CVTemplateId } from "@/lib/cv-types";
 
-const VALID_TEMPLATES: CVTemplateId[] = ["classic", "modern", "europass"];
+const VALID_TEMPLATES: CVTemplateId[] = ["classic", "modern", "europass", "photo"];
 
 export async function GET(
   _req: NextRequest,

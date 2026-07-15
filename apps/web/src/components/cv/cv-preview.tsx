@@ -245,6 +245,10 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
   const order = data.sectionOrder?.length ? data.sectionOrder : DEFAULT_SECTION_ORDER;
 
+  // Show a photo whenever one is set, or an empty placeholder slot on the
+  // photo-first template so the header layout is obvious before uploading.
+  const showAvatar = hasContent(data.photo) || template === "photo";
+
   return (
     <article
       className={`${styles.page} ${styles[template]} ${printable ? styles.printable : ""} ${
@@ -253,21 +257,32 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
       data-cv-print={printable ? "true" : undefined}
     >
       <header className={styles.cvHeader}>
-        <h1 className={styles.name}>{data.fullName || "Your Name"}</h1>
-        {hasContent(data.headline) && <p className={styles.headline}>{data.headline}</p>}
-        {contactBits.length > 0 && (
-          <p className={styles.contactLine}>{contactBits.join("  \u2022  ")}</p>
-        )}
-        {links.length > 0 && (
-          <p className={styles.contactLine}>
-            {links.map((l, i) => (
-              <span key={i}>
-                {i > 0 && "  \u2022  "}
-                <a href={l.url}>{l.label || l.url}</a>
-              </span>
-            ))}
-          </p>
-        )}
+        {showAvatar &&
+          (hasContent(data.photo) ? (
+            // Data-URL headshot — next/image can't optimize these, and this
+            // also needs to render in the print/PDF output as a plain <img>.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className={styles.avatar} src={data.photo} alt={data.fullName || "Profile photo"} />
+          ) : (
+            <span className={`${styles.avatar} ${styles.avatarPlaceholder}`} aria-hidden="true" />
+          ))}
+        <div className={styles.headerText}>
+          <h1 className={styles.name}>{data.fullName || "Your Name"}</h1>
+          {hasContent(data.headline) && <p className={styles.headline}>{data.headline}</p>}
+          {contactBits.length > 0 && (
+            <p className={styles.contactLine}>{contactBits.join("  \u2022  ")}</p>
+          )}
+          {links.length > 0 && (
+            <p className={styles.contactLine}>
+              {links.map((l, i) => (
+                <span key={i}>
+                  {i > 0 && "  \u2022  "}
+                  <a href={l.url}>{l.label || l.url}</a>
+                </span>
+              ))}
+            </p>
+          )}
+        </div>
       </header>
 
       {order.map((key) => sectionNodes[key])}

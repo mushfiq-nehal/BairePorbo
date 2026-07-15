@@ -124,6 +124,71 @@
   margin-left: 132px;
 }
 
+/* ── Photo (clean modern layout with a headshot in the header) ───────────── */
+.photo {
+  font-family: "Manrope", "Segoe UI", system-ui, sans-serif;
+}
+/* Photo sits to the right, name/contact fill the left — a confident,
+   document-like header rather than a tinted web card. */
+.photo .cvHeader {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  text-align: left;
+  padding-bottom: 18px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid var(--cv-accent);
+}
+.photo .avatar {
+  width: 110px;
+  height: 110px;
+  box-shadow: 0 0 0 1px var(--cv-rule);
+}
+.photo .name {
+  font-size: 30px;
+  letter-spacing: -0.01em;
+  color: var(--cv-ink);
+}
+.photo .headline {
+  color: var(--cv-accent);
+  font-weight: 600;
+  font-style: normal;
+}
+.photo .sectionTitle {
+  color: var(--cv-accent);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--teal-200);
+}
+
+/* ── Header photo / avatar (shared) ──────────────────────────────────────── */
+.avatar {
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--cv-rule);
+  display: block;
+}
+.avatarPlaceholder {
+  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+}
+.headerText {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* Any template gains a side-by-side header once a photo is present. */
+.cvHeader:has(.avatar) {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  text-align: left;
+}
+
 /* ── Shared header ───────────────────────────────────────────────────────── */
 .name {
   margin: 0 0 4px;
@@ -280,5 +345,11 @@
   }
   .europass .entrySub {
     margin-left: 0;
+  }
+  .cvHeader:has(.avatar),
+  .photo .cvHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
   }
 }

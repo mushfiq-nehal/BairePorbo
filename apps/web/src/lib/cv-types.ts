@@ -89,6 +89,8 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
 export type CVData = {
   fullName: string;
   headline: string;
+  /** Optional profile photo, stored inline as a resized data URL (see the "photo" template). */
+  photo: string;
   email: string;
   phone: string;
   location: string;
@@ -110,7 +112,7 @@ export type CVData = {
   sectionOrder: SectionKey[];
 };
 
-export type CVTemplateId = "classic" | "modern" | "europass";
+export type CVTemplateId = "classic" | "modern" | "europass" | "photo";
 
 export type CVRecord = {
   id: string;
@@ -136,6 +138,11 @@ export const CV_TEMPLATES: { id: CVTemplateId; name: string; description: string
     id: "europass",
     name: "Europass CV",
     description: "The standardized EU format — a clean left-aligned date column and understated navy accents, widely recognized by European universities and employers.",
+  },
+  {
+    id: "photo",
+    name: "Spotlight",
+    description: "A clean sans-serif layout with your headshot set neatly beside the header — ideal where a photo is expected or welcomed.",
   },
 ];
 
@@ -185,6 +192,7 @@ export const EMPTY_TEXT: TextEntry = { text: "" };
 export const DEMO_CV: CVData = {
   fullName: "Ayesha Rahman",
   headline: "Prospective PhD Student in Computer Science",
+  photo: "",
   email: "ayesha.rahman@example.com",
   phone: "+880 1XXX-XXXXXX",
   location: "Dhaka, Bangladesh",
@@ -262,6 +270,7 @@ export function emptyCV(): CVData {
   return {
     fullName: "",
     headline: "",
+    photo: "",
     email: "",
     phone: "",
     location: "",
@@ -313,6 +322,7 @@ export function normalizeCV(input: unknown): CVData {
   return {
     fullName: str(raw.fullName),
     headline: str(raw.headline),
+    photo: str(raw.photo),
     email: str(raw.email),
     phone: str(raw.phone),
     location: str(raw.location),

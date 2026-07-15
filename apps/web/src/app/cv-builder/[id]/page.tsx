@@ -22,6 +22,7 @@ import {
   type CVTemplateId,
   type SectionKey,
 } from "@/lib/cv-types";
+import { fileToResizedDataUrl } from "@/lib/client-image";
 import styles from "./editor.module.css";
 
 export default function CVEditorPage() {
@@ -425,6 +426,7 @@ export default function CVEditorPage() {
                   <Text label="Location" value={data.location} onChange={(v) => setField("location", v)} placeholder="Dhaka, Bangladesh" />
                   <Text label="Website / LinkedIn" value={data.website} onChange={(v) => setField("website", v)} />
                 </Row>
+                <PhotoField value={data.photo} onChange={(v) => setField("photo", v)} />
               </Group>
 
               {/* Everything below is reorderable — drag the grip handle or use
@@ -725,6 +727,74 @@ function Text({
       <span className={styles.label}>{label}</span>
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} />
     </label>
+  );
+}
+
+/** Profile photo picker. Resizes the chosen image in the browser and stores
+ * it inline as a data URL on `data.photo` (used by the "Spotlight" template). */
+function PhotoField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleFile = async (file: File | undefined) => {
+    setError("");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    setBusy(true);
+    try {
+      onChange(await fileToResizedDataUrl(file, 400, 0.85));
+    } catch {
+      setError("Could not process that image. Try a different file.");
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className={styles.photoField}>
+      <span className={styles.label}>Profile photo</span>
+      <div className={styles.photoRow}>
+        <span className={styles.photoPreview}>
+          {value ? (
+            // Local data URL — plain <img> is intentional (no next/image).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="Profile preview" />
+          ) : (
+            <span className={styles.photoPlaceholder} aria-hidden="true" />
+          )}
+        </span>
+        <div className={styles.photoActions}>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            className={styles.photoInput}
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
+          <button
+            type="button"
+            className={styles.photoBtn}
+            onClick={() => inputRef.current?.click()}
+            disabled={busy}
+          >
+            {busy ? "Processing…" : value ? "Change photo" : "Upload photo"}
+          </button>
+          {value && (
+            <button type="button" className={styles.photoRemove} onClick={() => onChange("")}>
+              Remove
+            </button>
+          )}
+          <p className={styles.photoHint}>
+            {error || "Shown on the “Spotlight” template. Square images work best."}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
