@@ -8,6 +8,10 @@ import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import CVPreview from "@/components/cv/cv-preview";
 import { CV_TEMPLATES, DEMO_CV, type CVTemplateId } from "@/lib/cv-types";
+
+// First template in CV_TEMPLATES is the canonical "classic academic" look —
+// used as the hero thumbnail so visitors see a real CV, not a stylized icon.
+const HERO_TEMPLATE: CVTemplateId = CV_TEMPLATES[0].id;
 import styles from "./cv-builder.module.css";
 
 type CVListItem = {
@@ -153,80 +157,31 @@ function TrashIcon() {
   );
 }
 
-function CvSheetIllustration() {
+// Layers a real, scaled-up CVPreview inside a "paper" frame with a soft
+// floating animation. Renders a second offset card behind it so the hero
+// still feels editorial, but the main subject is an actual CV.
+function CvHeroThumbnail() {
   return (
-    <svg
-      viewBox="0 0 320 240"
-      role="presentation"
-      aria-hidden="true"
-      className={styles.heroIllustration}
-    >
-      <defs>
-        <linearGradient id="sheetGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="100%" stopColor="#f4f1ed" />
-        </linearGradient>
-        <linearGradient id="accentGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0f8f8d" />
-          <stop offset="100%" stopColor="#0a6d6b" />
-        </linearGradient>
-      </defs>
-
-      {/* Back sheet */}
-      <rect
-        x="62"
-        y="32"
-        width="200"
-        height="184"
-        rx="10"
-        fill="#ffffff"
-        opacity="0.7"
-      />
-      <rect
-        x="62"
-        y="32"
-        width="200"
-        height="184"
-        rx="10"
-        fill="none"
-        stroke="#e8e3db"
-        strokeWidth="1"
-      />
-
-      {/* Front sheet */}
-      <rect
-        x="42"
-        y="44"
-        width="208"
-        height="176"
-        rx="10"
-        fill="url(#sheetGrad)"
-        stroke="#e8e3db"
-        strokeWidth="1"
-      />
-      <rect x="42" y="44" width="208" height="32" rx="10" fill="url(#accentGrad)" />
-      <rect x="42" y="64" width="208" height="12" fill="url(#accentGrad)" />
-
-      {/* Header text rows */}
-      <circle cx="60" cy="60" r="9" fill="#ffffff" opacity="0.85" />
-      <rect x="76" y="55" width="90" height="6" rx="3" fill="#ffffff" opacity="0.85" />
-      <rect x="76" y="64" width="60" height="4" rx="2" fill="#ffffff" opacity="0.6" />
-
-      {/* Body lines */}
-      <rect x="56" y="92" width="64" height="6" rx="3" fill="#0c7b79" />
-      <rect x="56" y="104" width="180" height="3" rx="1.5" fill="#d4cfc7" />
-      <rect x="56" y="112" width="170" height="3" rx="1.5" fill="#d4cfc7" />
-      <rect x="56" y="120" width="150" height="3" rx="1.5" fill="#d4cfc7" />
-
-      <rect x="56" y="138" width="80" height="6" rx="3" fill="#0c7b79" />
-      <rect x="56" y="150" width="180" height="3" rx="1.5" fill="#d4cfc7" />
-      <rect x="56" y="158" width="160" height="3" rx="1.5" fill="#d4cfc7" />
-
-      <rect x="56" y="176" width="60" height="6" rx="3" fill="#0c7b79" />
-      <rect x="56" y="188" width="140" height="3" rx="1.5" fill="#d4cfc7" />
-      <rect x="56" y="196" width="170" height="3" rx="1.5" fill="#d4cfc7" />
-      <rect x="56" y="204" width="120" height="3" rx="1.5" fill="#d4cfc7" />
-    </svg>
+    <div className={styles.heroCvStage}>
+      <div className={styles.heroCvBack}>
+        <div className={styles.heroCvBackInner}>
+          <CVPreview
+            data={DEMO_CV}
+            template={HERO_TEMPLATE}
+            compact
+          />
+        </div>
+      </div>
+      <div className={styles.heroCvFrame}>
+        <div className={styles.heroCvScale}>
+          <CVPreview
+            data={DEMO_CV}
+            template={HERO_TEMPLATE}
+            compact
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -341,7 +296,7 @@ export default function CVBuilderPage() {
             </div>
 
             <div className={styles.heroVisual} aria-hidden="true">
-              <CvSheetIllustration />
+              <CvHeroThumbnail />
             </div>
           </section>
 
