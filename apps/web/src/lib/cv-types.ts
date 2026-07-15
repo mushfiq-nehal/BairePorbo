@@ -130,14 +130,14 @@ export const CV_TEMPLATES: { id: CVTemplateId; name: string; description: string
     description: "Traditional serif layout with a centered header — the format most graduate committees expect.",
   },
   {
-    id: "modern",
-    name: "Modern Academic",
-    description: "Clean sans-serif layout with a teal accent rail and left-aligned header.",
-  },
-  {
     id: "europass",
     name: "Europass CV",
     description: "The standardized EU format — a clean left-aligned date column and understated navy accents, widely recognized by European universities and employers.",
+  },
+  {
+    id: "modern",
+    name: "Modern Academic",
+    description: "Clean sans-serif layout with a teal accent rail and left-aligned header — a versatile, contemporary alternative to the traditional format.",
   },
   {
     id: "photo",
