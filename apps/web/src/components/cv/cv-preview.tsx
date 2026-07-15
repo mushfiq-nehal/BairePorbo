@@ -1,5 +1,6 @@
 "use client";
 
+import { useLayoutEffect, useRef, useState } from "react";
 import { DEFAULT_SECTION_ORDER } from "@/lib/cv-types";
 import type {
   CVData,
@@ -18,6 +19,67 @@ type CVPreviewProps = {
   /** Fill-width, no shadow/rounding — for scaled thumbnail previews. */
   compact?: boolean;
 };
+
+/** The `.printable` page's true, print-accurate width (see cv-preview.module.css). */
+const PAGE_WIDTH = 820;
+
+/**
+ * Shrinks the printable preview to fit whatever width its column has,
+ * so the full page is always visible instead of being cropped/scrolled.
+ * `zoom` (rather than `transform: scale`) resizes the box's own layout,
+ * so the scrollable wrapper shrinks to match — no leftover blank space.
+ *
+ * The zoom is applied inline, which would otherwise also shrink the
+ * actual print/PDF output (inline styles beat the `@media print` reset
+ * in cv-preview.module.css) — so it's forced back to 1 for the
+ * `beforeprint`/`afterprint` window around window.print().
+ */
+function usePageFitZoom(enabled: boolean) {
+  const ref = useRef<HTMLElement>(null);
+  const [zoom, setZoom] = useState(1);
+
+  useLayoutEffect(() => {
+    if (!enabled) return;
+    const container = ref.current?.parentElement;
+    if (!container) return;
+
+    // Use the container's content-box width (its padding isn't usable
+    // space for the page), not clientWidth, which includes padding and
+    // would let the scaled page overflow it.
+    const contentWidth = () => {
+      const cs = getComputedStyle(container);
+      return container.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    };
+    const applyWidth = (width: number) => {
+      setZoom(width > 0 ? Math.min(1, width / PAGE_WIDTH) : 1);
+    };
+    const update = () => applyWidth(contentWidth());
+    update();
+
+    const ro = new ResizeObserver((entries) => {
+      const contentRect = entries[0]?.contentRect;
+      applyWidth(contentRect ? contentRect.width : contentWidth());
+    });
+    ro.observe(container);
+
+    // Mutate the DOM directly (rather than via setState) so the reset is
+    // guaranteed to apply before the browser captures the print snapshot —
+    // window.print() can render synchronously right after "beforeprint".
+    const restoreForPrint = () => {
+      if (ref.current) ref.current.style.zoom = "1";
+    };
+    window.addEventListener("beforeprint", restoreForPrint);
+    window.addEventListener("afterprint", update);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("beforeprint", restoreForPrint);
+      window.removeEventListener("afterprint", update);
+    };
+  }, [enabled]);
+
+  return { ref, zoom };
+}
 
 const dateRange = (start: string, end: string): string => {
   const s = start.trim();
@@ -110,6 +172,7 @@ function EducationList({ entries }: { entries: EducationEntry[] }) {
 }
 
 export default function CVPreview({ data, template, printable, compact }: CVPreviewProps) {
+  const { ref: pageRef, zoom } = usePageFitZoom(Boolean(printable));
   const contactBits = [data.email, data.phone, data.location].filter(hasContent);
   const links = [
     ...(hasContent(data.website) ? [{ label: data.website, url: data.website }] : []),
@@ -251,9 +314,11 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
   return (
     <article
+      ref={pageRef}
       className={`${styles.page} ${styles[template]} ${printable ? styles.printable : ""} ${
         compact ? styles.compact : ""
       }`}
+      style={printable ? ({ zoom } as React.CSSProperties) : undefined}
       data-cv-print={printable ? "true" : undefined}
     >
       <header className={styles.cvHeader}>
