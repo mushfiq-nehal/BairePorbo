@@ -7,11 +7,17 @@ import AuthGuard from "@/components/auth/auth-guard";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import CVPreview from "@/components/cv/cv-preview";
-import { CV_TEMPLATES, DEMO_CV, type CVTemplateId } from "@/lib/cv-types";
+import { CV_TEMPLATES, DEMO_CV, type CVData, type CVTemplateId } from "@/lib/cv-types";
 
 // First template in CV_TEMPLATES is the canonical "classic academic" look —
 // used as the hero thumbnail so visitors see a real CV, not a stylized icon.
 const HERO_TEMPLATE: CVTemplateId = CV_TEMPLATES[0].id;
+
+// Sample headshot shown in the photo-template thumbnail so its preview reads
+// as a real photo CV instead of an empty avatar slot. Other templates keep
+// the photo-free demo data.
+const DEMO_PHOTO: CVData = { ...DEMO_CV, photo: "/CV-photo.png" };
+
 import styles from "./cv-builder.module.css";
 
 type CVListItem = {
@@ -388,7 +394,11 @@ export default function CVBuilderPage() {
                   <div key={tpl.id} className={styles.templateCard}>
                     <span className={styles.previewFrame} aria-hidden="true">
                       <span className={styles.previewScale}>
-                        <CVPreview data={DEMO_CV} template={tpl.id} compact />
+                        <CVPreview
+                          data={tpl.id === "photo" ? DEMO_PHOTO : DEMO_CV}
+                          template={tpl.id}
+                          compact
+                        />
                       </span>
                     </span>
                     <div className={styles.templateBody}>
