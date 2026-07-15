@@ -69,38 +69,37 @@
   border-bottom: 2px solid var(--teal-200);
 }
 
-/* ── Europass (EU standard format, navy bars, left date column) ─────────── */
+/* ── Europass (EU standard format, restrained navy accent, left date column) */
 .europass {
-  --cv-accent: #003399;
+  --cv-accent: #1d3a6b;
   font-family: "Manrope", Arial, "Segoe UI", sans-serif;
   font-size: 13.5px;
 }
 .europass .cvHeader {
   text-align: left;
-  border-bottom: 4px solid var(--cv-accent);
+  border-bottom: 2px solid var(--cv-accent);
   padding-bottom: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 .europass .name {
-  font-size: 26px;
-  color: var(--cv-accent);
-  text-transform: uppercase;
+  font-size: 27px;
+  color: var(--cv-ink);
   letter-spacing: 0.01em;
 }
 .europass .headline {
   font-style: normal;
   font-weight: 500;
+  color: var(--cv-accent);
 }
 .europass .sectionTitle {
   margin: 0 0 10px;
-  padding: 5px 10px;
-  background: var(--cv-accent);
-  color: #fff;
-  font-size: 12px;
+  padding-bottom: 4px;
+  color: var(--cv-accent);
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-bottom: 1px solid var(--cv-rule);
 }
 /* Date range reads as a fixed left-hand column, like the official EU form. */
 .europass .entryHead {
@@ -110,25 +109,19 @@
 .europass .entryMeta {
   order: -1;
   flex: 0 0 108px;
-  padding-right: 10px;
-  margin-right: 10px;
-  border-right: 2px solid var(--cv-rule);
-  font-weight: 600;
-  color: var(--cv-accent);
+  padding-right: 12px;
+  margin-right: 12px;
+  border-right: 1px solid var(--cv-rule);
+  font-weight: 500;
+  color: var(--cv-muted);
   white-space: normal;
 }
 .europass .entryTitle {
   flex: 1 1 auto;
   color: var(--cv-ink);
 }
-.europass .entryOrg {
-  color: var(--cv-accent);
-}
 .europass .entrySub {
-  margin-left: 128px;
-}
-.europass .skillCategory {
-  color: var(--cv-accent);
+  margin-left: 132px;
 }
 
 /* ── Shared header ───────────────────────────────────────────────────────── */

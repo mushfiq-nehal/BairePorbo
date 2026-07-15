@@ -135,7 +135,7 @@ export const CV_TEMPLATES: { id: CVTemplateId; name: string; description: string
   {
     id: "europass",
     name: "Europass CV",
-    description: "The standardized EU format — navy section bars and a left-aligned date column, widely recognized by European universities and employers.",
+    description: "The standardized EU format — a clean left-aligned date column and understated navy accents, widely recognized by European universities and employers.",
   },
 ];
 
