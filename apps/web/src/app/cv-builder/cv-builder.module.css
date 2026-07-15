@@ -3,7 +3,13 @@
   min-height: 100vh;
   background: var(--bg-body);
   padding: 16px 8vw 80px;
-  overflow-x: hidden;
+  /* overflow-x: hidden (not clip) forces overflow-y to compute as "auto"
+     per spec, turning .page into a real scroll container. The ::before/
+     ::after blobs below poke outside the box via negative offsets, so
+     that "auto" overflow becomes genuine content — giving .page its own
+     internal scrollbar alongside the document's, i.e. a double scrollbar.
+     clip avoids both problems. */
+  overflow: clip;
 }
 
 /* Soft brand blobs that bleed off the page corners, mirroring the
