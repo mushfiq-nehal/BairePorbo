@@ -69,6 +69,68 @@
   border-bottom: 2px solid var(--teal-200);
 }
 
+/* ── Europass (EU standard format, navy bars, left date column) ─────────── */
+.europass {
+  --cv-accent: #003399;
+  font-family: "Manrope", Arial, "Segoe UI", sans-serif;
+  font-size: 13.5px;
+}
+.europass .cvHeader {
+  text-align: left;
+  border-bottom: 4px solid var(--cv-accent);
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+.europass .name {
+  font-size: 26px;
+  color: var(--cv-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+.europass .headline {
+  font-style: normal;
+  font-weight: 500;
+}
+.europass .sectionTitle {
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  background: var(--cv-accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+/* Date range reads as a fixed left-hand column, like the official EU form. */
+.europass .entryHead {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+.europass .entryMeta {
+  order: -1;
+  flex: 0 0 108px;
+  padding-right: 10px;
+  margin-right: 10px;
+  border-right: 2px solid var(--cv-rule);
+  font-weight: 600;
+  color: var(--cv-accent);
+  white-space: normal;
+}
+.europass .entryTitle {
+  flex: 1 1 auto;
+  color: var(--cv-ink);
+}
+.europass .entryOrg {
+  color: var(--cv-accent);
+}
+.europass .entrySub {
+  margin-left: 128px;
+}
+.europass .skillCategory {
+  color: var(--cv-accent);
+}
+
 /* ── Shared header ───────────────────────────────────────────────────────── */
 .name {
   margin: 0 0 4px;
@@ -212,5 +274,18 @@
   }
   .refGrid {
     grid-template-columns: 1fr;
+  }
+  .europass .entryHead {
+    flex-direction: column;
+  }
+  .europass .entryMeta {
+    flex: 0 0 auto;
+    padding-right: 0;
+    margin-right: 0;
+    border-right: none;
+    margin-bottom: 2px;
+  }
+  .europass .entrySub {
+    margin-left: 0;
   }
 }

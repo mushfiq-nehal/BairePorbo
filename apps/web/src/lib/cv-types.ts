@@ -110,7 +110,7 @@ export type CVData = {
   sectionOrder: SectionKey[];
 };
 
-export type CVTemplateId = "classic" | "modern";
+export type CVTemplateId = "classic" | "modern" | "europass";
 
 export type CVRecord = {
   id: string;
@@ -131,6 +131,11 @@ export const CV_TEMPLATES: { id: CVTemplateId; name: string; description: string
     id: "modern",
     name: "Modern Academic",
     description: "Clean sans-serif layout with a teal accent rail and left-aligned header.",
+  },
+  {
+    id: "europass",
+    name: "Europass CV",
+    description: "The standardized EU format — navy section bars and a left-aligned date column, widely recognized by European universities and employers.",
   },
 ];
 

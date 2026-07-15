@@ -3,7 +3,7 @@ import { sql } from "@/utils/db";
 import { getUser } from "@/utils/api-auth";
 import { emptyCV, normalizeCV, type CVTemplateId } from "@/lib/cv-types";
 
-const VALID_TEMPLATES: CVTemplateId[] = ["classic", "modern"];
+const VALID_TEMPLATES: CVTemplateId[] = ["classic", "modern", "europass"];
 
 /** List the current user's saved CVs (most recently updated first). */
 export async function GET() {
