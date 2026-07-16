@@ -169,17 +169,17 @@ export const CV_TEMPLATES: { id: CVTemplateId; name: string; description: string
   {
     id: "europass",
     name: "Europass CV",
-    description: "The standardized EU format — a clean left-aligned date column and understated navy accents, widely recognized by European universities and employers.",
+    description: "The standardized EU format — a left-aligned date column with understated navy accents, recognized across Europe.",
   },
   {
     id: "modern",
     name: "Modern Academic",
-    description: "Clean sans-serif layout with a teal accent rail and left-aligned header — a versatile, contemporary alternative to the traditional format.",
+    description: "Sans-serif layout with a teal accent rail and left-aligned header — a contemporary take on the classic format.",
   },
   {
     id: "photo",
     name: "Spotlight",
-    description: "A clean sans-serif layout with your headshot set neatly beside the header — ideal where a photo is expected or welcomed.",
+    description: "Sans-serif layout with your headshot set beside the header — ideal where a photo is expected or welcomed.",
   },
 ];
 

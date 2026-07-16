@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
@@ -378,63 +379,68 @@ export default function CVBuilderPage() {
             </article>
           </section>
 
-          {/* ── Template picker ── */}
-          {pickerOpen && (
-            <div
-              className={styles.templatePickerBackdrop}
-              onClick={(e) => {
-                if (e.target === e.currentTarget) setPickerOpen(false);
-              }}
-            >
-              <section className={styles.templatePicker} role="dialog" aria-modal="true" aria-label="Choose a template">
-                <div className={styles.templatePickerHeader}>
-                  <div>
-                    <h3>Choose a template</h3>
-                    <p className={styles.templatePickerHint}>
-                      Live preview of a sample academic CV in each style.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.pickerClose}
-                    onClick={() => setPickerOpen(false)}
-                    aria-label="Close template picker"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className={styles.templateGrid}>
-                  {CV_TEMPLATES.map((tpl, i) => (
-                    <div key={tpl.id} className={styles.templateCard}>
-                      {i === 0 && <span className={styles.templateBadge}>Most popular</span>}
-                      <span className={styles.previewFrame} data-template={tpl.id} aria-hidden="true">
-                        <span className={styles.previewScale}>
-                          <CVPreview
-                            data={tpl.id === "photo" ? DEMO_PHOTO : DEMO_CV}
-                            template={tpl.id}
-                            compact
-                          />
-                        </span>
-                        <span className={styles.previewFade} />
-                      </span>
-                      <div className={styles.templateBody}>
-                        <strong>{tpl.name}</strong>
-                        <span className={styles.templateDesc}>{tpl.description}</span>
-                        <button
-                          type="button"
-                          className={styles.templateChoose}
-                          onClick={() => createCV(tpl.id)}
-                          disabled={creating}
-                        >
-                          {creating ? "Creating…" : "Use this template"}
-                        </button>
-                      </div>
+          {/* ── Template picker ──
+              Rendered via a portal straight into <body> so it always paints
+              above the navbar, regardless of any z-index/stacking context
+              set up by ancestors like .main. */}
+          {pickerOpen &&
+            createPortal(
+              <div
+                className={styles.templatePickerBackdrop}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setPickerOpen(false);
+                }}
+              >
+                <section className={styles.templatePicker} role="dialog" aria-modal="true" aria-label="Choose a template">
+                  <div className={styles.templatePickerHeader}>
+                    <div>
+                      <h3>Choose a template</h3>
+                      <p className={styles.templatePickerHint}>
+                        Live preview of a sample academic CV in each style.
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-          )}
+                    <button
+                      type="button"
+                      className={styles.pickerClose}
+                      onClick={() => setPickerOpen(false)}
+                      aria-label="Close template picker"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className={styles.templateGrid}>
+                    {CV_TEMPLATES.map((tpl, i) => (
+                      <div key={tpl.id} className={styles.templateCard}>
+                        {i === 0 && <span className={styles.templateBadge}>Most popular</span>}
+                        <span className={styles.previewFrame} data-template={tpl.id} aria-hidden="true">
+                          <span className={styles.previewScale}>
+                            <CVPreview
+                              data={tpl.id === "photo" ? DEMO_PHOTO : DEMO_CV}
+                              template={tpl.id}
+                              compact
+                            />
+                          </span>
+                          <span className={styles.previewFade} />
+                        </span>
+                        <div className={styles.templateBody}>
+                          <strong>{tpl.name}</strong>
+                          <span className={styles.templateDesc}>{tpl.description}</span>
+                          <button
+                            type="button"
+                            className={styles.templateChoose}
+                            onClick={() => createCV(tpl.id)}
+                            disabled={creating}
+                          >
+                            {creating ? "Creating…" : "Use this template"}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </div>,
+              document.body,
+            )}
 
           {/* ── Features strip ── */}
           <section className={styles.features} aria-label="Why use this builder">

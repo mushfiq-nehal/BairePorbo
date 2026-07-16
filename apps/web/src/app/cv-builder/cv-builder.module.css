@@ -542,19 +542,20 @@
   top: -10px;
   left: 14px;
   z-index: 1;
-  background: var(--teal-600, var(--teal-500));
+  background: var(--coral-500);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: 4px 10px;
   border-radius: var(--radius-pill);
-  box-shadow: 0 4px 10px rgba(15, 143, 141, 0.3);
+  box-shadow: 0 4px 10px rgba(224, 110, 72, 0.35);
 }
 
 .templateBody {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 6px;
 }
 .templateCard strong {
@@ -568,7 +569,7 @@
 }
 
 .templateChoose {
-  margin-top: 12px;
+  margin-top: auto;
   align-self: flex-start;
   background: var(--teal-600, var(--teal-500));
   color: #fff;
