@@ -99,9 +99,9 @@ export const DEFAULT_SECTION_ORDER: SectionKey[] = [
   "education",
   "researchExperience",
   "publications",
+  "projects",
   "teachingExperience",
   "workExperience",
-  "projects",
   "presentations",
   "awards",
   "skills",
@@ -380,9 +380,11 @@ export function normalizeCV(input: unknown): CVData {
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const arr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : []);
 
-  // Keep any known keys in the saved order, then append newly-introduced or
-  // missing keys at the end — handles both older CVs saved before this field
-  // existed and any future sections added to DEFAULT_SECTION_ORDER.
+  // Keep any known keys in the saved order, then slot in newly-introduced
+  // sections (e.g. a CV saved before "projects" existed) right after
+  // whichever of their DEFAULT_SECTION_ORDER neighbours is already present,
+  // rather than always dumping them at the very end — so e.g. "projects"
+  // lands next to "publications" for existing CVs too, not after "references".
   const validKeys = new Set<string>(DEFAULT_SECTION_ORDER);
   const seen = new Set<string>();
   const sectionOrder: SectionKey[] = [];
@@ -393,7 +395,18 @@ export function normalizeCV(input: unknown): CVData {
     }
   }
   for (const k of DEFAULT_SECTION_ORDER) {
-    if (!seen.has(k)) sectionOrder.push(k);
+    if (seen.has(k)) continue;
+    const defaultIndex = DEFAULT_SECTION_ORDER.indexOf(k);
+    let insertAt = sectionOrder.length;
+    for (let i = defaultIndex - 1; i >= 0; i--) {
+      const idx = sectionOrder.indexOf(DEFAULT_SECTION_ORDER[i]);
+      if (idx !== -1) {
+        insertAt = idx + 1;
+        break;
+      }
+    }
+    sectionOrder.splice(insertAt, 0, k);
+    seen.add(k);
   }
 
   // Publications used to be free-text lines (`{ text }`); fold any old-shape

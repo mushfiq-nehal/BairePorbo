@@ -100,6 +100,12 @@ function doiHref(doi: string): string {
   return /^https?:\/\//i.test(d) ? d : `https://doi.org/${d}`;
 }
 
+/** The "Website / LinkedIn" field shows a clean label (like GitHub/ORCID)
+ * instead of the raw URL — detect which one was entered. */
+function websiteLabel(url: string): string {
+  return /linkedin\.com/i.test(url) ? "LinkedIn" : "Website";
+}
+
 function ExperienceList({ entries }: { entries: ExperienceEntry[] }) {
   const shown = entries.filter((e) => e.role || e.organization || e.description);
   if (shown.length === 0) return null;
@@ -241,7 +247,7 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
   const { ref: pageRef, zoom } = usePageFitZoom(Boolean(printable));
   const contactBits = [data.email, data.phone, data.location].filter(hasContent);
   const links = [
-    ...(hasContent(data.website) ? [{ label: data.website, url: data.website }] : []),
+    ...(hasContent(data.website) ? [{ label: websiteLabel(data.website), url: data.website }] : []),
     ...(hasContent(data.githubUrl) ? [{ label: "GitHub", url: data.githubUrl }] : []),
     ...(hasContent(data.googleScholarUrl) ? [{ label: "Google Scholar", url: data.googleScholarUrl }] : []),
     ...(hasContent(data.orcid) ? [{ label: "ORCID", url: data.orcid }] : []),
