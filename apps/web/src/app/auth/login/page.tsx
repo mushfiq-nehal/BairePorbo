@@ -30,8 +30,21 @@ function LoginForm() {
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         router.replace(redirect);
+      } else if (result.status === "needs_second_factor") {
+        setError("This account requires a second verification step, which isn't supported here yet. Please contact support.");
+      } else if (result.status === "needs_new_password") {
+        setError("You need to set a new password before signing in. Please use \"Forgot password?\" below.");
       } else {
-        setError("Sign-in incomplete. Please try again.");
+        // Most common cause: this email was registered via Google, so it has
+        // no password factor and Clerk can't complete a password sign-in for it.
+        const factors: { strategy?: string }[] = result.supportedFirstFactors ?? [];
+        const hasPassword = factors.some((f) => f.strategy === "password");
+        const hasGoogle = factors.some((f) => f.strategy === "oauth_google");
+        if (!hasPassword && hasGoogle) {
+          setError("This email is linked to a Google account. Please use \"Continue with Google\" instead.");
+        } else {
+          setError("Sign-in incomplete. Please try again.");
+        }
       }
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string }[] };
