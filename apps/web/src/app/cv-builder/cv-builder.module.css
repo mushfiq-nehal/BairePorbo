@@ -446,59 +446,82 @@
   background: var(--coral-100);
 }
 
-/* ── Template picker ───────────────────────────────────── */
+/* ── Template picker (modal) ──────────────────────────────
+   Mirrors the site's dialog pattern (dialog-provider.module.css): a
+   blurred backdrop behind a scale/fade-in panel, teal as the primary
+   accent — rather than a plain inline section pushed into the page. */
+.templatePickerBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 34, 52, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: pickerFadeIn 0.2s ease-out forwards;
+}
 .templatePicker {
   position: relative;
   background: linear-gradient(180deg, #ffffff 0%, var(--sand-50) 100%);
-  border: 1px solid var(--border-default);
-  border-radius: 22px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
+  border-radius: 24px;
+  padding: 28px;
+  width: 100%;
+  max-width: 900px;
+  max-height: min(760px, 90vh);
+  overflow-y: auto;
+  box-shadow: 0 30px 60px rgba(15, 34, 52, 0.25);
+  animation: pickerScaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .templatePickerHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 .templatePicker h3 {
   margin: 0 0 4px;
   font-family: "Fraunces", Georgia, serif;
-  font-size: 20px;
+  font-size: 24px;
   color: var(--ink-900);
 }
 .templatePickerHint {
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-500);
 }
 .pickerClose {
   background: transparent;
   border: 1px solid var(--border-default);
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
   border-radius: 50%;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-500);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 .pickerClose:hover {
   background: var(--sand-100);
+  border-color: var(--border-strong);
   color: var(--ink-900);
 }
 
 .templateGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 18px;
+  gap: 20px;
 }
 
 .templateCard {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -510,8 +533,23 @@
 }
 .templateCard:hover {
   border-color: var(--teal-500);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: 0 14px 28px rgba(15, 34, 52, 0.1);
+}
+
+.templateBadge {
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  z-index: 1;
+  background: var(--teal-600, var(--teal-500));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 10px rgba(15, 143, 141, 0.3);
 }
 
 .templateBody {
@@ -532,42 +570,71 @@
 .templateChoose {
   margin-top: 12px;
   align-self: flex-start;
-  background: var(--ink-900);
+  background: var(--teal-600, var(--teal-500));
   color: #fff;
   border: none;
-  padding: 9px 16px;
+  padding: 9px 18px;
   border-radius: var(--radius-pill);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 4px 12px rgba(15, 143, 141, 0.2);
 }
 .templateChoose:hover {
   background: var(--teal-700);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(15, 143, 141, 0.3);
 }
 .templateChoose:disabled {
   opacity: 0.6;
   cursor: default;
+  transform: none;
 }
 
 /* Scaled live preview of the demo CV. The inner element is laid out at 250%
    width then scaled to 0.4, so it renders at exactly the frame width and is
-   responsive. Overflow is clipped to show the top of the page. */
+   responsive. A colored top rail hints at each template's accent before you
+   even read the thumbnail, and a bottom fade softens the hard content crop. */
 .previewFrame {
+  position: relative;
   display: block;
   height: 300px;
   overflow: hidden;
   border-radius: 10px;
   border: 1px solid var(--border-default);
+  border-top: 3px solid var(--ink-900);
   background: #ffffff;
   pointer-events: none;
   box-shadow: 0 6px 14px rgba(15, 34, 52, 0.06);
+}
+.previewFrame[data-template="modern"],
+.previewFrame[data-template="photo"] {
+  border-top-color: var(--teal-500);
+}
+.previewFrame[data-template="europass"] {
+  border-top-color: #1d3a6b;
 }
 .previewScale {
   display: block;
   width: 250%;
   transform: scale(0.4);
   transform-origin: top left;
+}
+.previewFade {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 56px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.95) 100%);
+}
+
+@keyframes pickerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes pickerScaleIn {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 /* ── Features strip ────────────────────────────────────── */
@@ -944,6 +1011,15 @@
   }
   .choices {
     grid-template-columns: 1fr;
+  }
+  .templatePickerBackdrop {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .templatePicker {
+    max-width: none;
+    max-height: 88vh;
+    border-radius: 22px 22px 0 0;
   }
   .templateGrid {
     grid-template-columns: 1fr;

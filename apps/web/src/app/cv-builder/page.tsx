@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/auth/auth-guard";
@@ -201,15 +201,21 @@ export default function CVBuilderPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const templatePickerRef = useRef<HTMLDivElement>(null);
 
-  // Opening the picker renders it further down the page — without this,
-  // clicking "Create new CV" appears to do nothing if it lands below the
-  // fold, since the page itself doesn't scroll to reveal it.
+  // The template picker is a proper modal overlay — lock page scroll while
+  // it's open, and let Escape close it like the rest of the app's dialogs.
   useEffect(() => {
-    if (pickerOpen) {
-      templatePickerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (!pickerOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPickerOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", onKeyDown);
+    };
   }, [pickerOpen]);
 
   const loadCVs = () => {
@@ -374,51 +380,60 @@ export default function CVBuilderPage() {
 
           {/* ── Template picker ── */}
           {pickerOpen && (
-            <section className={styles.templatePicker} ref={templatePickerRef}>
-              <div className={styles.templatePickerHeader}>
-                <div>
-                  <h3>Choose a template</h3>
-                  <p className={styles.templatePickerHint}>
-                    Live preview of a sample academic CV in each style.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className={styles.pickerClose}
-                  onClick={() => setPickerOpen(false)}
-                  aria-label="Close template picker"
-                >
-                  ✕
-                </button>
-              </div>
-              <div className={styles.templateGrid}>
-                {CV_TEMPLATES.map((tpl) => (
-                  <div key={tpl.id} className={styles.templateCard}>
-                    <span className={styles.previewFrame} aria-hidden="true">
-                      <span className={styles.previewScale}>
-                        <CVPreview
-                          data={tpl.id === "photo" ? DEMO_PHOTO : DEMO_CV}
-                          template={tpl.id}
-                          compact
-                        />
-                      </span>
-                    </span>
-                    <div className={styles.templateBody}>
-                      <strong>{tpl.name}</strong>
-                      <span className={styles.templateDesc}>{tpl.description}</span>
-                      <button
-                        type="button"
-                        className={styles.templateChoose}
-                        onClick={() => createCV(tpl.id)}
-                        disabled={creating}
-                      >
-                        {creating ? "Creating…" : "Use this template"}
-                      </button>
-                    </div>
+            <div
+              className={styles.templatePickerBackdrop}
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setPickerOpen(false);
+              }}
+            >
+              <section className={styles.templatePicker} role="dialog" aria-modal="true" aria-label="Choose a template">
+                <div className={styles.templatePickerHeader}>
+                  <div>
+                    <h3>Choose a template</h3>
+                    <p className={styles.templatePickerHint}>
+                      Live preview of a sample academic CV in each style.
+                    </p>
                   </div>
-                ))}
-              </div>
-            </section>
+                  <button
+                    type="button"
+                    className={styles.pickerClose}
+                    onClick={() => setPickerOpen(false)}
+                    aria-label="Close template picker"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className={styles.templateGrid}>
+                  {CV_TEMPLATES.map((tpl, i) => (
+                    <div key={tpl.id} className={styles.templateCard}>
+                      {i === 0 && <span className={styles.templateBadge}>Most popular</span>}
+                      <span className={styles.previewFrame} data-template={tpl.id} aria-hidden="true">
+                        <span className={styles.previewScale}>
+                          <CVPreview
+                            data={tpl.id === "photo" ? DEMO_PHOTO : DEMO_CV}
+                            template={tpl.id}
+                            compact
+                          />
+                        </span>
+                        <span className={styles.previewFade} />
+                      </span>
+                      <div className={styles.templateBody}>
+                        <strong>{tpl.name}</strong>
+                        <span className={styles.templateDesc}>{tpl.description}</span>
+                        <button
+                          type="button"
+                          className={styles.templateChoose}
+                          onClick={() => createCV(tpl.id)}
+                          disabled={creating}
+                        >
+                          {creating ? "Creating…" : "Use this template"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
           )}
 
           {/* ── Features strip ── */}
