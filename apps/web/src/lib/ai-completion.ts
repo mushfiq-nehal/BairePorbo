@@ -37,6 +37,16 @@ type CompletionOpts = {
   /** Abort the upstream request if it hasn't responded within this many ms.
    * Unset = no client-side timeout (rely on the platform's own limits). */
   timeoutMs?: number;
+  /** Many OpenRouter models (e.g. deepseek-v4-pro) are "reasoning" models
+   * that spend a large default share of `maxTokens` on invisible thinking
+   * tokens before writing the actual answer — at high effort that can be
+   * ~80% of the budget, easily starving a JSON-extraction task of room to
+   * finish. Set `exclude: true` to keep reasoning traces out of `content`
+   * (it's still computed, just not returned) so parsing isn't confused by
+   * a huge preamble. Pair with a generous `maxTokens` to leave enough room
+   * for the actual answer regardless of the reasoning share.
+   */
+  reasoning?: { effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"; exclude?: boolean };
 };
 
 type CompletionResult = {
@@ -63,6 +73,7 @@ const callOpenRouter = async (
   temperature: number,
   webSearch?: { maxResults: number },
   timeoutMs?: number,
+  reasoning?: CompletionOpts["reasoning"],
 ): Promise<{ content: string; citations?: { url: string; title?: string }[] }> => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured.");
@@ -84,6 +95,9 @@ const callOpenRouter = async (
   };
   if (webSearch) {
     body.plugins = [{ id: "web", max_results: webSearch.maxResults }];
+  }
+  if (reasoning) {
+    body.reasoning = reasoning;
   }
 
   const controller = timeoutMs ? new AbortController() : undefined;
@@ -164,7 +178,7 @@ const callNim = async (
 };
 
 export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionResult> => {
-  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs } = opts;
+  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs, reasoning } = opts;
   const messages: Message[] = [
     { role: "system", content: system },
     { role: "user", content: user },
@@ -191,6 +205,7 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
     temperature,
     useWebSearch ? { maxResults: webSearchMaxResults } : undefined,
     timeoutMs,
+    reasoning,
   );
   logRequest("ai.completion", { provider: "openrouter", model: orModel, webSearch: useWebSearch });
   return { content, modelUsed: orModel, citations };

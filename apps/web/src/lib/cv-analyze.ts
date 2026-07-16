@@ -101,16 +101,36 @@ export async function analyzeCVText(
     model: "deepseek-pro",
     system: SYSTEM_PROMPT,
     user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
-    maxTokens: 2600,
+    // deepseek-v4-pro is a reasoning model that defaults to "high" effort,
+    // which spends ~80% of maxTokens on invisible thinking tokens before
+    // writing the actual answer. 2600 left almost nothing for the JSON
+    // itself, so the response was getting truncated mid-object and failing
+    // to parse. Budget generously so the visible answer always has room,
+    // and exclude the reasoning trace from `content` so parsing never has
+    // to skip over it.
+    maxTokens: 16_000,
     temperature: 0.3,
     timeoutMs: 55_000,
+    reasoning: { exclude: true },
   });
 
   let parsed: Record<string, unknown>;
   try {
     parsed = parseJsonFromCompletion<Record<string, unknown>>(content);
   } catch {
-    parsed = extractJsonObject<Record<string, unknown>>(content);
+    try {
+      parsed = extractJsonObject<Record<string, unknown>>(content);
+    } catch (err) {
+      // Surface a preview so failures are debuggable from logs instead of
+      // just "analysis failed" — most commonly caused by the response
+      // getting cut off before the model finished writing the JSON.
+      const preview = content.slice(0, 300);
+      throw new Error(
+        `Failed to parse CV analysis JSON from ${modelUsed} (content length ${content.length}): ${
+          (err as Error).message
+        }. Preview: ${preview}`,
+      );
+    }
   }
 
   return { analysis: normalizeAnalysis(parsed), modelUsed };
