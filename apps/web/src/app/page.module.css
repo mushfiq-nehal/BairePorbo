@@ -329,9 +329,12 @@
   max-width: 620px;
   height: auto;
   /* The source PNG has a hard white background — fade its edges out so the
-     rectangle corners melt into the page instead of showing sharp edges. */
-  -webkit-mask-image: radial-gradient(125% 125% at 50% 45%, #000 62%, transparent 90%);
-  mask-image: radial-gradient(125% 125% at 50% 45%, #000 62%, transparent 90%);
+     rectangle corners melt into the page instead of showing sharp edges.
+     Sizing to "farthest-corner" (the default when no explicit size is given)
+     makes 100% mean "the corner", so the fade reaches evenly into every
+     corner instead of leaving them hard-edged like a fixed-size ellipse does. */
+  -webkit-mask-image: radial-gradient(ellipse at 50% 46%, #000 48%, rgba(0, 0, 0, 0.7) 62%, transparent 88%);
+  mask-image: radial-gradient(ellipse at 50% 46%, #000 48%, rgba(0, 0, 0, 0.7) 62%, transparent 88%);
   filter: drop-shadow(0 26px 44px rgba(15, 34, 52, 0.14));
   animation: heroFloat 9s ease-in-out infinite;
   transform-origin: 55% 55%;
