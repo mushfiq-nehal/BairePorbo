@@ -348,7 +348,7 @@ export default function CVBuilderPage() {
               </span>
               <h2>Analyze your current CV</h2>
               <p>
-                Already have a CV? Upload it and our AI (DeepSeek V4 Pro) will score it and
+                Already have a CV? Upload it and our advanced AI models will score it and
                 give section-by-section suggestions — so your new one is even stronger.
               </p>
               <span className={styles.choiceLink}>
@@ -366,7 +366,7 @@ export default function CVBuilderPage() {
               <h2>Build a new academic CV</h2>
               <p>
                 Fill in your details in a guided form and watch a clean, print-ready CV
-                take shape in real time. Pick from classic and modern academic templates.
+                take shape in real time. Pick from four academic templates.
               </p>
               <button
                 type="button"
@@ -450,7 +450,7 @@ export default function CVBuilderPage() {
               </span>
               <div>
                 <strong>Committee-ready templates</strong>
-                <p>Two formats vetted by grad-school admissions — classic serif or modern sans.</p>
+                <p>Four formats vetted by grad-school admissions — classic, modern, Europass, or photo-friendly.</p>
               </div>
             </div>
             <div className={styles.featureItem}>
@@ -459,7 +459,7 @@ export default function CVBuilderPage() {
               </span>
               <div>
                 <strong>AI feedback you can trust</strong>
-                <p>DeepSeek V4 Pro reviews your CV section by section, in under 30 seconds.</p>
+                <p>Advanced AI models review your CV section by section, in under 30 seconds.</p>
               </div>
             </div>
             <div className={styles.featureItem}>

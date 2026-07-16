@@ -68,7 +68,7 @@ export default function CVEditorPage() {
     [snapshot, title, template, data],
   );
 
-  const save = async () => {
+  const save = async (opts?: { silent?: boolean }) => {
     setSaving(true);
     try {
       const res = await fetch(`/api/cv/${id}`, {
@@ -78,14 +78,42 @@ export default function CVEditorPage() {
       });
       if (res.ok) {
         setSnapshot(JSON.stringify({ title, template, data }));
-      } else {
+      } else if (!opts?.silent) {
         await dialog.alert({ title: "Error", description: "Could not save your CV." });
       }
     } catch {
-      await dialog.alert({ title: "Error", description: "Could not save your CV." });
+      // Autosave retries silently on the next debounce tick; only surface
+      // the failure for an explicit user-initiated save.
+      if (!opts?.silent) {
+        await dialog.alert({ title: "Error", description: "Could not save your CV." });
+      }
     }
     setSaving(false);
   };
+
+  // Autosave: wait for a pause in editing, then save. Skips while a load or
+  // another save is in flight; re-arms itself once that save finishes if the
+  // user kept typing in the meantime.
+  useEffect(() => {
+    if (loading || saving || !isDirty) return;
+    const t = setTimeout(() => {
+      save({ silent: true });
+    }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, template, data, loading, saving, isDirty]);
+
+  // Safety net for the debounce window: warn before closing/navigating away
+  // with unsaved changes still pending.
+  useEffect(() => {
+    if (!isDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isDirty]);
 
   const handleDownload = async () => {
     if (isDirty) await save();
@@ -436,7 +464,7 @@ export default function CVEditorPage() {
                 Preview
               </button>
             </div>
-            <button className={styles.saveBtn} onClick={save} disabled={saving || !isDirty}>
+            <button className={styles.saveBtn} onClick={() => save()} disabled={saving || !isDirty}>
               {saving ? "Saving…" : isDirty ? "Save" : "Saved"}
             </button>
             <button className={styles.downloadBtn} onClick={handleDownload}>
