@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { sql } from "@/utils/db";
 import { getUser } from "@/utils/api-auth";
 
@@ -82,8 +83,33 @@ export async function GET() {
   const readiness = Math.round((filledKeys.size / PROFILE_FIELDS.length) * 100);
   const missingFields = PROFILE_FIELDS.filter((f) => !filledKeys.has(f.key)).map((f) => f.label);
 
-  const fullName: string =
-    String(profile?.full_name ?? "").trim() || userId.split("_")[1]?.slice(0, 8) || "there";
+  let fullName: string = String(profile?.full_name ?? "").trim();
+
+  if (!fullName) {
+    // Profile row is missing/empty — usually because the Clerk `user.created`
+    // webhook never ran for this account. Fall back to Clerk's own user data
+    // instead of showing a raw user ID, and backfill the profile so this
+    // only needs to happen once.
+    try {
+      const clerkUser = await currentUser();
+      const clerkName = [clerkUser?.firstName, clerkUser?.lastName].filter(Boolean).join(" ").trim();
+      const emailPrefix = clerkUser?.emailAddresses?.[0]?.emailAddress?.split("@")[0];
+      fullName = clerkName || emailPrefix || "";
+
+      if (fullName) {
+        await sql`
+          INSERT INTO profiles (id, full_name)
+          VALUES (${userId}, ${fullName})
+          ON CONFLICT (id) DO UPDATE SET full_name = ${fullName}
+          WHERE profiles.full_name IS NULL OR profiles.full_name = ''
+        `;
+      }
+    } catch (err) {
+      console.error("[dashboard] failed to resolve fallback name from Clerk:", err);
+    }
+  }
+
+  fullName = fullName || "there";
 
   const bookmarks: BookmarkScholarship[] = bookmarkRows.map((b) => ({
     id: b.id as string,
