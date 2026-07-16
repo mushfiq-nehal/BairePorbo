@@ -38,15 +38,18 @@ type CompletionOpts = {
    * Unset = no client-side timeout (rely on the platform's own limits). */
   timeoutMs?: number;
   /** Many OpenRouter models (e.g. deepseek-v4-pro) are "reasoning" models
-   * that spend a large default share of `maxTokens` on invisible thinking
-   * tokens before writing the actual answer — at high effort that can be
-   * ~80% of the budget, easily starving a JSON-extraction task of room to
-   * finish. Set `exclude: true` to keep reasoning traces out of `content`
-   * (it's still computed, just not returned) so parsing isn't confused by
-   * a huge preamble. Pair with a generous `maxTokens` to leave enough room
-   * for the actual answer regardless of the reasoning share.
-   */
-  reasoning?: { effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max"; exclude?: boolean };
+   * that, by default, spend 15-35s generating invisible thinking tokens
+   * before writing the actual answer. For latency-sensitive, well-structured
+   * tasks (like JSON extraction) that reasoning adds little value but risks
+   * both truncation (thinking eats the maxTokens budget) and platform
+   * timeouts. Set `enabled: false` to skip reasoning entirely — the fastest,
+   * most reliable option. Use `exclude: true` if you want the model to still
+   * reason but keep the trace out of `content`. */
+  reasoning?: {
+    enabled?: boolean;
+    effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+    exclude?: boolean;
+  };
 };
 
 type CompletionResult = {

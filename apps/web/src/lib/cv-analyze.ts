@@ -101,17 +101,18 @@ export async function analyzeCVText(
     model: "deepseek-pro",
     system: SYSTEM_PROMPT,
     user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
-    // deepseek-v4-pro is a reasoning model that defaults to "high" effort,
-    // which spends ~80% of maxTokens on invisible thinking tokens before
-    // writing the actual answer. 2600 left almost nothing for the JSON
-    // itself, so the response was getting truncated mid-object and failing
-    // to parse. Budget generously so the visible answer always has room,
-    // and exclude the reasoning trace from `content` so parsing never has
-    // to skip over it.
-    maxTokens: 16_000,
+    // deepseek-v4-pro is a reasoning model that, by default, spends 15-35s
+    // on invisible thinking tokens before answering — and those tokens ate
+    // into the old 2600-token budget, truncating the JSON (parse failures /
+    // 502s). Worse, the reasoning latency, stacked on file extraction and
+    // auth, regularly blew past Vercel's 60s function limit → 504s (the
+    // intermittent "works 1 in 5 times" behaviour). Reasoning adds little
+    // to this structured-extraction task, so disable it: this makes the
+    // call fast (~7-18s) and reliable. 4000 tokens is ample for the JSON.
+    maxTokens: 4000,
     temperature: 0.3,
     timeoutMs: 55_000,
-    reasoning: { exclude: true },
+    reasoning: { enabled: false },
   });
 
   let parsed: Record<string, unknown>;
