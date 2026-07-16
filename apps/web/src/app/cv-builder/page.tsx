@@ -7,7 +7,7 @@ import AuthGuard from "@/components/auth/auth-guard";
 import NavbarWithAuth from "@/components/layout/navbar-with-auth";
 import { useDialog } from "@/components/ui/dialog-provider";
 import CVPreview from "@/components/cv/cv-preview";
-import { CV_TEMPLATES, DEMO_CV, type CVData, type CVTemplateId } from "@/lib/cv-types";
+import { CV_TEMPLATES, DEMO_CV, normalizeCV, type CVData, type CVTemplateId } from "@/lib/cv-types";
 
 // First template in CV_TEMPLATES is the canonical "classic academic" look —
 // used as the hero thumbnail so visitors see a real CV, not a stylized icon.
@@ -25,6 +25,8 @@ type CVListItem = {
   title: string;
   template: CVTemplateId;
   updated_at: string;
+  /** Possibly-partial CVData shape straight from the DB — run through normalizeCV before use. */
+  data: unknown;
 };
 
 function AnalyzeIcon() {
@@ -531,7 +533,7 @@ export default function CVBuilderPage() {
                         <span className={styles.savedPreview} aria-hidden="true">
                           <span className={styles.savedPreviewScale}>
                             <CVPreview
-                              data={DEMO_CV}
+                              data={normalizeCV(cv.data)}
                               template={cv.template}
                               compact
                             />

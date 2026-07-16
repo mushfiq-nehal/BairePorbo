@@ -106,6 +106,29 @@ function websiteLabel(url: string): string {
   return /linkedin\.com/i.test(url) ? "LinkedIn" : "Website";
 }
 
+/** Renders a real link normally, or plain text in `compact` thumbnails —
+ * those are always nested inside another clickable element (a card `<Link>`
+ * or template-picker `<button>`), where a nested `<a>` would be invalid
+ * HTML and could hijack clicks meant for the outer element. */
+function MaybeLink({
+  href,
+  compact,
+  className,
+  children,
+}: {
+  href: string;
+  compact?: boolean;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  if (compact) return <span className={className}>{children}</span>;
+  return (
+    <a className={className} href={href}>
+      {children}
+    </a>
+  );
+}
+
 function ExperienceList({ entries }: { entries: ExperienceEntry[] }) {
   const shown = entries.filter((e) => e.role || e.organization || e.description);
   if (shown.length === 0) return null;
@@ -185,7 +208,7 @@ function EducationList({ entries }: { entries: EducationEntry[] }) {
   );
 }
 
-function ProjectList({ entries }: { entries: ProjectEntry[] }) {
+function ProjectList({ entries, compact }: { entries: ProjectEntry[]; compact?: boolean }) {
   const shown = entries.filter((p) => p.title || p.description);
   if (shown.length === 0) return null;
   return (
@@ -203,9 +226,9 @@ function ProjectList({ entries }: { entries: ProjectEntry[] }) {
           {(p.link || p.description) && (
             <div className={styles.entrySub}>
               {hasContent(p.link) && (
-                <a className={styles.entryLink} href={p.link}>
+                <MaybeLink className={styles.entryLink} href={p.link} compact={compact}>
                   {p.link}
-                </a>
+                </MaybeLink>
               )}
               {hasContent(p.description) && <p className={styles.entryDesc}>{p.description}</p>}
             </div>
@@ -216,7 +239,7 @@ function ProjectList({ entries }: { entries: ProjectEntry[] }) {
   );
 }
 
-function PublicationList({ entries }: { entries: PublicationEntry[] }) {
+function PublicationList({ entries, compact }: { entries: PublicationEntry[]; compact?: boolean }) {
   const shown = entries.filter((p) => p.title || p.venue || p.doi);
   if (shown.length === 0) return null;
   return (
@@ -231,9 +254,9 @@ function PublicationList({ entries }: { entries: PublicationEntry[] }) {
             <div className={styles.entrySub}>
               {hasContent(p.venue) && <em className={styles.entryLocation}>{p.venue}</em>}
               {hasContent(p.doi) && (
-                <a className={styles.entryLink} href={doiHref(p.doi)}>
+                <MaybeLink className={styles.entryLink} href={doiHref(p.doi)} compact={compact}>
                   {p.doi}
-                </a>
+                </MaybeLink>
               )}
             </div>
           )}
@@ -294,7 +317,7 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
     publications: hasPublications ? (
       <Section title="Publications" key="publications">
-        <PublicationList entries={data.publications} />
+        <PublicationList entries={data.publications} compact={compact} />
       </Section>
     ) : null,
 
@@ -312,7 +335,7 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
 
     projects: hasProjects ? (
       <Section title="Projects" key="projects">
-        <ProjectList entries={data.projects} />
+        <ProjectList entries={data.projects} compact={compact} />
       </Section>
     ) : null,
 
@@ -427,7 +450,9 @@ export default function CVPreview({ data, template, printable, compact }: CVPrev
               {links.map((l, i) => (
                 <span key={i}>
                   {i > 0 && "  \u2022  "}
-                  <a href={l.url}>{l.label || l.url}</a>
+                  <MaybeLink href={l.url} compact={compact}>
+                    {l.label || l.url}
+                  </MaybeLink>
                 </span>
               ))}
             </p>
