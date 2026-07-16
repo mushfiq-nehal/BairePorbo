@@ -14,6 +14,12 @@ import { CV_TEMPLATES, DEMO_CV, normalizeCV, type CVData, type CVTemplateId } fr
 // used as the hero thumbnail so visitors see a real CV, not a stylized icon.
 const HERO_TEMPLATE: CVTemplateId = CV_TEMPLATES[0].id;
 
+// The card peeking out from behind the hero thumbnail shows a second,
+// visually distinct template (rather than repeating the front one) so the
+// "stack of papers" reads as proof of choice, not just a decorative prop.
+const HERO_TEMPLATE_BACK: CVTemplateId =
+  CV_TEMPLATES.find((t) => t.id === "modern")?.id ?? CV_TEMPLATES[0].id;
+
 // Sample headshot shown in the photo-template thumbnail so its preview reads
 // as a real photo CV instead of an empty avatar slot. Other templates keep
 // the photo-free demo data.
@@ -176,7 +182,7 @@ function CvHeroThumbnail() {
         <div className={styles.heroCvBackInner}>
           <CVPreview
             data={DEMO_CV}
-            template={HERO_TEMPLATE}
+            template={HERO_TEMPLATE_BACK}
             compact
           />
         </div>
@@ -207,14 +213,21 @@ export default function CVBuilderPage() {
   // it's open, and let Escape close it like the rest of the app's dialogs.
   useEffect(() => {
     if (!pickerOpen) return;
-    const prevOverflow = document.body.style.overflow;
+    // Body alone isn't enough: once body's overflow stops being "visible" it
+    // stops propagating to the viewport, so `html` (which has no explicit
+    // overflow-y) becomes independently scrollable and the page still moves
+    // under the modal. Lock both.
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPickerOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      document.body.style.overflow = prevOverflow;
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [pickerOpen]);
@@ -396,7 +409,7 @@ export default function CVBuilderPage() {
                     <div>
                       <h3>Choose a template</h3>
                       <p className={styles.templatePickerHint}>
-                        Live preview of a sample academic CV in each style.
+                        Live preview of a sample academic CV in all {CV_TEMPLATES.length} styles.
                       </p>
                     </div>
                     <button

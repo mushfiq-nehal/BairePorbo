@@ -1025,6 +1025,9 @@
   .templateGrid {
     grid-template-columns: 1fr;
   }
+  .previewFrame {
+    height: 220px;
+  }
   .features {
     grid-template-columns: 1fr;
   }
