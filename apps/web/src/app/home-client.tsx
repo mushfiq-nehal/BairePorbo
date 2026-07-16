@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
@@ -454,17 +453,19 @@ function AndroidBanner() {
 }
 
 // ── Inline visual: hero illustration shown beside the hero copy ──────────────
+// The illustration is split into a static base and an animated overlay (the
+// paper plane, dashed trail, and location pin). Both SVGs share the exact same
+// viewBox, so they stack pixel-perfectly. The overlay's motion lives inside the
+// SVG file itself, so a plain <img> is enough for the animation to play.
 function ProductPreview() {
   return (
     <div className={styles.previewWrap} aria-hidden="true">
-      <Image
-        src="/hero.png"
-        alt=""
-        width={2500}
-        height={2000}
-        priority
-        className={styles.heroImage}
-      />
+      <div className={styles.heroStack}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/hero-base.svg" alt="" className={styles.heroBase} />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/hero-animation.svg" alt="" className={styles.heroAnim} />
+      </div>
     </div>
   );
 }
