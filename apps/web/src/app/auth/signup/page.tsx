@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useSignUp, useSignIn } from "@clerk/nextjs/legacy";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
@@ -47,18 +48,23 @@ function validateEmail(email: string): string | null {
   return null;
 }
 
+type Step = "form" | "verify";
+
 export default function SignupPage() {
   const t = useT();
-  const { signUp, isLoaded: signUpLoaded } = useSignUp() as any;
+  const router = useRouter();
+  const { signUp, isLoaded: signUpLoaded, setActive } = useSignUp() as any;
   const { signIn, isLoaded: signInLoaded } = useSignIn() as any;
 
+  const [step, setStep] = useState<Step>("form");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
 
   const handleEmailBlur = () => setEmailError(validateEmail(email));
 
@@ -75,15 +81,21 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      await signUp.create({
+      const result = await signUp.create({
         emailAddress: email,
         password,
         firstName: fullName.split(" ")[0] ?? fullName,
         lastName: fullName.split(" ").slice(1).join(" ") || undefined,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (signUp as any).prepareEmailAddressVerification({ strategy: "email_code" });
-      setDone(true);
+
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        router.replace("/dashboard");
+        return;
+      }
+
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setStep("verify");
     } catch (err: unknown) {
       const clerkErr = err as { errors?: { message: string; code?: string }[] };
       const first = clerkErr?.errors?.[0];
@@ -94,6 +106,40 @@ export default function SignupPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signUpLoaded || !signUp) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        router.replace("/dashboard");
+      } else {
+        setError("Couldn't verify that code. Please check it and try again.");
+      }
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[] };
+      setError(clerkErr?.errors?.[0]?.message ?? "Invalid or expired code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!signUpLoaded || !signUp) return;
+    setError(null);
+    setResendMessage(null);
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setResendMessage(t("signup.codeResent"));
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[] };
+      setError(clerkErr?.errors?.[0]?.message ?? "Could not resend code. Please try again.");
     }
   };
 
@@ -118,7 +164,7 @@ export default function SignupPage() {
     }
   };
 
-  if (done) {
+  if (step === "verify") {
     return (
       <div className={styles.page}>
         <div className={styles.card}>
@@ -126,11 +172,44 @@ export default function SignupPage() {
             <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
             <span className={styles.logoText}>BairePorbo</span>
           </div>
-          <h1 className={styles.heading}>{t("signup.successHeading")}</h1>
-          <p className={styles.sub}>{t("signup.successSub")}</p>
-          <Link href="/auth/login" className={styles.primaryBtn} style={{ display: "block", textAlign: "center", marginTop: 20 }}>
-            {t("signup.signInNow")}
-          </Link>
+          <h1 className={styles.heading}>{t("signup.verifyHeading")}</h1>
+          <p className={styles.sub}>
+            {t("signup.verifySub")} <strong>{email}</strong>
+          </p>
+
+          <form onSubmit={handleVerifyCode} className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="code">{t("signup.verifyCode")}</label>
+              <input
+                id="code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={code}
+                onChange={(e) => { setCode(e.target.value); setError(null); }}
+                placeholder="123456"
+                maxLength={6}
+              />
+            </div>
+
+            {error && <p className={styles.error}>{error}</p>}
+            {resendMessage && <p className={styles.sub} style={{ margin: 0 }}>{resendMessage}</p>}
+
+            <button type="submit" className={styles.primaryBtn} disabled={loading || !signUpLoaded}>
+              {loading ? t("signup.verifying") : t("signup.verifyButton")}
+            </button>
+          </form>
+
+          <p className={styles.switchLink}>
+            <button
+              type="button"
+              style={{ background: "none", border: "none", color: "var(--teal-600)", cursor: "pointer", padding: 0, font: "inherit" }}
+              onClick={handleResendCode}
+            >
+              {t("signup.resendCode")}
+            </button>
+          </p>
         </div>
       </div>
     );

@@ -170,6 +170,13 @@ export const translations = {
   "signup.signInNow": { en: "Sign in now", bn: "এখনই সাইন ইন করুন" },
   "signup.fullNamePlaceholder": { en: "Your full name", bn: "আপনার পূর্ণ নাম" },
   "signup.passwordPlaceholder": { en: "At least 8 characters", bn: "কমপক্ষে ৮ অক্ষর" },
+  "signup.verifyHeading": { en: "Verify your email", bn: "আপনার ইমেইল ভেরিফাই করুন" },
+  "signup.verifySub": { en: "We sent a 6-digit code to", bn: "আমরা একটি ৬-সংখ্যার কোড পাঠিয়েছি" },
+  "signup.verifyCode": { en: "Verification code", bn: "ভেরিফিকেশন কোড" },
+  "signup.verifyButton": { en: "Verify & create account", bn: "ভেরিফাই করে একাউন্ট তৈরি করুন" },
+  "signup.verifying": { en: "Verifying…", bn: "ভেরিফাই হচ্ছে…" },
+  "signup.resendCode": { en: "Didn't get a code? Resend", bn: "কোড পাননি? আবার পাঠান" },
+  "signup.codeResent": { en: "A new code has been sent.", bn: "নতুন একটি কোড পাঠানো হয়েছে।" },
 
   // ── Chat page ─────────────────────────────────────────────────────────────
   "chat.title": { en: "Scholarship mentor chat", bn: "Scholarship Mentor Chat" },
