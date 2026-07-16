@@ -304,37 +304,15 @@
   animation: floatIn 1.05s ease forwards;
 }
 
-/* Soft glow blob behind the illustration so it feels grounded on the page
-   rather than floating as a bare cut-out. */
-.previewWrap::before {
-  content: "";
-  position: absolute;
-  inset: 6% 4%;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle at 50% 45%,
-    rgba(15, 143, 141, 0.16),
-    rgba(245, 194, 101, 0.1) 45%,
-    transparent 72%
-  );
-  filter: blur(28px);
-  z-index: 0;
-  animation: heroGlow 7s ease-in-out infinite;
-}
-
 .heroImage {
   position: relative;
   z-index: 1;
   width: 108%;
   max-width: 620px;
   height: auto;
-  /* The source PNG has a hard white background — fade its edges out so the
-     rectangle corners melt into the page instead of showing sharp edges.
-     Sizing to "farthest-corner" (the default when no explicit size is given)
-     makes 100% mean "the corner", so the fade reaches evenly into every
-     corner instead of leaving them hard-edged like a fixed-size ellipse does. */
-  -webkit-mask-image: radial-gradient(ellipse at 50% 46%, #000 48%, rgba(0, 0, 0, 0.7) 62%, transparent 88%);
-  mask-image: radial-gradient(ellipse at 50% 46%, #000 48%, rgba(0, 0, 0, 0.7) 62%, transparent 88%);
+  /* The PNG already has real alpha transparency baked in (it's designed to
+     bleed off the frame edge) — no mask needed, just a soft contact shadow
+     so it feels grounded rather than pasted flat on the page. */
   filter: drop-shadow(0 26px 44px rgba(15, 34, 52, 0.14));
   animation: heroFloat 9s ease-in-out infinite;
   transform-origin: 55% 55%;
@@ -345,14 +323,8 @@
   50%      { transform: scale(1.015) rotate(-0.5deg); }
 }
 
-@keyframes heroGlow {
-  0%, 100% { opacity: 0.85; transform: scale(1); }
-  50%      { opacity: 1; transform: scale(1.05); }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .heroImage,
-  .previewWrap::before {
+  .heroImage {
     animation: none;
   }
 }
