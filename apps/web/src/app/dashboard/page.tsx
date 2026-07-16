@@ -38,6 +38,66 @@ type DashboardData = {
   } | null;
 };
 
+// Small inline icon set, shared between the hero stat chips and panel
+// headers so the same glyph always means the same thing across the page
+// (readiness → user, saved → bookmark, closing soon → clock).
+function SparkleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 3.5 13.6 8.4 18.5 10 13.6 11.6 12 16.5 10.4 11.6 5.5 10l4.9-1.6L12 3.5Z" fill="currentColor" />
+      <path
+        d="M18 15.5 18.7 17.3 20.5 18 18.7 18.7 18 20.5 17.3 18.7 15.5 18 17.3 17.3 18 15.5Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 8v4.2l2.6 1.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="8.5" r="3.5" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5 19.5c1.2-3.4 4-5 7-5s5.8 1.6 7 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ChatIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v6a2.5 2.5 0 0 1-2.5 2.5H9l-3.6 3v-3H6.5A2.5 2.5 0 0 1 4 12.5v-6Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BookmarkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M6.5 4A1.5 1.5 0 0 0 5 5.5v14l7-4.5 7 4.5v-14A1.5 1.5 0 0 0 17.5 4h-11Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const MATCH_CACHE_KEY = "bp_dashboard_matches";
 const MATCH_CACHE_TTL_MS = 60 * 60 * 1000; // 1h
 
@@ -281,10 +341,36 @@ export default function DashboardPage() {
             <div className={styles.heroIntro}>
               <p className={styles.kicker}>{t(greetingKeyFor())}</p>
               <h1>{data.user.name}</h1>
+              <ul className={styles.heroStats}>
+                <li className={styles.heroStat} data-tone="teal">
+                  <UserIcon />
+                  <strong>{data.stats.readiness}</strong>
+                  {t("dashboard.complete")}
+                </li>
+                <li className={styles.heroStat} data-tone="sand">
+                  <BookmarkIcon />
+                  <strong>{data.stats.bookmarksCount}</strong> {t("dashboard.saved")}
+                </li>
+                {data.bookmarksClosingSoon.length > 0 && (
+                  <li className={styles.heroStat} data-tone="coral">
+                    <ClockIcon />
+                    <strong>{data.bookmarksClosingSoon.length}</strong> {t("dashboard.closingSoon")}
+                  </li>
+                )}
+              </ul>
             </div>
 
             {nextAction && (
               <div className={`${styles.actionCard} ${styles[`action_${nextAction.kind}`]}`}>
+                <span className={styles.actionIcon} aria-hidden="true">
+                  {nextAction.kind === "urgent" ? (
+                    <ClockIcon />
+                  ) : nextAction.kind === "profile" ? (
+                    <UserIcon />
+                  ) : (
+                    <SparkleIcon />
+                  )}
+                </span>
                 <div className={styles.actionBody}>
                   <p className={styles.actionLabel}>{t("dashboard.whatNext")}</p>
                   <h2>{nextAction.titleKey}</h2>
@@ -299,6 +385,9 @@ export default function DashboardPage() {
 
           {/* ── CV Builder promo ── */}
           <Link href="/cv-builder" className={styles.cvPromo}>
+            <span className={styles.cvPromoIcon} aria-hidden="true">
+              <SparkleIcon />
+            </span>
             <div className={styles.cvPromoBody}>
               <p className={styles.cvPromoKicker}>New · AI-powered</p>
               <h3>Build a standout academic CV</h3>
@@ -345,9 +434,14 @@ export default function DashboardPage() {
             {/* AI Match */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
-                <div>
-                  <p className={styles.kickerLight}>{t("dashboard.forYou")}</p>
-                  <h3>{t("dashboard.aiPicks")}</h3>
+                <div className={styles.panelHeadingGroup}>
+                  <span className={styles.panelIcon} data-tone="teal" aria-hidden="true">
+                    <SparkleIcon />
+                  </span>
+                  <div>
+                    <p className={styles.kickerLight}>{t("dashboard.forYou")}</p>
+                    <h3>{t("dashboard.aiPicks")}</h3>
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -417,12 +511,17 @@ export default function DashboardPage() {
             {/* Closing soon (from bookmarks) */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
-                <div>
-                  <p className={styles.kickerLight}>
-                    <span className={styles.liveDot} aria-hidden="true" />
-                    {t("dashboard.closingSoon")}
-                  </p>
-                  <h3>{t("dashboard.bookmarksWithDeadlines")}</h3>
+                <div className={styles.panelHeadingGroup}>
+                  <span className={styles.panelIcon} data-tone="coral" aria-hidden="true">
+                    <ClockIcon />
+                  </span>
+                  <div>
+                    <p className={styles.kickerLight}>
+                      <span className={styles.liveDot} aria-hidden="true" />
+                      {t("dashboard.closingSoon")}
+                    </p>
+                    <h3>{t("dashboard.bookmarksWithDeadlines")}</h3>
+                  </div>
                 </div>
                 <Link href="/scholarships?sort=deadline" className={styles.linkButton}>
                   {t("dashboard.seeAll")}
@@ -474,9 +573,17 @@ export default function DashboardPage() {
             {/* Profile completeness */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
-                <div>
-                  <p className={styles.kickerLight}>{t("dashboard.yourProfile")}</p>
-                  <h3>{data.stats.readiness}{t("dashboard.complete")}</h3>
+                <div className={styles.panelHeadingGroup}>
+                  <span className={styles.panelIcon} data-tone="teal" aria-hidden="true">
+                    <UserIcon />
+                  </span>
+                  <div>
+                    <p className={styles.kickerLight}>{t("dashboard.yourProfile")}</p>
+                    <h3>
+                      <strong className={styles.readinessNum}>{data.stats.readiness}</strong>
+                      {t("dashboard.complete")}
+                    </h3>
+                  </div>
                 </div>
               </div>
               <div className={styles.progressTrack} aria-hidden="true">
@@ -515,9 +622,14 @@ export default function DashboardPage() {
             {/* Continue chat */}
             <div className={styles.panel}>
               <div className={styles.panelHeader}>
-                <div>
-                  <p className={styles.kickerLight}>{t("dashboard.mentor")}</p>
-                  <h3>{t("dashboard.continueChatting")}</h3>
+                <div className={styles.panelHeadingGroup}>
+                  <span className={styles.panelIcon} data-tone="teal" aria-hidden="true">
+                    <ChatIcon />
+                  </span>
+                  <div>
+                    <p className={styles.kickerLight}>{t("dashboard.mentor")}</p>
+                    <h3>{t("dashboard.continueChatting")}</h3>
+                  </div>
                 </div>
                 <Link href="/chat" className={styles.linkButton}>
                   {t("dashboard.open")}
@@ -557,9 +669,14 @@ export default function DashboardPage() {
           {data.bookmarks.length > 0 && (
             <section className={styles.panel} data-mobile-section="bookmarks">
               <div className={styles.panelHeader}>
-                <div>
-                  <p className={styles.kickerLight}>{t("dashboard.saved")}</p>
-                  <h3>{t("dashboard.allBookmarks")} ({data.bookmarks.length})</h3>
+                <div className={styles.panelHeadingGroup}>
+                  <span className={styles.panelIcon} data-tone="sand" aria-hidden="true">
+                    <BookmarkIcon />
+                  </span>
+                  <div>
+                    <p className={styles.kickerLight}>{t("dashboard.saved")}</p>
+                    <h3>{t("dashboard.allBookmarks")} ({data.bookmarks.length})</h3>
+                  </div>
                 </div>
               </div>
 

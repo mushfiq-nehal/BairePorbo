@@ -40,6 +40,24 @@
   gap: 28px;
 }
 
+/* Quiet staggered entrance — the page loads once per session, so this stays
+   brief rather than announcing itself. prefers-reduced-motion is handled
+   globally in globals.css. */
+.main > * {
+  animation: dashFadeUp 0.45s ease both;
+}
+.main > *:nth-child(1) { animation-delay: 0s; }
+.main > *:nth-child(2) { animation-delay: 0.05s; }
+.main > *:nth-child(3) { animation-delay: 0.09s; }
+.main > *:nth-child(4) { animation-delay: 0.13s; }
+.main > *:nth-child(5) { animation-delay: 0.17s; }
+.main > *:nth-child(6) { animation-delay: 0.21s; }
+
+@keyframes dashFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .skeleton {
   padding: 60px;
   background: rgba(255, 255, 255, 0.7);
@@ -114,17 +132,99 @@
 
 /* ── Hero ── */
 .heroStrip {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
   gap: 28px;
-  align-items: stretch;
+  align-items: center;
+  padding: 36px 40px;
+  border-radius: 28px;
+  background:
+    radial-gradient(900px 320px at 0% 0%, rgba(15, 143, 141, 0.16), transparent 70%),
+    radial-gradient(760px 320px at 100% 100%, rgba(240, 138, 104, 0.18), transparent 70%),
+    linear-gradient(135deg, #ffffff, var(--sand-50) 70%);
+  border: 1px solid var(--sand-200);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.heroStrip::before,
+.heroStrip::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.heroStrip::before {
+  width: 260px;
+  height: 260px;
+  right: -90px;
+  top: -90px;
+  background: radial-gradient(circle, rgba(15, 143, 141, 0.22), rgba(15, 143, 141, 0));
+}
+
+.heroStrip::after {
+  width: 220px;
+  height: 220px;
+  left: -80px;
+  bottom: -100px;
+  background: radial-gradient(circle, rgba(240, 138, 104, 0.2), rgba(240, 138, 104, 0));
 }
 
 .heroIntro {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 6px;
+}
+
+.heroStats {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heroStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--sand-200);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.heroStat svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.heroStat strong {
+  color: var(--ink-900);
+  font-weight: 700;
+  margin-right: 1px;
+}
+
+.heroStat[data-tone="teal"] svg {
+  color: var(--teal-600);
+}
+
+.heroStat[data-tone="coral"] svg {
+  color: var(--coral-500);
+}
+
+.heroStat[data-tone="sand"] svg {
+  color: var(--ink-500);
 }
 
 .kicker {
@@ -158,15 +258,41 @@
 /* Action card — adapts based on kind */
 .actionCard {
   position: relative;
+  z-index: 1;
   display: flex;
-  align-items: stretch;
-  gap: 20px;
+  align-items: center;
+  gap: 18px;
   padding: 22px 24px;
   border-radius: 22px;
   border: 1px solid var(--sand-200);
   background: #ffffff;
-  box-shadow: 0 14px 32px -12px rgba(15, 143, 141, 0.18);
+  box-shadow: 0 16px 36px -14px rgba(15, 34, 52, 0.22);
   overflow: hidden;
+}
+
+.actionIcon {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--teal-100);
+  color: var(--teal-700);
+  border: 1px solid var(--teal-200);
+}
+
+.actionIcon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.action_urgent .actionIcon {
+  background: var(--coral-100);
+  color: var(--coral-700);
+  border-color: #f4cdbf;
 }
 
 .actionCard::before {
@@ -290,12 +416,57 @@
   gap: 16px;
 }
 
+.panelHeadingGroup {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.panelIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--sand-200);
+}
+
+.panelIcon svg {
+  width: 19px;
+  height: 19px;
+}
+
+.panelIcon[data-tone="teal"] {
+  background: var(--teal-100);
+  color: var(--teal-700);
+  border-color: var(--teal-200);
+}
+
+.panelIcon[data-tone="coral"] {
+  background: var(--coral-100);
+  color: var(--coral-700);
+  border-color: #f4cdbf;
+}
+
+.panelIcon[data-tone="sand"] {
+  background: var(--sand-100);
+  color: var(--ink-700);
+}
+
 .panelHeader h3 {
   font-family: var(--font-display), var(--font-bengali), sans-serif;
   font-size: 18px;
   font-weight: 700;
   color: var(--ink-900);
   letter-spacing: -0.2px;
+}
+
+.readinessNum {
+  font-size: 1.2em;
+  color: var(--teal-700);
 }
 
 .linkButton {
@@ -483,6 +654,7 @@
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid var(--sand-200);
+  border-left: 3px solid var(--teal-200);
   background: #ffffff;
   text-decoration: none;
   color: inherit;
@@ -524,6 +696,7 @@
 
 .deadlineItemUrgent {
   border-color: rgba(240, 138, 104, 0.4);
+  border-left-color: var(--coral-500);
 }
 
 .deadlineItemUrgent .deadlineBadge {
@@ -535,7 +708,7 @@
 /* ── Profile progress ── */
 .progressTrack {
   width: 100%;
-  height: 8px;
+  height: 12px;
   background: rgba(15, 143, 141, 0.08);
   border-radius: 999px;
   overflow: hidden;
@@ -701,6 +874,7 @@
   .heroStrip {
     grid-template-columns: 1fr;
     gap: 18px;
+    padding: 28px 26px;
   }
 }
 
@@ -724,6 +898,16 @@
 @media (max-width: 720px) {
   .page {
     padding: 22px 6vw 56px;
+  }
+
+  .heroStrip {
+    border-radius: 22px;
+    padding: 24px 20px;
+  }
+
+  .heroStat {
+    font-size: 12px;
+    padding: 6px 12px 6px 9px;
   }
 
   /* Show the mobile segmented control */
@@ -831,6 +1015,26 @@
 .cvPromo:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
+}
+.cvPromoIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+.cvPromoIcon svg {
+  width: 22px;
+  height: 22px;
+}
+.cvPromoBody {
+  flex: 1;
+  min-width: 220px;
 }
 .cvPromoBody h3 {
   margin: 2px 0 4px;
