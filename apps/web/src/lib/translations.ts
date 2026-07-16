@@ -28,9 +28,9 @@ export const translations = {
   "tab.signUp": { en: "Sign up", bn: "সাইন আপ" },
 
   // ── Homepage — Hero ──────────────────────────────────────────────────────
-  "home.kicker": { en: "AI scholarship compass for Bangladesh", bn: "বাংলাদেশের জন্য AI Scholarship Compass" },
+  "home.kicker": { en: "AI scholarship compass for Bangladesh", bn: "বাংলাদেশের শিক্ষার্থীদের জন্য AI ভিত্তিক স্কলারশিপ গাইডলাইন প্ল্যাটফর্ম" },
   "home.heroTitle": { en: "Find scholarships that fit your story, not just your grades.", bn: "এমন স্কলারশিপ খুঁজুন যা আপনার গল্পের সাথে মানানসই, CGPA এর সাথে নয়।" },
-  "home.heroCopy": { en: "BairePorbo guides students through higher-study decisions with explainable AI, localized advice, and a curated scholarship map.", bn: "BairePorbo — Explainable AI, localized advice আর curated scholarship map দিয়ে তোমার উচ্চশিক্ষার সিদ্ধান্তকে সহজ করে।" },
+  "home.heroCopy": { en: "BairePorbo guides students through higher-study decisions with explainable AI, localized advice, and a curated scholarship map.", bn: "BairePorbo — এর Advanced AI Model সমৃদ্ধ AI Mentor, Expert দের গাইডলাইন আর curated scholarship তোমার Higher Study র যাত্রা কে করবে সহজ।" },
   "home.searchPlaceholder": { en: "Search by country, field, or scholarship name…", bn: "দেশ, বিষয় বা scholarship নাম দিয়ে খুঁজুন…" },
   "home.searchButton": { en: "Search", bn: "খুঁজুন" },
   "home.searchAriaLabel": { en: "Search scholarships", bn: "Scholarship খুঁজুন" },
@@ -52,7 +52,7 @@ export const translations = {
 
   // ── Homepage — Closing soon ───────────────────────────────────────────────
   "home.closingSoon": { en: "Closing soon", bn: "শীঘ্রই শেষ হচ্ছে" },
-  "home.dontMissDeadlines": { en: "Don't miss these deadlines", bn: "এই deadline মিস করবেন না" },
+  "home.dontMissDeadlines": { en: "Don't miss these deadlines", bn: "deadline শেষ হওয়ার আগে এপ্লাই করেছেন তো?" },
   "home.seeAllScholarships": { en: "See all scholarships →", bn: "সব scholarship দেখুন →" },
   "home.nothingClosingPre": { en: "Nothing closing in the next 30 days. Check the", bn: "আগামী ৩০ দিনে কিছু শেষ হচ্ছে না।" },
   "home.fullList": { en: "full list", bn: "সম্পূর্ণ তালিকা" },
@@ -60,13 +60,13 @@ export const translations = {
   "home.deadlinePrefix": { en: "Deadline", bn: "Deadline" },
 
   // ── Homepage — Mentor showcase ────────────────────────────────────────────
-  "home.mentorKicker": { en: "The AI Mentor in action", bn: "AI Mentor কর্মক্ষেত্রে" },
+  "home.mentorKicker": { en: "The AI Mentor in action", bn: "Advanced AI Powered Mentor" },
   "home.mentorTitle": { en: "Real answers to the questions students actually ask.", bn: "শিক্ষার্থীরা যে প্রশ্নগুলো সত্যিই করে তার আসল উত্তর।" },
-  "home.mentorDesc": { en: "Not a generic chatbot. The mentor knows Bangladeshi context — your CGPA, IELTS expectations, and what scholarships realistically open up.", bn: "এটি সাধারণ chatbot নয়। Mentor বাংলাদেশী context জানে — তোমার CGPA, IELTS প্রত্যাশা, ও কোন scholarships বাস্তবে পাওয়া সম্ভব।" },
+  "home.mentorDesc": { en: "Not a generic chatbot. The mentor knows Bangladeshi context — your CGPA, IELTS expectations, and what scholarships realistically open up.", bn: "এটি সাধারণ chatbot নয়। AI Mentor এর আছে স্কলারশিপ এর Realtime ডাটাবেজ। তোমার প্রোফাইল অনুযায়ী বাংলাদেশ এর কন্টেক্সট এ পাবে সব উত্তর।" },
   "home.tryMentor": { en: "Try the mentor →", bn: "Mentor ব্যবহার করে দেখুন →" },
 
   // ── Homepage — Guide teaser ───────────────────────────────────────────────
-  "home.knowledgeHub": { en: "Knowledge hub", bn: "জ্ঞান কেন্দ্র" },
+  "home.knowledgeHub": { en: "Knowledge hub", bn: "এক্সপার্ট গাইডলাইন" },
   "home.guidesTitle": { en: "Study abroad guides & FAQs", bn: "বিদেশে পড়াশোনার গাইড ও FAQ" },
   "home.guidesDesc": { en: "Answers to the questions Bangladeshi students ask most — scholarships, IELTS, SOP writing, and more.", bn: "বাংলাদেশী শিক্ষার্থীরা সবচেয়ে বেশি যে প্রশ্নগুলো করেন — scholarships, IELTS, SOP writing, ও আরো।" },
   "home.allGuides": { en: "All guides →", bn: "সব গাইড →" },
