@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
@@ -452,66 +453,18 @@ function AndroidBanner() {
   );
 }
 
-// ── Inline visual: chat preview shown beside the hero ─────────────────────────
+// ── Inline visual: hero illustration shown beside the hero copy ──────────────
 function ProductPreview() {
-  const { lang } = useLang();
-  const isBn = lang === "bn";
-
   return (
     <div className={styles.previewWrap} aria-hidden="true">
-      <div className={styles.previewCard}>
-        <div className={styles.previewHeader}>
-          <div className={styles.previewDots}>
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className={styles.previewStatus}>
-            <span className={styles.previewLiveDot} />
-            BairePorbo Mentor · Online
-          </div>
-        </div>
-
-        <div className={styles.previewBody}>
-          <div className={styles.previewBubbleUser}>
-            {isBn
-              ? "আমার BRAC-এ ৩.৪ CGPA। Chevening কি পাব?"
-              : "I have a 3.4 CGPA from BRAC. Can I get into Chevening?"}
-          </div>
-          <div className={styles.previewBubbleAi}>
-            {isBn ? (
-              <>
-                <strong>সংক্ষেপে: হ্যাঁ, তুমি competitive।</strong>
-                <br />
-                Chevening-এ কোনো minimum CGPA নেই — ওরা{" "}
-                <em>leadership ও impact</em> দেখে। ৩.৪ দিয়ে apply করো।
-                <ul>
-                  <li>২+ বছর কাজের অভিজ্ঞতা লাগবে</li>
-                  <li><strong>৫ নভেম্বর</strong>-এর আগে আবেদন করো</li>
-                  <li>৩টি আলাদা UK programme বেছে নাও</li>
-                </ul>
-              </>
-            ) : (
-              <>
-                <strong>Short answer: yes, you&apos;re competitive.</strong>
-                <br />
-                Chevening doesn&apos;t set a minimum CGPA — they prioritise{" "}
-                <em>leadership and impact</em>. Your 3.4 is fine.
-                <ul>
-                  <li>2+ years of experience needed</li>
-                  <li>Apply before <strong>5 Nov</strong></li>
-                  <li>3 distinct UK programs</li>
-                </ul>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.previewBadge}>
-        <span className={styles.previewBadgePulse} />
-        Powered by Advanced AI
-      </div>
+      <Image
+        src="/hero.png"
+        alt=""
+        width={2500}
+        height={2000}
+        priority
+        className={styles.heroImage}
+      />
     </div>
   );
 }
