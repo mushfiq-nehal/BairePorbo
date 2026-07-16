@@ -194,10 +194,14 @@ export default function CVAnalyzePage() {
     let elapsedTimer: ReturnType<typeof setInterval> | null = null;
 
     const advance = () => {
-      // Mark current as done, then move to next.
+      // Capture the id by value now — setCompletedStages's updater runs
+      // slightly later, and `stage` is mutated right below. Reading
+      // `STAGES[stage]` from inside the updater would race with that
+      // mutation and, on the final stage, read past the end of the array.
+      const finishedStageId = STAGES[stage].id;
       setCompletedStages((prev) => {
         const next = new Set(prev);
-        next.add(STAGES[stage].id);
+        next.add(finishedStageId);
         return next;
       });
       stage += 1;
