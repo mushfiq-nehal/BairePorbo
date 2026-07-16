@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useSignUp, useSignIn } from "@clerk/nextjs";
+import { useSignUp, useSignIn } from "@clerk/nextjs/legacy";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
