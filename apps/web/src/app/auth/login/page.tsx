@@ -8,6 +8,8 @@ import { useSignIn } from "@clerk/nextjs/legacy";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
+type Step = "form" | "client-trust";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -15,10 +17,34 @@ function LoginForm() {
   const t = useT();
   const { signIn, isLoaded, setActive } = useSignIn() as any;
 
+  const [step, setStep] = useState<Step>("form");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [trustCode, setTrustCode] = useState("");
+  const [trustStrategy, setTrustStrategy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Handles Clerk's "Client Trust" second-factor challenge, which is triggered
+  // for password sign-ins from a client/device Clerk hasn't seen verify before.
+  // Without this, those sign-ins get stuck at a non-"complete" status forever.
+  const startClientTrustVerification = async (result: any) => {
+    const factors: { strategy?: string }[] = result.supportedSecondFactors ?? [];
+    const strategy =
+      factors.find((f) => f.strategy === "email_code")?.strategy ??
+      factors.find((f) => f.strategy === "email_link")?.strategy ??
+      factors.find((f) => f.strategy === "phone_code")?.strategy ??
+      null;
+
+    if (!strategy) {
+      setError("This device needs extra verification, but no verification method is available. Please contact support.");
+      return;
+    }
+
+    await signIn.prepareSecondFactor({ strategy });
+    setTrustStrategy(strategy);
+    setStep("client-trust");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,6 +56,8 @@ function LoginForm() {
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         router.replace(redirect);
+      } else if (result.status === "needs_client_trust") {
+        await startClientTrustVerification(result);
       } else if (result.status === "needs_second_factor") {
         setError("This account requires a second verification step, which isn't supported here yet. Please contact support.");
       } else if (result.status === "needs_new_password") {
@@ -54,6 +82,38 @@ function LoginForm() {
     }
   };
 
+  const handleTrustCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoaded || !signIn || !trustStrategy) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await signIn.attemptSecondFactor({ strategy: trustStrategy, code: trustCode });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        router.replace(redirect);
+      } else {
+        setError("Couldn't verify that code. Please check it and try again.");
+      }
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[] };
+      setError(clerkErr?.errors?.[0]?.message ?? "Invalid or expired code. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendTrustCode = async () => {
+    if (!isLoaded || !signIn || !trustStrategy) return;
+    setError(null);
+    try {
+      await signIn.prepareSecondFactor({ strategy: trustStrategy });
+    } catch (err: unknown) {
+      const clerkErr = err as { errors?: { message: string }[] };
+      setError(clerkErr?.errors?.[0]?.message ?? "Could not resend code. Please try again.");
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     setError(null);
     try {
@@ -74,6 +134,56 @@ function LoginForm() {
       setError(clerkErr?.errors?.[0]?.message ?? clerkErr?.message ?? String(err));
     }
   };
+
+  if (step === "client-trust") {
+    return (
+      <div className={styles.page}>
+        <div className={styles.card}>
+          <div className={styles.logo}>
+            <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.logoImage} />
+            <span className={styles.logoText}>BairePorbo</span>
+          </div>
+          <h1 className={styles.heading}>Verify it&apos;s you</h1>
+          <p className={styles.sub}>
+            We don&apos;t recognize this device. We sent a code to <strong>{email}</strong> to confirm it&apos;s really you.
+          </p>
+
+          <form onSubmit={handleTrustCodeSubmit} className={styles.form}>
+            <div className={styles.field}>
+              <label htmlFor="trust-code">Verification code</label>
+              <input
+                id="trust-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                required
+                value={trustCode}
+                onChange={(e) => { setTrustCode(e.target.value); setError(null); }}
+                placeholder="123456"
+                maxLength={6}
+              />
+            </div>
+
+            {error && <p className={styles.error}>{error}</p>}
+
+            <button type="submit" className={styles.primaryBtn} disabled={loading || !isLoaded}>
+              {loading ? "Verifying…" : "Verify and sign in"}
+            </button>
+          </form>
+
+          <p className={styles.switchLink}>
+            <button
+              type="button"
+              style={{ background: "none", border: "none", color: "var(--teal-600)", cursor: "pointer", padding: 0, font: "inherit" }}
+              onClick={handleResendTrustCode}
+            >
+              Resend code
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.page}>
