@@ -8,7 +8,7 @@ import Constants from "expo-constants";
 export const API_BASE: string =
   process.env.EXPO_PUBLIC_API_BASE ??
   (Constants.expoConfig?.extra?.apiBase as string | undefined) ??
-  "https://baireporbo.app";
+  "https://www.baireporbo.app";
 
 export const CLERK_PUBLISHABLE_KEY: string =
   process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";

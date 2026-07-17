@@ -1,36 +1,35 @@
 import { useState } from "react";
-import { View, ScrollView, ActivityIndicator, Pressable, Linking } from "react-native";
+import { View, ScrollView, ActivityIndicator, Pressable, Linking, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { RequiredDocuments } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
-import { AppText } from "@/components/AppText";
+import { Txt, Chip, Button, Card } from "@/components/ui";
+import { colors } from "@/theme";
 
 function Section({ title, body }: { title: string; body: string | null | undefined }) {
   if (!body) return null;
   return (
-    <View className="mb-5">
-      <AppText bold className="text-slate-300 font-semibold mb-1.5">
-        {title}
-      </AppText>
-      <AppText className="text-slate-100 leading-6">{body}</AppText>
+    <View className="mb-6">
+      <Txt font="display" weight="semibold" className="text-ink-900 text-lg mb-2">{title}</Txt>
+      <Txt className="text-ink-700 leading-6">{body}</Txt>
     </View>
   );
 }
 
-function DocList({ title, items }: { title: string; items: string[] }) {
+function DocList({ title, items, tone }: { title: string; items: string[]; tone: "teal" | "coral" }) {
   if (items.length === 0) return null;
+  const dot = tone === "teal" ? colors.teal500 : colors.coral500;
   return (
-    <View className="mb-3">
-      <AppText bold className="text-slate-400 text-xs uppercase mb-1.5">
-        {title}
-      </AppText>
+    <View className="mb-4">
+      <Txt weight="semibold" className="text-ink-400 text-xs uppercase tracking-wide mb-2">{title}</Txt>
       {items.map((doc, i) => (
-        <View key={i} className="flex-row gap-2 mb-1">
-          <AppText className="text-brand">•</AppText>
-          <AppText className="text-slate-100 flex-1">{doc}</AppText>
+        <View key={i} className="flex-row gap-2.5 mb-1.5">
+          <Ionicons name="checkmark-circle" size={18} color={dot} style={{ marginTop: 1 }} />
+          <Txt className="text-ink-800 flex-1 leading-5">{doc}</Txt>
         </View>
       ))}
     </View>
@@ -58,95 +57,91 @@ export default function ScholarshipDetail() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-ink items-center justify-center" edges={["bottom"]}>
-        <ActivityIndicator color="#2563EB" />
+      <SafeAreaView className="flex-1 bg-body items-center justify-center" edges={["bottom"]}>
+        <ActivityIndicator color={colors.teal500} />
       </SafeAreaView>
     );
   }
-
   if (isError || !s) {
     return (
-      <SafeAreaView className="flex-1 bg-ink items-center justify-center px-6" edges={["bottom"]}>
-        <AppText className="text-red-400 text-center">{t("detail.notFound")}</AppText>
+      <SafeAreaView className="flex-1 bg-body items-center justify-center px-8" edges={["bottom"]}>
+        <Txt className="text-ink-500 text-center">{t("detail.notFound")}</Txt>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-ink" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-body" edges={["bottom"]}>
       <Stack.Screen options={{ title: s.country ?? "" }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        <AppText bold className="text-white text-2xl font-bold mb-2">
-          {s.title}
-        </AppText>
+      <ScrollView contentContainerStyle={{ paddingBottom: 36 }} showsVerticalScrollIndicator={false}>
+        {s.thumbnail_url ? (
+          <Image
+            source={{ uri: s.thumbnail_url }}
+            style={{ width: "100%", aspectRatio: 16 / 9, backgroundColor: colors.sand100 }}
+            resizeMode="cover"
+          />
+        ) : null}
+        <View style={{ padding: 20 }}>
+        {s.is_flagship ? (
+          <View className="flex-row mb-3">
+            <View className="flex-row items-center gap-1 bg-coral-100 rounded-full px-3 py-1">
+              <Ionicons name="star" size={12} color={colors.coral500} />
+              <Txt weight="semibold" className="text-coral-700 text-xs">{t("common.featured")}</Txt>
+            </View>
+          </View>
+        ) : null}
 
-        <View className="flex-row flex-wrap gap-2 mb-5">
-          {s.country ? (
-            <View className="bg-slate-800 rounded-full px-3 py-1">
-              <AppText className="text-slate-300 text-xs">📍 {s.country}</AppText>
-            </View>
-          ) : null}
-          {s.degree_level ? (
-            <View className="bg-slate-800 rounded-full px-3 py-1">
-              <AppText className="text-slate-300 text-xs">🎓 {s.degree_level}</AppText>
-            </View>
-          ) : null}
-          {s.funding_type ? (
-            <View className="bg-slate-800 rounded-full px-3 py-1">
-              <AppText className="text-slate-300 text-xs">💰 {s.funding_type}</AppText>
-            </View>
-          ) : null}
-          {s.deadline ? (
-            <View className="bg-slate-800 rounded-full px-3 py-1">
-              <AppText className="text-slate-300 text-xs">⏳ {s.deadline}</AppText>
-            </View>
-          ) : null}
+        <Txt font="display" weight="bold" className="text-ink-900 text-[26px] leading-8 mb-4">
+          {s.title}
+        </Txt>
+
+        <View className="flex-row flex-wrap gap-2 mb-6">
+          {s.country ? <Chip tone="teal" label={s.country} /> : null}
+          {s.degree_level ? <Chip label={s.degree_level} /> : null}
+          {s.funding_type ? <Chip label={s.funding_type} /> : null}
+          {s.deadline ? <Chip tone="coral" label={s.deadline} /> : null}
         </View>
 
         <Section title={t("detail.about")} body={s.ai_summary ?? s.raw_description} />
         <Section title={t("detail.eligibility")} body={s.eligibility_summary} />
         <Section title={t("detail.benefits")} body={s.tips} />
 
-        {/* Required-documents checklist (AI-generated, cached server-side). */}
-        <View className="mb-5">
-          <AppText bold className="text-slate-300 font-semibold mb-2">
+        <View className="mb-6">
+          <Txt font="display" weight="semibold" className="text-ink-900 text-lg mb-3">
             {t("detail.requiredDocuments")}
-          </AppText>
+          </Txt>
           {docs ? (
-            <View className="bg-slate-900 rounded-2xl p-4">
-              <DocList title={t("detail.coreDocuments")} items={docs.core} />
-              <DocList title={t("detail.additionalDocuments")} items={docs.additional} />
+            <Card className="p-4">
+              <DocList tone="teal" title={t("detail.coreDocuments")} items={docs.core} />
+              <DocList tone="coral" title={t("detail.additionalDocuments")} items={docs.additional} />
               {docs.note ? (
-                <AppText className="text-slate-400 text-sm italic mt-1">💡 {docs.note}</AppText>
+                <View className="flex-row gap-2 mt-1 bg-teal-100 rounded-xl p-3">
+                  <Ionicons name="bulb-outline" size={16} color={colors.teal700} />
+                  <Txt className="text-teal-800 text-sm flex-1 leading-5">{docs.note}</Txt>
+                </View>
               ) : null}
-            </View>
+            </Card>
           ) : docsMutation.isError ? (
-            <AppText className="text-red-400">{t("detail.docsError")}</AppText>
+            <Txt className="text-coral-700">{t("detail.docsError")}</Txt>
           ) : (
-            <Pressable
-              className="bg-slate-800 rounded-xl py-3 items-center active:opacity-80"
+            <Button
+              label={t("detail.generateDocs")}
+              variant="outline"
+              icon={<Ionicons name="document-text-outline" size={18} color={colors.teal700} />}
+              loading={docsMutation.isPending}
               onPress={() => docsMutation.mutate()}
-              disabled={docsMutation.isPending}
-            >
-              {docsMutation.isPending ? (
-                <ActivityIndicator color="#2563EB" />
-              ) : (
-                <AppText className="text-brand font-semibold">{t("detail.generateDocs")}</AppText>
-              )}
-            </Pressable>
+            />
           )}
         </View>
 
         {s.official_url ? (
-          <Pressable
-            className="bg-brand rounded-xl py-4 items-center active:opacity-80"
+          <Button
+            label={t("detail.applyNow")}
+            icon={<Ionicons name="open-outline" size={18} color={colors.white} />}
             onPress={() => Linking.openURL(s.official_url as string)}
-          >
-            <AppText bold className="text-brand-fg font-semibold">
-              {t("detail.applyNow")}
-            </AppText>
-          </Pressable>
+          />
         ) : null}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

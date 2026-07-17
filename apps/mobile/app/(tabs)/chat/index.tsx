@@ -1,21 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  View,
-  TextInput,
-  Pressable,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-} from "react-native";
+import { View, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ChatMessage } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
-import { AppText } from "@/components/AppText";
+import { Txt } from "@/components/ui";
+import { colors } from "@/theme";
 
 export default function Chat() {
   const api = useApi();
@@ -31,7 +25,6 @@ export default function Chat() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
 
-  // Resume a session opened from the history list.
   useEffect(() => {
     const incoming = params.sessionId ?? null;
     if (!incoming || incoming === sessionId) return;
@@ -40,9 +33,7 @@ export default function Chat() {
     (async () => {
       try {
         const res = await api.getChatMessages(incoming);
-        if (active) {
-          setMessages(res.messages.map((m) => ({ role: m.role, content: m.content })));
-        }
+        if (active) setMessages(res.messages.map((m) => ({ role: m.role, content: m.content })));
       } catch {
         if (active) setError(t("chat.error"));
       }
@@ -62,22 +53,18 @@ export default function Chat() {
   async function send() {
     const text = input.trim();
     if (!text || streaming) return;
-
     setError(null);
     setInput("");
     const history: ChatMessage[] = [...messages, { role: "user", content: text }];
     setMessages([...history, { role: "assistant", content: "" }]);
     setStreaming(true);
-
     try {
-      // Persist the conversation: create a session lazily on the first turn.
       let activeSession = sessionId;
       if (!activeSession) {
         const created = await api.createChatSession();
         activeSession = created.session.id;
         setSessionId(activeSession);
       }
-
       await api.streamChat(
         { messages: history, userMessage: text, sessionId: activeSession },
         {
@@ -85,9 +72,7 @@ export default function Chat() {
             setMessages((prev) => {
               const next = [...prev];
               const last = next[next.length - 1];
-              if (last?.role === "assistant") {
-                next[next.length - 1] = { role: "assistant", content: last.content + token };
-              }
+              if (last?.role === "assistant") next[next.length - 1] = { role: "assistant", content: last.content + token };
               return next;
             });
             scrollRef.current?.scrollToEnd({ animated: true });
@@ -98,9 +83,7 @@ export default function Chat() {
     } catch (err) {
       const msg =
         err instanceof ApiError
-          ? typeof err.body?.error === "string"
-            ? err.body.error
-            : err.message
+          ? typeof err.body?.error === "string" ? err.body.error : err.message
           : t("chat.error");
       setError(msg);
       setMessages((prev) => {
@@ -114,70 +97,66 @@ export default function Chat() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-ink" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-body" edges={["bottom"]}>
       <Stack.Screen
         options={{
           headerRight: () => (
-            <View className="flex-row gap-4">
-              <Pressable onPress={newChat}>
-                <AppText className="text-brand font-semibold">{t("chat.newChat")}</AppText>
+            <View className="flex-row gap-4 items-center">
+              <Pressable onPress={newChat} hitSlop={8}>
+                <Ionicons name="create-outline" size={22} color={colors.teal600} />
               </Pressable>
-              <Pressable onPress={() => router.push("/(tabs)/chat/sessions")}>
-                <AppText className="text-brand font-semibold">{t("chat.history")}</AppText>
+              <Pressable onPress={() => router.push("/(tabs)/chat/sessions")} hitSlop={8}>
+                <Ionicons name="time-outline" size={22} color={colors.teal600} />
               </Pressable>
             </View>
           ),
         }}
       />
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <ScrollView
-          ref={scrollRef}
-          className="flex-1 px-4"
-          contentContainerStyle={{ paddingVertical: 16, gap: 12 }}
-        >
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView ref={scrollRef} className="flex-1 px-4" contentContainerStyle={{ paddingVertical: 16, gap: 10 }}>
           {messages.length === 0 ? (
-            <AppText className="text-slate-400 text-center mt-10">{t("chat.emptyHint")}</AppText>
+            <View className="items-center mt-16 px-6">
+              <View className="w-16 h-16 rounded-3xl bg-teal-100 items-center justify-center mb-4">
+                <Ionicons name="sparkles" size={30} color={colors.teal600} />
+              </View>
+              <Txt className="text-ink-500 text-center leading-6">{t("chat.emptyHint")}</Txt>
+            </View>
           ) : null}
           {messages.map((m, i) => (
             <View
               key={i}
+              style={m.role === "assistant" ? { borderWidth: 1, borderColor: colors.sand200 } : undefined}
               className={
                 m.role === "user"
-                  ? "self-end bg-brand rounded-2xl px-4 py-2 max-w-[85%]"
-                  : "self-start bg-slate-800 rounded-2xl px-4 py-2 max-w-[85%]"
+                  ? "self-end bg-teal-500 rounded-3xl rounded-br-lg px-4 py-2.5 max-w-[85%]"
+                  : "self-start bg-surface rounded-3xl rounded-bl-lg px-4 py-2.5 max-w-[88%]"
               }
             >
-              <AppText className={m.role === "user" ? "text-brand-fg" : "text-white"}>
+              <Txt className={`${m.role === "user" ? "text-white" : "text-ink-800"} leading-6`}>
                 {m.content || "…"}
-              </AppText>
+              </Txt>
             </View>
           ))}
         </ScrollView>
 
-        {error ? <AppText className="text-red-400 px-4 pb-1">{error}</AppText> : null}
+        {error ? <Txt className="text-coral-700 px-4 pb-1 text-sm">{error}</Txt> : null}
 
-        <View className="flex-row items-center gap-2 px-4 pb-2 pt-1 border-t border-slate-800">
+        <View className="flex-row items-end gap-2 px-4 pb-2 pt-2 border-t border-sand-200 bg-body">
           <TextInput
-            className="flex-1 bg-slate-800 text-white rounded-2xl px-4 py-3"
+            className="flex-1 bg-surface border border-sand-200 text-ink-900 rounded-3xl px-4 py-3 max-h-32"
+            style={{ fontFamily: "Manrope_400Regular" }}
             placeholder={t("chat.placeholder")}
-            placeholderTextColor="#64748B"
+            placeholderTextColor={colors.ink400}
             value={input}
             onChangeText={setInput}
             multiline
           />
           <Pressable
-            className="bg-brand rounded-full w-12 h-12 items-center justify-center active:opacity-80"
+            className={`rounded-full w-12 h-12 items-center justify-center ${streaming ? "bg-teal-200" : "bg-teal-500"}`}
             onPress={send}
             disabled={streaming}
           >
-            {streaming ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <AppText className="text-brand-fg text-lg">➤</AppText>
-            )}
+            {streaming ? <ActivityIndicator color={colors.white} /> : <Ionicons name="arrow-up" size={22} color={colors.white} />}
           </Pressable>
         </View>
       </KeyboardAvoidingView>

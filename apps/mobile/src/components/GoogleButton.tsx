@@ -5,8 +5,9 @@ import { useSSO } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
-import { AppText } from "./AppText";
+import { Txt } from "./ui";
 import { useT } from "@/i18n";
+import { colors, shadow } from "@/theme";
 
 // Required so the browser-based OAuth redirect can complete and dismiss.
 WebBrowser.maybeCompleteAuthSession();
@@ -49,18 +50,19 @@ export function GoogleButton({ onError }: { onError?: (msg: string) => void }) {
 
   return (
     <Pressable
-      className="bg-white rounded-xl py-3 flex-row items-center justify-center gap-2 active:opacity-80"
+      style={shadow.sm}
+      className="bg-surface border border-sand-200 rounded-full py-4 flex-row items-center justify-center gap-2.5 active:opacity-90"
       onPress={onPress}
       disabled={busy}
     >
       {busy ? (
-        <ActivityIndicator color="#0B1120" />
+        <ActivityIndicator color={colors.ink700} />
       ) : (
         <>
-          <FontAwesome name="google" size={18} color="#0B1120" />
-          <AppText bold className="text-[#0B1120] font-semibold">
+          <FontAwesome name="google" size={18} color={colors.coral500} />
+          <Txt weight="semibold" className="text-ink-800 text-base">
             {t("auth.google")}
-          </AppText>
+          </Txt>
         </>
       )}
     </Pressable>

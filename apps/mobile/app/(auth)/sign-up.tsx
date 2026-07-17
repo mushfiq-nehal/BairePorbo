@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { View, TextInput, Pressable, ActivityIndicator } from "react-native";
+import { View, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { useSignUp } from "@clerk/clerk-expo";
 import { useT } from "@/i18n";
-import { AppText } from "@/components/AppText";
+import { Txt, Button, Logo } from "@/components/ui";
 import { GoogleButton } from "@/components/GoogleButton";
+import { colors } from "@/theme";
+
+const inputClass = "bg-surface border border-sand-200 text-ink-900 rounded-2xl px-4 py-4";
+const inputFont = { fontFamily: "Manrope_400Regular" };
 
 export default function SignUp() {
   const { signUp, setActive, isLoaded } = useSignUp();
@@ -58,91 +62,75 @@ export default function SignUp() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-ink">
-      <View className="flex-1 justify-center px-6 gap-4">
-        <AppText bold className="text-white text-3xl font-bold mb-2">
-          {t("auth.createAccount")}
-        </AppText>
+    <SafeAreaView className="flex-1 bg-body">
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }} keyboardShouldPersistTaps="handled">
+          <View className="items-center mb-8">
+            <Logo size={64} />
+            <Txt font="display" weight="bold" className="text-ink-900 text-3xl mt-4">
+              {t("auth.createAccount")}
+            </Txt>
+          </View>
 
-        {!pendingVerification ? (
-          <>
-            <TextInput
-              className="bg-slate-800 text-white rounded-xl px-4 py-3"
-              placeholder={t("auth.email")}
-              placeholderTextColor="#64748B"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              value={email}
-              onChangeText={setEmail}
-            />
-            <TextInput
-              className="bg-slate-800 text-white rounded-xl px-4 py-3"
-              placeholder={t("auth.password")}
-              placeholderTextColor="#64748B"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
-            {error ? <AppText className="text-red-400">{error}</AppText> : null}
-            <Pressable
-              className="bg-brand rounded-xl py-3 items-center mt-2 active:opacity-80"
-              onPress={onSignUp}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <AppText bold className="text-brand-fg font-semibold">
-                  {t("auth.continue")}
-                </AppText>
-              )}
-            </Pressable>
+          {!pendingVerification ? (
+            <View className="gap-3">
+              <TextInput
+                className={inputClass}
+                style={inputFont}
+                placeholder={t("auth.email")}
+                placeholderTextColor={colors.ink400}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                className={inputClass}
+                style={inputFont}
+                placeholder={t("auth.password")}
+                placeholderTextColor={colors.ink400}
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+              />
+              {error ? <Txt className="text-coral-700 text-sm">{error}</Txt> : null}
+              <Button label={t("auth.continue")} onPress={onSignUp} loading={busy} />
 
-            <View className="flex-row items-center gap-3 my-2">
-              <View className="flex-1 h-px bg-slate-700" />
-              <AppText className="text-slate-500 text-xs">{t("auth.orDivider")}</AppText>
-              <View className="flex-1 h-px bg-slate-700" />
+              <View className="flex-row items-center gap-3 my-1">
+                <View className="flex-1 h-px bg-sand-200" />
+                <Txt className="text-ink-400 text-xs">{t("auth.orDivider")}</Txt>
+                <View className="flex-1 h-px bg-sand-200" />
+              </View>
+
+              <GoogleButton onError={setError} />
+
+              <View className="flex-row justify-center mt-6">
+                <Txt className="text-ink-500">{t("auth.haveAccount")}</Txt>
+                <Link href="/(auth)/sign-in" asChild>
+                  <Txt weight="semibold" className="text-teal-600">{t("auth.signIn")}</Txt>
+                </Link>
+              </View>
             </View>
-
-            <GoogleButton onError={setError} />
-
-            <View className="flex-row justify-center mt-4">
-              <AppText className="text-slate-400">{t("auth.haveAccount")}</AppText>
-              <Link href="/(auth)/sign-in" className="text-brand font-semibold">
-                {t("auth.signIn")}
-              </Link>
+          ) : (
+            <View className="gap-3">
+              <Txt className="text-ink-500 text-center">
+                {t("auth.verifyPrompt")} {email}
+              </Txt>
+              <TextInput
+                className={inputClass}
+                style={inputFont}
+                placeholder={t("auth.verifyCode")}
+                placeholderTextColor={colors.ink400}
+                keyboardType="number-pad"
+                value={code}
+                onChangeText={setCode}
+              />
+              {error ? <Txt className="text-coral-700 text-sm">{error}</Txt> : null}
+              <Button label={t("auth.verify")} onPress={onVerify} loading={busy} />
             </View>
-          </>
-        ) : (
-          <>
-            <AppText className="text-slate-400">
-              {t("auth.verifyPrompt")} {email}
-            </AppText>
-            <TextInput
-              className="bg-slate-800 text-white rounded-xl px-4 py-3"
-              placeholder={t("auth.verifyCode")}
-              placeholderTextColor="#64748B"
-              keyboardType="number-pad"
-              value={code}
-              onChangeText={setCode}
-            />
-            {error ? <AppText className="text-red-400">{error}</AppText> : null}
-            <Pressable
-              className="bg-brand rounded-xl py-3 items-center mt-2 active:opacity-80"
-              onPress={onVerify}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <AppText bold className="text-brand-fg font-semibold">
-                  {t("auth.verify")}
-                </AppText>
-              )}
-            </Pressable>
-          </>
-        )}
-      </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

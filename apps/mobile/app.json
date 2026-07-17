@@ -5,7 +5,7 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "scheme": "baireporbo",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
@@ -15,7 +15,7 @@
       "package": "app.baireporbo.android",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0B1120"
+        "backgroundColor": "#ffffff"
       }
     },
     "web": {
@@ -32,9 +32,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 180,
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#0B1120"
+          "backgroundColor": "#f8f8f7"
         }
       ]
     ],
@@ -42,7 +42,7 @@
       "typedRoutes": true
     },
     "extra": {
-      "apiBase": "https://baireporbo.app"
+      "apiBase": "https://www.baireporbo.app"
     }
   }
 }

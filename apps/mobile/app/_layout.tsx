@@ -9,19 +9,30 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import { View, ActivityIndicator } from "react-native";
+import { useFonts } from "expo-font";
 import {
-  useFonts,
   HindSiliguri_400Regular,
   HindSiliguri_500Medium,
   HindSiliguri_600SemiBold,
   HindSiliguri_700Bold,
 } from "@expo-google-fonts/hind-siliguri";
+import {
+  Fraunces_600SemiBold,
+  Fraunces_700Bold,
+} from "@expo-google-fonts/fraunces";
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+} from "@expo-google-fonts/manrope";
 
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/config";
 import { tokenCache } from "@/lib/token-cache";
 import { queryClient } from "@/lib/query";
 import { ApiProvider } from "@/lib/api";
 import { LangProvider, useLang } from "@/i18n";
+import { colors } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -48,8 +59,8 @@ function AuthGate() {
 
   if (!isLoaded) {
     return (
-      <View className="flex-1 items-center justify-center bg-ink">
-        <ActivityIndicator color="#2563EB" />
+      <View className="flex-1 items-center justify-center bg-body">
+        <ActivityIndicator color={colors.teal500} />
       </View>
     );
   }
@@ -72,6 +83,12 @@ function AppShell({ fontsLoaded }: { fontsLoaded: boolean }) {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
+    Fraunces_600SemiBold,
+    Fraunces_700Bold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
     HindSiliguri_400Regular,
     HindSiliguri_500Medium,
     HindSiliguri_600SemiBold,
@@ -86,7 +103,7 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <SafeAreaProvider>
                 <AppShell fontsLoaded={fontsLoaded} />
-                <StatusBar style="light" />
+                <StatusBar style="dark" />
               </SafeAreaProvider>
             </GestureHandlerRootView>
           </LangProvider>

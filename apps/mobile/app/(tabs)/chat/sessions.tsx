@@ -1,11 +1,13 @@
 import { View, FlatList, Pressable, ActivityIndicator, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChatSession } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
-import { AppText } from "@/components/AppText";
+import { Txt } from "@/components/ui";
+import { colors, shadow } from "@/theme";
 
 export default function Sessions() {
   const api = useApi();
@@ -30,44 +32,47 @@ export default function Sessions() {
   const sessions = data?.sessions ?? [];
 
   return (
-    <SafeAreaView className="flex-1 bg-ink" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-body" edges={["bottom"]}>
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color="#2563EB" />
+          <ActivityIndicator color={colors.teal500} />
         </View>
       ) : (
         <FlatList
           data={sessions}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ padding: 16 }}
-          ItemSeparatorComponent={() => <View className="h-2" />}
+          ItemSeparatorComponent={() => <View className="h-2.5" />}
           renderItem={({ item }) => (
             <Pressable
-              className="bg-slate-800 rounded-2xl p-4 flex-row items-center justify-between active:opacity-80"
+              style={shadow.sm}
+              className="bg-surface border border-sand-200 rounded-2xl p-4 flex-row items-center gap-3 active:opacity-90"
               onPress={() => open(item)}
             >
-              <AppText className="text-white flex-1 pr-3" numberOfLines={1}>
+              <View className="w-9 h-9 rounded-xl bg-teal-100 items-center justify-center">
+                <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.teal600} />
+              </View>
+              <Txt weight="medium" className="text-ink-800 flex-1" numberOfLines={1}>
                 {item.title}
-              </AppText>
+              </Txt>
               <Pressable
-                hitSlop={8}
+                hitSlop={10}
                 onPress={() =>
                   Alert.alert(t("chat.delete"), item.title, [
                     { text: t("common.cancel"), style: "cancel" },
-                    {
-                      text: t("chat.delete"),
-                      style: "destructive",
-                      onPress: () => del.mutate(item.id),
-                    },
+                    { text: t("chat.delete"), style: "destructive", onPress: () => del.mutate(item.id) },
                   ])
                 }
               >
-                <AppText className="text-red-400 text-sm">{t("chat.delete")}</AppText>
+                <Ionicons name="trash-outline" size={18} color={colors.coral500} />
               </Pressable>
             </Pressable>
           )}
           ListEmptyComponent={
-            <AppText className="text-slate-400 text-center mt-10">{t("chat.noSessions")}</AppText>
+            <View className="items-center mt-20">
+              <Ionicons name="chatbubbles-outline" size={40} color={colors.ink400} />
+              <Txt className="text-ink-400 text-center mt-3">{t("chat.noSessions")}</Txt>
+            </View>
           }
         />
       )}
