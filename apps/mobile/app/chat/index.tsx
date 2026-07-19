@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, TextInput, Pressable, ScrollView, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, TextInput, Pressable, ScrollView, Keyboard, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -79,6 +79,18 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+
+  // Hide the disclaimer while typing — screen space is scarce with the
+  // keyboard up.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboardOpen(false));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api.getMeta() });
   const modelName = prettyModel(meta?.chatModelLabel);
@@ -252,7 +264,9 @@ export default function Chat() {
         </ScrollView>
 
         {/* Input */}
-        <SafeAreaView edges={["bottom"]} className="bg-surface border-t border-sand-200">
+        {/* With the keyboard up, the nav-bar inset would stack on the keyboard
+            padding and leave a dead gap under the input — drop it. */}
+        <SafeAreaView edges={keyboardOpen ? [] : ["bottom"]} className="bg-surface border-t border-sand-200">
           <View className="flex-row items-center gap-2.5 px-4 py-2">
             <TextInput
               className="flex-1 bg-body border border-sand-200 text-ink-900 rounded-full px-4 py-3 max-h-32"
@@ -272,7 +286,9 @@ export default function Chat() {
               {streaming ? <ActivityIndicator color={colors.white} /> : <Ionicons name="arrow-up" size={22} color={colors.white} />}
             </Pressable>
           </View>
-          <Txt className="text-ink-400 text-[10.5px] text-center pb-1.5 px-6">{t("chat.disclaimer")}</Txt>
+          {!keyboardOpen ? (
+            <Txt className="text-ink-400 text-[10.5px] text-center pb-1.5 px-6">{t("chat.disclaimer")}</Txt>
+          ) : null}
         </SafeAreaView>
       </KeyboardAvoidingView>
     </View>
