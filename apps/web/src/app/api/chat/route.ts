@@ -17,7 +17,9 @@ Be concise, practical, and encouraging. Always cite specific scholarships or pro
 
 const MAX_MSG_LENGTH = 8000;
 const MAX_HISTORY = 12;
-const MAX_OUTPUT_TOKENS = 2048;
+// Bangla costs ~2-4x the tokens of English for the same text, so a budget
+// that's ample in English truncates Bangla replies mid-answer.
+const MAX_OUTPUT_TOKENS = 4096;
 
 type RateLimitErrorBody = {
   error: string;
