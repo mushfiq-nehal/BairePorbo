@@ -8,6 +8,7 @@ import type { RequiredDocuments } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
+import { isExpired } from "@/lib/deadline";
 import { Txt, Button, Card } from "@/components/ui";
 import { CoverArt } from "@/components/CoverArt";
 import { colors } from "@/theme";
@@ -115,7 +116,19 @@ export default function ScholarshipDetail() {
     );
   }
 
-  const deadlineLabel = s.deadline ? `${t("detail.deadlineLabel")} ${s.deadline}` : t("detail.rolling");
+  const upcoming = s.is_live === false;
+  const closed = !upcoming && isExpired(s.deadline);
+  const deadlineLabel = upcoming
+    ? s.opening_note
+      ? `${t("discover.opensPrefix")} ${s.opening_note}`
+      : t("discover.openingSoon")
+    : closed
+      ? s.deadline
+        ? `${t("discover.closed")} · ${s.deadline}`
+        : t("discover.closed")
+      : s.deadline
+        ? `${t("detail.deadlineLabel")} ${s.deadline}`
+        : t("detail.rolling");
 
   return (
     <View className="flex-1 bg-surface">
@@ -134,7 +147,7 @@ export default function ScholarshipDetail() {
             </View>
             <View className="flex-row">
               <View className="bg-white/95 rounded-full px-2.5 py-1">
-                <Txt weight="bold" className="text-coral-700 text-[11px]">{deadlineLabel}</Txt>
+                <Txt weight="bold" className={upcoming ? "text-teal-700 text-[11px]" : "text-coral-700 text-[11px]"}>{deadlineLabel}</Txt>
               </View>
             </View>
           </View>

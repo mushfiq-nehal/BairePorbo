@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { View, TextInput, KeyboardAvoidingView, Platform, ScrollView, Pressable } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +15,7 @@ export default function SignIn() {
   const router = useRouter();
   const t = useT();
   const { lang, setLang } = useLang();
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,7 +49,10 @@ export default function SignIn() {
       <SafeAreaView className="flex-1">
         <Pressable
           onPress={() => setLang(lang === "en" ? "bn" : "en")}
-          className="absolute top-3 right-5 z-10 flex-row items-center gap-1.5 bg-white/80 border border-sand-200 rounded-full px-3 py-2"
+          // Absolute children ignore the SafeAreaView padding, so offset by the
+          // status-bar inset explicitly.
+          style={{ top: insets.top + 10 }}
+          className="absolute right-5 z-10 flex-row items-center gap-1.5 bg-white/80 border border-sand-200 rounded-full px-3 py-2"
         >
           <Ionicons name="globe-outline" size={15} color={colors.ink700} />
           <Txt weight="bold" className="text-ink-700 text-xs">{langLabel}</Txt>

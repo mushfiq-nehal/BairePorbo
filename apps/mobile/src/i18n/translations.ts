@@ -181,6 +181,8 @@ export const translations = {
   "discover.searchPh": { en: "Search scholarships…", bn: "Scholarship খুঁজুন…" },
   "discover.openNow": { en: "Open Now", bn: "এখন খোলা" },
   "discover.recentlyClosed": { en: "Recently Closed", bn: "সম্প্রতি বন্ধ" },
+  "discover.openingSoon": { en: "Opening Soon", bn: "শীঘ্রই খুলছে" },
+  "discover.opensPrefix": { en: "Opens:", bn: "খুলবে:" },
   "discover.closed": { en: "Closed", bn: "বন্ধ" },
   "discover.tracked": { en: "tracked", bn: "ট্র্যাক করা" },
   "discover.openSuffix": { en: "open now", bn: "এখন খোলা" },

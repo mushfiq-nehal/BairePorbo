@@ -7,6 +7,7 @@ import { useUser } from "@clerk/clerk-expo";
 import { useQuery } from "@tanstack/react-query";
 import type { BookmarkScholarship, ScholarshipListItem } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { isExpired } from "@/lib/deadline";
 import { useLang, useT } from "@/i18n";
 import { Txt, Logo } from "@/components/ui";
 import { colors, gradients, shadow, tintFor } from "@/theme";
@@ -50,7 +51,11 @@ export default function Home() {
 
   const closing = dash?.bookmarksClosingSoon ?? [];
   const picks: (BookmarkScholarship | ScholarshipListItem)[] =
-    closing.length > 0 ? closing.slice(0, 3) : (schData?.scholarships ?? []).slice(0, 3);
+    closing.length > 0
+      ? closing.slice(0, 3)
+      : (schData?.scholarships ?? [])
+          .filter((s) => s.is_live !== false && !isExpired(s.deadline))
+          .slice(0, 3);
 
   const langLabel = lang === "en" ? "বাংলা" : "EN";
 

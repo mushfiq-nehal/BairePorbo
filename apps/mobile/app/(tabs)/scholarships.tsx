@@ -8,6 +8,7 @@ import type { ScholarshipListItem } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
+import { isClosingSoon, isExpired, isRecentlyClosed } from "@/lib/deadline";
 import { Txt, Button } from "@/components/ui";
 import { CoverArt } from "@/components/CoverArt";
 import { colors, shadow } from "@/theme";
@@ -21,20 +22,29 @@ function uniqueSorted(values: (string | null)[]): string[] {
 function ScholarshipCard({
   item,
   closed,
+  upcoming,
   onOpen,
 }: {
   item: ScholarshipListItem;
   closed?: boolean;
+  upcoming?: boolean;
   onOpen: () => void;
 }) {
   const t = useT();
   const { has, toggle } = useBookmarks();
   const bookmarked = has(item.id);
-  const deadlineLabel = closed
-    ? t("discover.closed")
-    : item.deadline
-      ? `${t("detail.deadlineLabel")} ${item.deadline}`
-      : t("detail.rolling");
+  const closingSoon = !closed && !upcoming && isClosingSoon(item.deadline);
+  const deadlineLabel = upcoming
+    ? item.opening_note
+      ? `${t("discover.opensPrefix")} ${item.opening_note}`
+      : t("discover.openingSoon")
+    : closed
+      ? item.deadline
+        ? `${t("discover.closed")} · ${item.deadline}`
+        : t("discover.closed")
+      : item.deadline
+        ? `${t("detail.deadlineLabel")} ${item.deadline}`
+        : t("detail.rolling");
 
   return (
     <Pressable
@@ -46,8 +56,8 @@ function ScholarshipCard({
         <Ionicons name="business-outline" size={30} color="rgba(255,255,255,0.5)" style={{ position: "absolute", right: 14, top: 12 }} />
         <View className="flex-row">
           <View className="flex-row items-center gap-1 bg-white/95 rounded-full px-2.5 py-1">
-            {!closed ? <Ionicons name="flash" size={12} color={colors.coral700} /> : null}
-            <Txt weight="bold" className="text-coral-700 text-[11px]">{deadlineLabel}</Txt>
+            {closingSoon ? <Ionicons name="flash" size={12} color={colors.coral700} /> : null}
+            <Txt weight="bold" className={upcoming ? "text-teal-700 text-[11px]" : "text-coral-700 text-[11px]"}>{deadlineLabel}</Txt>
           </View>
         </View>
         {!closed ? (
@@ -151,8 +161,11 @@ export default function Scholarships() {
     );
   }, [all, facets, query]);
 
-  const open = filtered.filter((s) => s.is_live !== false);
-  const closed = filtered.filter((s) => s.is_live === false);
+  // Mirror the web's buckets: live = is_live and deadline not passed;
+  // upcoming = is_live false; recently closed = live but expired within ~90d.
+  const open = filtered.filter((s) => s.is_live !== false && !isExpired(s.deadline));
+  const upcoming = filtered.filter((s) => s.is_live === false);
+  const closed = filtered.filter((s) => s.is_live !== false && isRecentlyClosed(s.deadline));
   const activeCount = facets.country.size + facets.funding.size + facets.level.size;
 
   function toggle(key: keyof Facets, value: string) {
@@ -239,17 +252,33 @@ export default function Scholarships() {
         ListHeaderComponent={header}
         ListEmptyComponent={<Txt className="text-ink-400 text-center mt-6">{t("discover.empty")}</Txt>}
         ListFooterComponent={
-          closed.length > 0 ? (
-            <View className="mt-2">
-              <View className="flex-row items-center gap-2 mb-3">
-                <View className="w-2 h-2 rounded-full bg-coral-400" />
-                <Txt font="display" weight="semibold" className="text-ink-900 text-[15px]">{t("discover.recentlyClosed")}</Txt>
+          <View>
+            {upcoming.length > 0 ? (
+              <View className="mt-2">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-2 h-2 rounded-full bg-teal-300" />
+                  <Txt font="display" weight="semibold" className="text-ink-900 text-[15px]">{t("discover.openingSoon")}</Txt>
+                  <View className="bg-sand-100 rounded-full px-2 py-0.5">
+                    <Txt weight="bold" className="text-ink-500 text-[11px]">{upcoming.length}</Txt>
+                  </View>
+                </View>
+                {upcoming.map((item) => (
+                  <ScholarshipCard key={item.id} item={item} upcoming onOpen={() => router.push(`/scholarship/${item.id}`)} />
+                ))}
               </View>
-              {closed.map((item) => (
-                <ScholarshipCard key={item.id} item={item} closed onOpen={() => router.push(`/scholarship/${item.id}`)} />
-              ))}
-            </View>
-          ) : null
+            ) : null}
+            {closed.length > 0 ? (
+              <View className="mt-2">
+                <View className="flex-row items-center gap-2 mb-3">
+                  <View className="w-2 h-2 rounded-full bg-coral-400" />
+                  <Txt font="display" weight="semibold" className="text-ink-900 text-[15px]">{t("discover.recentlyClosed")}</Txt>
+                </View>
+                {closed.map((item) => (
+                  <ScholarshipCard key={item.id} item={item} closed onOpen={() => router.push(`/scholarship/${item.id}`)} />
+                ))}
+              </View>
+            ) : null}
+          </View>
         }
       />
 
