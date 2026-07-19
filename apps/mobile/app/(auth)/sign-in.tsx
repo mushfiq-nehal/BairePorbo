@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, TextInput, KeyboardAvoidingView, Platform, ScrollView, Pressable } from "react-native";
+import { View, TextInput, KeyboardAvoidingView, ScrollView, Pressable } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useRouter } from "expo-router";
@@ -58,7 +58,7 @@ export default function SignIn() {
           <Txt weight="bold" className="text-ink-700 text-xs">{langLabel}</Txt>
         </Pressable>
 
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView className="flex-1" behavior="padding">
           <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 30 }} keyboardShouldPersistTaps="handled">
             {/* Brand */}
             <View className="flex-row items-center gap-3 mb-8">

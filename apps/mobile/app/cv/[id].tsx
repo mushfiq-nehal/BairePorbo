@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator, Linking, Alert } from "react-native";
+import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, ActivityIndicator, Linking, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -149,7 +149,7 @@ export default function CvEditor() {
           <Txt className="text-ink-400 text-[12px] text-center mt-1 px-6 leading-[17px]">{t("cv.previewNote")}</Txt>
         </ScrollView>
       ) : (
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <Field label={t("cv.cvTitle")} value={title} onChange={setTitle} />
 

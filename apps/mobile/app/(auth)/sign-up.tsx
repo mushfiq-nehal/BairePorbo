@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
+import { View, TextInput, KeyboardAvoidingView, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { useSignUp } from "@clerk/clerk-expo";
@@ -63,7 +63,7 @@ export default function SignUp() {
 
   return (
     <SafeAreaView className="flex-1 bg-body">
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24 }} keyboardShouldPersistTaps="handled">
           <View className="items-center mb-8">
             <Logo size={64} />

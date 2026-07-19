@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -139,7 +139,7 @@ export default function ProfileEdit() {
       {isLoading ? (
         <ActivityIndicator color={colors.teal500} className="mt-10" />
       ) : (
-        <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAvoidingView className="flex-1" behavior="padding">
           <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 60 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {error ? <Txt className="text-coral-700 text-sm mb-3">{error}</Txt> : null}
 
