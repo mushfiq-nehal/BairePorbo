@@ -4,7 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import Markdown from "react-native-markdown-display";
 import type { ChatMessage } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
@@ -55,17 +55,6 @@ function buildMarkdownStyles(lang: "en" | "bn") {
   });
 }
 
-/** Turn a raw model id ("deepseek/deepseek-v4-flash") into a friendly label ("Deepseek V4"). */
-function prettyModel(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  const base = (raw.split("/").pop() ?? raw).replace(/-(flash|mini|instruct|chat|preview|latest|turbo)$/i, "");
-  return base
-    .split(/[-_\s]+/)
-    .filter(Boolean)
-    .map((w) => (/^v\d+$/i.test(w) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1)))
-    .join(" ");
-}
-
 export default function Chat() {
   const api = useApi();
   const t = useT();
@@ -92,9 +81,7 @@ export default function Chat() {
     };
   }, []);
 
-  const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api.getMeta() });
-  const modelName = prettyModel(meta?.chatModelLabel);
-  const status = modelName ? `${modelName} · ${t("chat.ready")}` : t("chat.ready");
+  const status = t("chat.ready");
 
   const { lang } = useLang();
   const mdStyles = useMemo(() => buildMarkdownStyles(lang), [lang]);

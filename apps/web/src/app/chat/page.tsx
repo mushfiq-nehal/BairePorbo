@@ -8,7 +8,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/lang-context";
-import { formatModelLabel } from "@/lib/model-label";
 import { useDialog } from "@/components/ui/dialog-provider";
 import PrimaryNav from "@/components/layout/primary-nav";
 import styles from "./chat.module.css";
@@ -122,13 +121,6 @@ const WELCOME_ANON: ChatMessage = {
   time: formatTime(new Date()),
 };
 
-const DEFAULT_MODEL_LABEL =
-  process.env.NEXT_PUBLIC_OPENROUTER_MODEL_LABEL ??
-  process.env.NEXT_PUBLIC_OPENROUTER_MODEL ??
-  process.env.NEXT_PUBLIC_NIM_MODEL_LABEL ??
-  process.env.NEXT_PUBLIC_NIM_MODEL ??
-  "deepseek/deepseek-v4-flash";
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 function ChatContent() {
@@ -144,8 +136,6 @@ function ChatContent() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [modelLabel, setModelLabel] = useState(DEFAULT_MODEL_LABEL);
-  const [activeModel, setActiveModel] = useState<string | null>(null);
   const [status, setStatus] = useState<"ready" | "thinking" | "streaming" | "error">("ready");
   const [rateLimitInfo, setRateLimitInfo] = useState<{
     message: string;
@@ -189,17 +179,6 @@ function ChatContent() {
       setActiveSessionId(null);
     }
   }, [isAnon]);
-
-  useEffect(() => {
-    fetch("/api/meta")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { chatModelLabel?: string } | null) => {
-        if (data?.chatModelLabel) {
-          setModelLabel(data.chatModelLabel);
-        }
-      })
-      .catch(() => {});
-  }, []);
 
   // Pre-fill from ?question= query param
   useEffect(() => {
@@ -293,7 +272,6 @@ function ChatContent() {
     setError(null);
     setRateLimitInfo(null);
     setStatus("ready");
-    setActiveModel(null);
     if (anonKey && !isAnon) loadSessions(anonKey);
   };
 
@@ -436,10 +414,6 @@ function ChatContent() {
           }
 
           if (parsed.error) throw new Error(parsed.error);
-
-          if (parsed.model) {
-            setActiveModel(parsed.model);
-          }
 
           if (parsed.token) {
             setStatus("streaming");
@@ -621,7 +595,7 @@ function ChatContent() {
             )}
 
             <div className={styles.sidebarFooter}>
-              <span>{t("chat.poweredBy")} {formatModelLabel(activeModel ?? modelLabel)}</span>
+              <span>{t("chat.poweredBy")} BairePorbo AI</span>
             </div>
           </div>
         </aside>
@@ -652,17 +626,7 @@ function ChatContent() {
           <section className={styles.contextBar}>
             <div className={styles.contextItem}>
               <span className={styles.contextLabelInline}>{t("chat.aiModel")}</span>
-              <span
-                className={styles.contextValue}
-                title={activeModel ?? modelLabel}
-              >
-                {formatModelLabel(activeModel ?? modelLabel)}
-              </span>
-              {activeModel && activeModel !== modelLabel && (
-                <span className={styles.fallbackTag} title={`Primary "${formatModelLabel(modelLabel)}" was unavailable, using fallback`}>
-                  {t("chat.fallback")}
-                </span>
-              )}
+              <span className={styles.contextValue}>BairePorbo AI</span>
             </div>
             <div className={styles.contextItem}>
               <span className={styles.contextLabelInline}>{t("chat.status")}</span>
