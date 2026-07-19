@@ -28,3 +28,7 @@ yarn-error.*
 
 # local env
 .env*.local
+
+# release signing (NEVER commit — back these up privately)
+android/keystore.properties
+android/app/upload-keystore.jks

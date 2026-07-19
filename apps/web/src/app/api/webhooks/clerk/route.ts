@@ -13,7 +13,15 @@ type ClerkUserCreatedEvent = {
   };
 };
 
-type ClerkEvent = ClerkUserCreatedEvent | { type: string; data: unknown };
+type ClerkUserDeletedEvent = {
+  type: "user.deleted";
+  data: {
+    id?: string;
+    deleted?: boolean;
+  };
+};
+
+type ClerkEvent = ClerkUserCreatedEvent | ClerkUserDeletedEvent | { type: string; data: unknown };
 
 export async function POST(req: NextRequest) {
   const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
@@ -48,7 +56,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  // Only handle user.created; silently acknowledge everything else
+  // Account deletion (required by Google Play's user-data policy): when the
+  // Clerk user is deleted, purge every row we hold for them.
+  if (event.type === "user.deleted") {
+    const deletedId = (event as ClerkUserDeletedEvent).data?.id;
+    if (!deletedId) return NextResponse.json({ received: true });
+    try {
+      await sql`DELETE FROM chat_messages WHERE session_id IN (SELECT id FROM chat_sessions WHERE user_id = ${deletedId})`;
+      await sql`DELETE FROM chat_sessions WHERE user_id = ${deletedId}`;
+      await sql`DELETE FROM user_bookmarks WHERE user_id = ${deletedId}`;
+      await sql`DELETE FROM user_tasks WHERE user_id = ${deletedId}`;
+      await sql`DELETE FROM public.cv_analyses WHERE user_id = ${deletedId}`;
+      await sql`DELETE FROM public.user_cvs WHERE user_id = ${deletedId}`;
+      await sql`DELETE FROM profiles WHERE id = ${deletedId}`;
+    } catch (err) {
+      console.error("[clerk-webhook] failed to purge deleted user's data:", err);
+      return NextResponse.json({ error: "DB error" }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  }
+
+  // Only handle user.created beyond this point; silently acknowledge everything else
   if (event.type !== "user.created") {
     return NextResponse.json({ received: true });
   }

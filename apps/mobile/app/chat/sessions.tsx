@@ -26,7 +26,7 @@ export default function Sessions() {
   });
 
   function open(session: ChatSession) {
-    router.dismissTo({ pathname: "/(tabs)/chat", params: { sessionId: session.id } });
+    router.dismissTo({ pathname: "/chat", params: { sessionId: session.id } });
   }
 
   const sessions = data?.sessions ?? [];

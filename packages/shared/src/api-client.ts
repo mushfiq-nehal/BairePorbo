@@ -7,9 +7,17 @@
  */
 
 import type {
+  BookmarksResponse,
   ChatRequestBody,
   ChatSessionMessagesResponse,
   ChatSessionsResponse,
+  CVData,
+  CVTemplateId,
+  CvAnalyzeResponse,
+  CvResponse,
+  CvsResponse,
+  DashboardResponse,
+  GuidesResponse,
   MetaResponse,
   ProfileResponse,
   ProfileUpdate,
@@ -70,8 +78,17 @@ export function createApiClient(config: ApiClientConfig) {
     return headers;
   }
 
-  async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-    const headers = await authHeaders(init.headers as Record<string, string> | undefined);
+  async function request<T>(
+    path: string,
+    init: RequestInit = {},
+    opts: { skipAuth?: boolean } = {},
+  ): Promise<T> {
+    // Some public endpoints (e.g. /api/guides) reject requests that carry an
+    // Authorization header (403). Pass `skipAuth` to fetch them anonymously,
+    // exactly as the web does for public content.
+    const headers = opts.skipAuth
+      ? ((init.headers as Record<string, string> | undefined) ?? {})
+      : await authHeaders(init.headers as Record<string, string> | undefined);
     const res = await doFetch(`${baseUrl}${path}`, { ...init, headers });
 
     if (!res.ok) {
@@ -115,9 +132,73 @@ export function createApiClient(config: ApiClientConfig) {
       );
     },
 
+    // ── Guides (public) — must be fetched anonymously; the endpoint 403s on auth. ──
+    getGuides() {
+      return request<GuidesResponse>(`/api/guides`, {}, { skipAuth: true });
+    },
+
     // ── Meta (public) ──
     getMeta() {
       return request<MetaResponse>(`/api/meta`);
+    },
+
+    // ── Dashboard (auth) — profile readiness, bookmarks, last chat ──
+    getDashboard() {
+      return request<DashboardResponse>(`/api/dashboard`);
+    },
+
+    // ── CV Builder (auth) ──
+    getCvs() {
+      return request<CvsResponse>(`/api/cv`);
+    },
+    getCv(id: string) {
+      return request<CvResponse>(`/api/cv/${encodeURIComponent(id)}`);
+    },
+    createCv(body: { title?: string; template?: CVTemplateId; data?: Partial<CVData> } = {}) {
+      return jsonRequest<CvResponse>(`/api/cv`, "POST", body);
+    },
+    updateCv(id: string, body: { title: string; template: CVTemplateId; data: CVData }) {
+      return jsonRequest<CvResponse>(`/api/cv/${encodeURIComponent(id)}`, "PUT", body);
+    },
+    deleteCv(id: string) {
+      return request<{ ok: boolean }>(`/api/cv/${encodeURIComponent(id)}`, { method: "DELETE" });
+    },
+    /** Analyse pasted CV text. */
+    analyzeCvText(text: string) {
+      return jsonRequest<CvAnalyzeResponse>(`/api/cv/analyze`, "POST", { text });
+    },
+    /** Analyse an uploaded file. Pass a FormData with a `file` field (RN: {uri,name,type}). */
+    async analyzeCvFile(form: FormData) {
+      // No Content-Type: fetch sets the multipart boundary itself.
+      const headers = await authHeaders();
+      const res = await doFetch(`${baseUrl}/api/cv/analyze`, { method: "POST", headers, body: form });
+      if (!res.ok) {
+        let body: Record<string, unknown> | null = null;
+        try {
+          body = (await res.json()) as Record<string, unknown>;
+        } catch {
+          /* non-JSON error */
+        }
+        throw new ApiError(res.status, body);
+      }
+      return (await res.json()) as CvAnalyzeResponse;
+    },
+
+    // ── Bookmarks (auth) ──
+    getBookmarks() {
+      return request<BookmarksResponse>(`/api/bookmarks`);
+    },
+    addBookmark(scholarshipId: string) {
+      return jsonRequest<{ success: boolean; already?: boolean }>(`/api/bookmarks`, "POST", {
+        scholarship_id: scholarshipId,
+      });
+    },
+    removeBookmark(scholarshipId: string) {
+      return request<{ success: boolean }>(`/api/bookmarks`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scholarship_id: scholarshipId }),
+      });
     },
 
     // ── Profile (auth) — the Bearer-token canary (§3.4) ──

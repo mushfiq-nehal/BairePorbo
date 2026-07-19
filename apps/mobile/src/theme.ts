@@ -63,6 +63,42 @@ export const fonts = {
 
 export const radius = { sm: 8, md: 12, lg: 16, pill: 999 } as const;
 
+/**
+ * Brand gradient pairs (top-left → bottom-right) for LinearGradient. Ported from
+ * the Claude Design spec so surfaces read identically to the mockup.
+ */
+export const gradients = {
+  hero: ["#0f8f8d", "#074e4d"] as const, // teal hero cards
+  heroSoft: ["#0f8f8d", "#0a6d6b"] as const,
+  guides: ["#074e4d", "#0a6d6b"] as const, // guides header
+  profile: ["#0f8f8d", "#074e4d"] as const, // profile header
+  avatar: ["#f08a68", "#e06e48"] as const, // coral initials avatar
+  fab: ["#0f8f8d", "#074e4d"] as const,
+  signin: ["#e0f5f4", "#f8f8f7", "#fdeee9"] as const, // sign-in backdrop
+} as const;
+
+/**
+ * Deterministic per-scholarship gradient tints for card/detail headers when no
+ * `thumbnail_url` exists (the design mockup used only gradients). Hash the id so
+ * the same scholarship always gets the same colour.
+ */
+export const tints = [
+  ["#e8a0b0", "#c86a80"], // pink
+  ["#d8b26a", "#b0863c"], // gold
+  ["#7fa8c9", "#4a6f92"], // blue
+  ["#4bb0ad", "#0a6d6b"], // teal
+  ["#d98a6a", "#b14a2a"], // rust
+  ["#6ab0a0", "#2c7d6a"], // green
+  ["#8a7fc9", "#544a92"], // purple
+  ["#c2504a", "#8a2f2f"], // red
+] as const;
+
+export function tintFor(key: string): readonly [string, string] {
+  let h = 0;
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return tints[h % tints.length];
+}
+
 /** Soft elevation matching the web's --shadow-sm/md (cool-tinted). */
 export const shadow = {
   sm: {

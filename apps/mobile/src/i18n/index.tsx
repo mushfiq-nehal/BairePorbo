@@ -5,7 +5,7 @@ import { translations, type Lang, type TranslationKey } from "./translations";
 
 export type { Lang, TranslationKey };
 
-const LANG_STORAGE = "bp_lang";
+export const LANG_STORAGE = "bp_lang";
 
 type LangContextValue = {
   lang: Lang;

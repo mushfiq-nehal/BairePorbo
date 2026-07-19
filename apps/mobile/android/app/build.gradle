@@ -97,6 +97,13 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+    // Upload key lives in android/keystore.properties + android/app/upload-keystore.jks
+    // (both gitignored — keep private backups; losing them locks you out of Play updates).
+    def keystoreProps = new Properties()
+    def keystorePropsFile = rootProject.file('keystore.properties')
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.withInputStream { keystoreProps.load(it) }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -104,15 +111,21 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        if (keystorePropsFile.exists()) {
+            release {
+                storeFile file(keystoreProps['BAIREPORBO_UPLOAD_STORE_FILE'])
+                storePassword keystoreProps['BAIREPORBO_UPLOAD_STORE_PASSWORD']
+                keyAlias keystoreProps['BAIREPORBO_UPLOAD_KEY_ALIAS']
+                keyPassword keystoreProps['BAIREPORBO_UPLOAD_KEY_PASSWORD']
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig keystorePropsFile.exists() ? signingConfigs.release : signingConfigs.debug
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds
