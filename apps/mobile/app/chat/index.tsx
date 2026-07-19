@@ -1,19 +1,59 @@
-import { useEffect, useRef, useState } from "react";
-import { View, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { View, TextInput, Pressable, ScrollView, KeyboardAvoidingView, Platform, ActivityIndicator, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import Markdown from "react-native-markdown-display";
 import type { ChatMessage } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
-import { useT } from "@/i18n";
+import { consumePendingChatSession } from "@/lib/chat-handoff";
+import { useLang, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/translations";
 import { Txt } from "@/components/ui";
-import { colors, gradients, shadow } from "@/theme";
+import { colors, fonts, gradients, shadow } from "@/theme";
 
 const SUGGESTIONS: TranslationKey[] = ["chat.suggest1", "chat.suggest2", "chat.suggest3", "chat.suggest4"];
+
+/** Markdown styles for assistant bubbles, matching the Txt typography. */
+function buildMarkdownStyles(lang: "en" | "bn") {
+  const body = lang === "bn" ? fonts.bengali : fonts.body;
+  const semibold = lang === "bn" ? fonts.bengaliSemibold : fonts.bodySemibold;
+  const bold = lang === "bn" ? fonts.bengaliBold : fonts.bodyBold;
+  return StyleSheet.create({
+    body: { color: colors.ink800, fontSize: 14.5, lineHeight: 22, fontFamily: body },
+    paragraph: { marginTop: 0, marginBottom: 6 },
+    strong: { fontFamily: bold },
+    heading1: { fontFamily: bold, fontSize: 17, lineHeight: 25, marginTop: 8, marginBottom: 4 },
+    heading2: { fontFamily: bold, fontSize: 16, lineHeight: 24, marginTop: 8, marginBottom: 4 },
+    heading3: { fontFamily: semibold, fontSize: 15, lineHeight: 23, marginTop: 6, marginBottom: 2 },
+    heading4: { fontFamily: semibold, fontSize: 14.5, lineHeight: 22, marginTop: 6, marginBottom: 2 },
+    heading5: { fontFamily: semibold, fontSize: 14.5, lineHeight: 22 },
+    heading6: { fontFamily: semibold, fontSize: 14.5, lineHeight: 22 },
+    bullet_list: { marginBottom: 6 },
+    ordered_list: { marginBottom: 6 },
+    list_item: { marginBottom: 3 },
+    link: { color: colors.teal600, textDecorationLine: "underline" },
+    blockquote: {
+      backgroundColor: colors.sand100,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.teal500,
+      paddingLeft: 10,
+      paddingVertical: 2,
+      marginVertical: 4,
+    },
+    code_inline: { backgroundColor: colors.sand100, borderRadius: 4, fontSize: 13 },
+    code_block: { backgroundColor: colors.sand100, borderColor: colors.sand200, borderRadius: 10, padding: 10, fontSize: 12.5, marginVertical: 4 },
+    fence: { backgroundColor: colors.sand100, borderColor: colors.sand200, borderRadius: 10, padding: 10, fontSize: 12.5, marginVertical: 4 },
+    table: { borderWidth: 1, borderColor: colors.sand200, borderRadius: 8, marginVertical: 6 },
+    th: { padding: 7, fontFamily: semibold, fontSize: 12.5 },
+    tr: { borderBottomWidth: 1, borderColor: colors.sand200, flexDirection: "row" },
+    td: { padding: 7, fontSize: 12.5 },
+    hr: { backgroundColor: colors.sand200, height: 1, marginVertical: 8 },
+  });
+}
 
 /** Turn a raw model id ("deepseek/deepseek-v4-flash") into a friendly label ("Deepseek V4"). */
 function prettyModel(raw: string | null | undefined): string | null {
@@ -44,23 +84,36 @@ export default function Chat() {
   const modelName = prettyModel(meta?.chatModelLabel);
   const status = modelName ? `${modelName} · ${t("chat.ready")}` : t("chat.ready");
 
+  const { lang } = useLang();
+  const mdStyles = useMemo(() => buildMarkdownStyles(lang), [lang]);
+
+  const loadSession = useCallback(
+    async (id: string) => {
+      setSessionId(id);
+      setError(null);
+      try {
+        const res = await api.getChatMessages(id);
+        setMessages(res.messages.map((m) => ({ role: m.role, content: m.content })));
+      } catch {
+        setError(t("chat.error"));
+      }
+    },
+    [api, t],
+  );
+
+  // Deep links (e.g. notification taps) open the chat with ?sessionId=.
   useEffect(() => {
     const incoming = params.sessionId ?? null;
-    if (!incoming || incoming === sessionId) return;
-    let active = true;
-    setSessionId(incoming);
-    (async () => {
-      try {
-        const res = await api.getChatMessages(incoming);
-        if (active) setMessages(res.messages.map((m) => ({ role: m.role, content: m.content })));
-      } catch {
-        if (active) setError(t("chat.error"));
-      }
-    })();
-    return () => {
-      active = false;
-    };
-  }, [params.sessionId, sessionId, api, t]);
+    if (incoming && incoming !== sessionId) loadSession(incoming);
+  }, [params.sessionId, sessionId, loadSession]);
+
+  // The history screen hands its pick over via the mailbox (see chat-handoff).
+  useFocusEffect(
+    useCallback(() => {
+      const pending = consumePendingChatSession();
+      if (pending && pending !== sessionId) loadSession(pending);
+    }, [sessionId, loadSession]),
+  );
 
   function newChat() {
     setMessages([]);
@@ -167,9 +220,11 @@ export default function Chat() {
                   : "self-start bg-surface rounded-[20px] rounded-bl-md px-4 py-3 max-w-[88%]"
               }
             >
-              <Txt className={`${m.role === "user" ? "text-white" : "text-ink-800"} text-[14.5px] leading-[22px]`}>
-                {m.content || "…"}
-              </Txt>
+              {m.role === "user" ? (
+                <Txt className="text-white text-[14.5px] leading-[22px]">{m.content || "…"}</Txt>
+              ) : (
+                <Markdown style={mdStyles}>{m.content || "…"}</Markdown>
+              )}
             </View>
           ))}
         </ScrollView>

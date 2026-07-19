@@ -1,15 +1,70 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, ScrollView, TextInput, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
+import { File as FsFile } from "expo-file-system";
 import { useMutation } from "@tanstack/react-query";
 import type { CVAnalysis, SectionFeedback } from "@baireporbo/shared";
+import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
+import type { TranslationKey } from "@/i18n/translations";
 import { Txt, Button } from "@/components/ui";
 import { colors } from "@/theme";
+
+/**
+ * The backend is one long request; these staged labels give the wait a sense
+ * of progress (mirrors the web analyzer). Each stage dwells at least `ms`,
+ * the last one holds until the response lands.
+ */
+const STAGES: { label: TranslationKey; hint: TranslationKey; ms: number }[] = [
+  { label: "cv.stageRead", hint: "cv.stageReadHint", ms: 2500 },
+  { label: "cv.stageSections", hint: "cv.stageSectionsHint", ms: 4000 },
+  { label: "cv.stageStructure", hint: "cv.stageStructureHint", ms: 5000 },
+  { label: "cv.stageStrengths", hint: "cv.stageStrengthsHint", ms: 6000 },
+  { label: "cv.stageReport", hint: "cv.stageReportHint", ms: 0 },
+];
+
+function AnalyzeProgress() {
+  const t = useT();
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    if (idx >= STAGES.length - 1) return;
+    const timer = setTimeout(() => setIdx((i) => i + 1), STAGES[idx].ms);
+    return () => clearTimeout(timer);
+  }, [idx]);
+
+  return (
+    <View className="bg-surface border border-sand-200 rounded-3xl p-6 mt-6">
+      {STAGES.map((s, i) => {
+        const done = i < idx;
+        const active = i === idx;
+        return (
+          <View key={s.label} className={`flex-row gap-3 ${i < STAGES.length - 1 ? "mb-5" : ""}`}>
+            <View className="w-6 items-center pt-0.5">
+              {done ? (
+                <Ionicons name="checkmark-circle" size={21} color={colors.teal500} />
+              ) : active ? (
+                <ActivityIndicator size="small" color={colors.teal500} />
+              ) : (
+                <View className="w-[17px] h-[17px] rounded-full border-2 border-sand-300 mt-0.5" />
+              )}
+            </View>
+            <View className="flex-1">
+              <Txt weight={active ? "bold" : "medium"} className={done || active ? "text-ink-900 text-[14.5px]" : "text-ink-400 text-[14.5px]"}>
+                {t(s.label)}
+              </Txt>
+              {active ? <Txt className="text-ink-400 text-[12px] mt-0.5">{t(s.hint)}</Txt> : null}
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function scoreColor(score: number): string {
   if (score >= 75) return colors.teal500;
@@ -53,7 +108,12 @@ export default function CvAnalyze() {
     setSource(res.sourceName);
     setError(null);
   };
-  const onFail = () => setError(t("cv.analyzeError"));
+  // Surface the backend's specific message (bad file, too little text, AI
+  // hiccup) instead of a generic one.
+  const onFail = (err: unknown) => {
+    console.log("[cv] analyze failed", err instanceof ApiError ? `${err.status} ${JSON.stringify(err.body)}` : String(err));
+    setError(err instanceof ApiError && typeof err.body?.error === "string" ? err.body.error : t("cv.analyzeError"));
+  };
 
   const analyzeText = useMutation({ mutationFn: () => api.analyzeCvText(text.trim()), onSuccess: onDone, onError: onFail });
   const analyzeFile = useMutation({ mutationFn: (form: FormData) => api.analyzeCvFile(form), onSuccess: onDone, onError: onFail });
@@ -68,7 +128,10 @@ export default function CvAnalyze() {
     if (res.canceled || !res.assets?.[0]) return;
     const asset = res.assets[0];
     const form = new FormData();
-    form.append("file", { uri: asset.uri, name: asset.name, type: asset.mimeType ?? "application/octet-stream" } as unknown as Blob);
+    // expo/fetch can't serialize RN's {uri,...} FormData parts (it throws
+    // "Unsupported FormDataPart implementation"); hand it the file's bytes via
+    // expo-file-system's File, which implements the Blob interface it expects.
+    form.append("file", new FsFile(asset.uri) as unknown as Blob, asset.name);
     analyzeFile.mutate(form);
   }
 
@@ -90,9 +153,9 @@ export default function CvAnalyze() {
 
       <ScrollView contentContainerStyle={{ padding: 18, paddingBottom: 48 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {busy ? (
-          <View className="items-center pt-24">
-            <ActivityIndicator color={colors.teal500} size="large" />
-            <Txt className="text-ink-500 mt-4">{t("cv.analyzing")}</Txt>
+          <View>
+            <Txt className="text-ink-500 text-center mt-4">{t("cv.analyzing")}</Txt>
+            <AnalyzeProgress />
           </View>
         ) : result ? (
           <View>

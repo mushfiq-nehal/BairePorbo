@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ChatSession } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { setPendingChatSession } from "@/lib/chat-handoff";
 import { useT } from "@/i18n";
 import { Txt } from "@/components/ui";
 import { colors, shadow } from "@/theme";
@@ -26,7 +27,10 @@ export default function Sessions() {
   });
 
   function open(session: ChatSession) {
-    router.dismissTo({ pathname: "/chat", params: { sessionId: session.id } });
+    // dismissTo with params doesn't reach the mounted chat screen; hand the id
+    // over via the module mailbox and just go back.
+    setPendingChatSession(session.id);
+    router.back();
   }
 
   const sessions = data?.sessions ?? [];
