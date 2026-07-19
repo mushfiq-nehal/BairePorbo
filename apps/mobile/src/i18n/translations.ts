@@ -194,7 +194,7 @@ export const translations = {
   "cv.stageReportHint": { en: "Concrete suggestions and an action plan.", bn: "সুনির্দিষ্ট পরামর্শ ও করণীয় তালিকা।" },
   "discover.opensPrefix": { en: "Opens:", bn: "খুলবে:" },
   "discover.closed": { en: "Closed", bn: "বন্ধ" },
-  "discover.tracked": { en: "tracked", bn: "ট্র্যাক করা" },
+  "discover.tracked": { en: "Tracked", bn: "ট্র্যাক করা" },
   "discover.openSuffix": { en: "open now", bn: "এখন খোলা" },
   "discover.showResults": { en: "Show results", bn: "ফলাফল দেখুন" },
 

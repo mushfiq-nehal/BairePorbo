@@ -181,9 +181,6 @@ export default function Scholarships() {
   const header = (
     <View>
       <Txt font="display" weight="semibold" className="text-ink-900 text-[23px]">{t("discover.title")}</Txt>
-      <Txt className="text-ink-400 text-[13px] mt-1">
-        {all.length} {t("discover.tracked")} · {open.length} {t("discover.openSuffix")}
-      </Txt>
       <View className="flex-row gap-2.5 mt-3.5">
         <View className="flex-1 flex-row items-center gap-2 bg-surface border border-sand-200 rounded-[14px] px-3.5 py-3">
           <Ionicons name="search-outline" size={18} color={colors.ink400} />
@@ -207,6 +204,23 @@ export default function Scholarships() {
             </View>
           ) : null}
         </Pressable>
+      </View>
+
+      {/* Totals up front — otherwise the "Open Now" count reads as the whole
+          catalogue. */}
+      <View className="flex-row gap-2.5 mt-4">
+        <View className="flex-1 bg-surface border border-sand-200 rounded-[14px] py-2.5 items-center">
+          <Txt font="display" weight="bold" className="text-ink-900 text-[18px]">{all.length}</Txt>
+          <Txt className="text-ink-400 text-[11px] mt-0.5">{t("discover.tracked")}</Txt>
+        </View>
+        <View className="flex-1 bg-surface border border-sand-200 rounded-[14px] py-2.5 items-center">
+          <Txt font="display" weight="bold" className="text-teal-600 text-[18px]">{open.length}</Txt>
+          <Txt className="text-ink-400 text-[11px] mt-0.5">{t("discover.openNow")}</Txt>
+        </View>
+        <View className="flex-1 bg-surface border border-sand-200 rounded-[14px] py-2.5 items-center">
+          <Txt font="display" weight="bold" className="text-coral-500 text-[18px]">{upcoming.length}</Txt>
+          <Txt className="text-ink-400 text-[11px] mt-0.5">{t("discover.openingSoon")}</Txt>
+        </View>
       </View>
 
       <View className="flex-row items-center gap-2 mt-4 mb-3">
