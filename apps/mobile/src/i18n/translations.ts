@@ -205,6 +205,14 @@ export const translations = {
   // ── Redesign: Chat ──
   "chat.mentorName": { en: "BairePorbo Mentor", bn: "BairePorbo Mentor" },
   "chat.ready": { en: "Ready", bn: "প্রস্তুত" },
+  // Staged "working on it" labels shown while the reply streams in. Kept generic
+  // on purpose — the same sequence has to fit any question the user might ask.
+  "chat.think1": { en: "Reading your question…", bn: "তোমার প্রশ্ন পড়ছি…" },
+  "chat.think2": { en: "Looking things up…", bn: "তথ্য খুঁজে দেখছি…" },
+  "chat.think3": { en: "Going through the details…", bn: "খুঁটিনাটি দেখে নিচ্ছি…" },
+  "chat.think4": { en: "Thinking it through…", bn: "ভেবে দেখছি…" },
+  "chat.think5": { en: "Writing your answer…", bn: "উত্তর লিখছি…" },
+  "chat.think6": { en: "Almost there…", bn: "প্রায় হয়ে এসেছে…" },
   "chat.greeting": {
     en: "Hi! I'm your BairePorbo Mentor. I can help you find scholarships, check eligibility, and build an application strategy. What program are you aiming for?",
     bn: "হাই! আমি তোমার BairePorbo মেন্টর। scholarship খুঁজে দেওয়া, যোগ্যতা যাচাই আর application strategy তৈরিতে সাহায্য করতে পারি। কোন প্রোগ্রামের জন্য প্রস্তুতি নিচ্ছো?",

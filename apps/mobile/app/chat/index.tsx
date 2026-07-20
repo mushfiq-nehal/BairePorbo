@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, TextInput, Pressable, ScrollView, Keyboard, KeyboardAvoidingView, ActivityIndicator, StyleSheet } from "react-native";
+import { View, TextInput, Pressable, ScrollView, Keyboard, KeyboardAvoidingView, ActivityIndicator, Animated, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,6 +53,48 @@ function buildMarkdownStyles(lang: "en" | "bn") {
     td: { padding: 7, fontSize: 12.5 },
     hr: { backgroundColor: colors.sand200, height: 1, marginVertical: 8 },
   });
+}
+
+/** How long each "working on it" label stays up before the next one, in ms. */
+const THINK_STAGES: { key: TranslationKey; ms: number }[] = [
+  { key: "chat.think1", ms: 1400 },
+  { key: "chat.think2", ms: 2600 },
+  { key: "chat.think3", ms: 3000 },
+  { key: "chat.think4", ms: 3200 },
+  { key: "chat.think5", ms: 4000 },
+  { key: "chat.think6", ms: 0 },
+];
+
+/**
+ * Replaces the empty assistant bubble while we wait for the first token.
+ * Replies take 5-10s, so a bare "…" reads as a hang — narrate the work instead.
+ */
+function Thinking() {
+  const t = useT();
+  const [idx, setIdx] = useState(0);
+  const fade = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const hold = THINK_STAGES[idx].ms;
+    if (!hold) return;
+    const timer = setTimeout(() => {
+      Animated.sequence([
+        Animated.timing(fade, { toValue: 0, duration: 180, useNativeDriver: true }),
+        Animated.timing(fade, { toValue: 1, duration: 220, delay: 60, useNativeDriver: true }),
+      ]).start();
+      setTimeout(() => setIdx((i) => Math.min(i + 1, THINK_STAGES.length - 1)), 240);
+    }, hold);
+    return () => clearTimeout(timer);
+  }, [idx, fade]);
+
+  return (
+    <View className="flex-row items-center gap-2">
+      <ActivityIndicator size="small" color={colors.teal500} />
+      <Animated.View style={{ opacity: fade }}>
+        <Txt className="text-ink-500 text-[14px] leading-[22px]">{t(THINK_STAGES[idx].key)}</Txt>
+      </Animated.View>
+    </View>
+  );
 }
 
 export default function Chat() {
@@ -221,8 +263,10 @@ export default function Chat() {
             >
               {m.role === "user" ? (
                 <Txt className="text-white text-[14.5px] leading-[22px]">{m.content || "…"}</Txt>
+              ) : m.content ? (
+                <Markdown style={mdStyles}>{m.content}</Markdown>
               ) : (
-                <Markdown style={mdStyles}>{m.content || "…"}</Markdown>
+                <Thinking />
               )}
             </View>
           ))}
