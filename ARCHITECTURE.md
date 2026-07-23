@@ -322,8 +322,9 @@ circuit breaker so a traffic spike can't drain the AI budget.
   (`.gitignore` excludes `*.keystore`/`*.jks`).
 - `public/.well-known/assetlinks.json` — must contain the APK signing key's
   SHA256 fingerprint for the TWA to drop browser chrome.
-- The APK is hosted at `/BairePorbo.apk`. The home page shows an Android-only
-  install banner (`AndroidBanner` in `page.tsx`).
+- The APK is hosted at `/BairePorbo.apk`. The Android-only install banner
+  (`AndroidBanner` in `home-client.tsx`) was removed from the home page now
+  that the React Native app is rolling out on the Play Store.
 
 ---
 

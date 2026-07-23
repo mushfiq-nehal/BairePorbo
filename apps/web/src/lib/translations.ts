@@ -91,11 +91,6 @@ export const translations = {
   "footer.connectSupport": { en: "Connect & Support", bn: "যোগাযোগ ও সহায়তা" },
   "footer.replyTime": { en: "We typically reply within 24 hours.", bn: "আমরা সাধারণত ২৪ ঘণ্টার মধ্যে উত্তর দিই।" },
 
-  // ── Android banner ────────────────────────────────────────────────────────
-  "banner.title": { en: "Get the BairePorbo app", bn: "BairePorbo app নিন" },
-  "banner.sub": { en: "Faster, app-like experience", bn: "দ্রুত, app-এর মতো অভিজ্ঞতা" },
-  "banner.install": { en: "Install", bn: "ইনস্টল করুন" },
-
   // ── Shared deadline / status labels ──────────────────────────────────────
   "label.deadline": { en: "Deadline", bn: "Deadline" },
   "label.open": { en: "Open", bn: "Open" },

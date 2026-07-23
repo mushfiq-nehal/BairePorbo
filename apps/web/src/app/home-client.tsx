@@ -146,7 +146,6 @@ export default function HomeClient() {
   // ── Render ──
   return (
     <div className={styles.page}>
-      <AndroidBanner />
       <AppNavbar actions={actions} />
 
       <main className={styles.main}>
@@ -395,59 +394,6 @@ export default function HomeClient() {
       </main>
 
       <SharedFooter />
-    </div>
-  );
-}
-
-// ── Android install banner ────────────────────────────────────────────────────
-function AndroidBanner() {
-  const [visible, setVisible] = useState(false);
-  const t = useT();
-
-  useEffect(() => {
-    // Only show on Android browsers, and only if not already dismissed
-    const isAndroid = /android/i.test(navigator.userAgent);
-    const dismissed = sessionStorage.getItem("bp_apk_banner_dismissed");
-    // Also hide if already running as a TWA / standalone PWA
-    const isStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as { standalone?: boolean }).standalone === true;
-    if (isAndroid && !dismissed && !isStandalone) {
-      setVisible(true);
-    }
-  }, []);
-
-  if (!visible) return null;
-
-  return (
-    <div className={styles.androidBanner} role="banner">
-      <div className={styles.androidBannerLeft}>
-        <img src="/logo.png" alt="" className={styles.androidBannerIcon} />
-        <div>
-          <p className={styles.androidBannerTitle}>{t("banner.title")}</p>
-          <p className={styles.androidBannerSub}>{t("banner.sub")}</p>
-        </div>
-      </div>
-      <div className={styles.androidBannerActions}>
-        <a
-          href="/BairePorbo.apk"
-          className={styles.androidBannerInstall}
-          download
-        >
-          {t("banner.install")}
-        </a>
-        <button
-          type="button"
-          className={styles.androidBannerDismiss}
-          onClick={() => {
-            sessionStorage.setItem("bp_apk_banner_dismissed", "1");
-            setVisible(false);
-          }}
-          aria-label="Dismiss"
-        >
-          ✕
-        </button>
-      </div>
     </div>
   );
 }
