@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalLayout, { LegalSection } from "../legal-layout";
 
-const LAST_UPDATED = "July 8, 2026";
+const LAST_UPDATED = "July 23, 2026";
 const SUPPORT_EMAIL = "support@baireporbo.app";
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ const sections: LegalSection[] = [
           <li>We use that data to operate the product — finding scholarships, generating AI summaries, and improving matching.</li>
           <li>We don&apos;t sell your account data, and advertisers never see it.</li>
           <li>BairePorbo shows ads (Google AdSense) to stay free — cookies for that only load if you accept our cookie banner. See our <Link href="/legal/cookies">Cookie Policy</Link> for details.</li>
-          <li>You can delete your account and data at any time by emailing us.</li>
+          <li>You can delete your account and data at any time — in the app (Profile → Delete account) or by emailing us.</li>
         </ul>
         <p>
           The sections below explain the details. If anything is unclear, email{" "}
@@ -44,9 +44,10 @@ const sections: LegalSection[] = [
       <>
         <h3>Account information</h3>
         <p>
-          When you sign up, we store your email address and a password hash via our
-          authentication provider, Supabase. If you sign in with Google, we receive your
-          email and basic profile information from Google.
+          When you sign up, we store your email address via our authentication
+          provider, Clerk. If you create a password, Clerk stores it only as a secure
+          hash — never in plaintext. If you sign in with Google, we receive your email
+          and basic profile information from Google.
         </p>
 
         <h3>Profile information</h3>
@@ -119,8 +120,17 @@ const sections: LegalSection[] = [
         </p>
         <ul>
           <li>
-            <strong>Supabase</strong> hosts our database and handles authentication.
-            All your account, profile, bookmark, and chat data is stored here.
+            <strong>Clerk</strong> handles authentication and account management,
+            including Google sign-in. Your email address and sign-in credentials are
+            stored here.
+          </li>
+          <li>
+            <strong>Neon</strong> hosts our Postgres database. Your profile, bookmarks,
+            tasks, CV drafts and analyses, and chat history are stored here.
+          </li>
+          <li>
+            <strong>Cloudflare R2</strong> stores and serves images, such as
+            scholarship and guide artwork and any photo you add to a CV.
           </li>
           <li>
             <strong>Vercel</strong> hosts the application. They process requests and
@@ -137,8 +147,8 @@ const sections: LegalSection[] = [
             scholarship database. Profile snippets used for AI matching are sent here.
           </li>
           <li>
-            <strong>Email delivery</strong> (Supabase or our SMTP provider) sends
-            confirmation, password reset, and operational emails.
+            <strong>Email delivery.</strong> Clerk sends account emails such as
+            verification and password-reset messages.
           </li>
           <li>
             <strong>Google AdSense</strong> serves the ads on BairePorbo. If you accept
@@ -243,9 +253,10 @@ const sections: LegalSection[] = [
           </li>
           <li>
             <strong>Delete</strong> your account, chat history, bookmarks, and profile
-            at any time. Email{" "}
+            at any time. In the app, go to <strong>Profile → Delete account</strong> to
+            remove everything immediately. You can also email{" "}
             <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a> from the email on
-            your account and we will remove everything within 14 days.
+            your account and we will complete the deletion within 7 days.
           </li>
           <li>
             <strong>Export</strong> your data in a machine-readable format on request.
@@ -263,9 +274,10 @@ const sections: LegalSection[] = [
     body: (
       <>
         <p>
-          We use HTTPS for all traffic. Database access is restricted to authenticated
-          users via row-level security policies. Passwords are never stored in
-          plaintext — they are hashed by our authentication provider.
+          We use HTTPS for all traffic. Database access is restricted to our
+          application servers, which enforce per-user authorization checks on every
+          request. Passwords are never stored in plaintext — they are hashed by our
+          authentication provider, Clerk.
         </p>
         <p>
           BairePorbo is a small project. We do our best to keep your data safe, but no
@@ -292,10 +304,11 @@ const sections: LegalSection[] = [
     title: "Where your data is stored",
     body: (
       <p>
-        Our database and authentication services are hosted on Supabase. The
-        application itself runs on Vercel. AI providers process requests on their own
-        infrastructure. Some of these services may store data outside Bangladesh.
-        By using BairePorbo, you consent to this cross-border processing.
+        Authentication is handled by Clerk, our database is hosted on Neon, images are
+        stored on Cloudflare R2, and the application itself runs on Vercel. AI providers
+        process requests on their own infrastructure. Some of these services may store
+        data outside Bangladesh. By using BairePorbo, you consent to this cross-border
+        processing.
       </p>
     ),
   },
