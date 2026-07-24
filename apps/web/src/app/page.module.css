@@ -146,6 +146,12 @@
   padding: 8px 0;
 }
 
+.searchInput:focus,
+.searchInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
 .searchInput::placeholder {
   color: var(--ink-500);
 }
