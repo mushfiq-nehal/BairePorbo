@@ -46,9 +46,9 @@ export type RateLimitDecision = {
 };
 
 const DEFAULT_LIMITS: Record<ChatTier, ChatLimits> = {
-  anonymous: { hourly: 3, daily: 3, global: 2000 },
-  user: { hourly: 6, daily: 15, global: 2000 },
-  admin: { hourly: 50, daily: 200, global: 2000 },
+  anonymous: { hourly: 3, daily: 3, global: 20000 },
+  user: { hourly: 6, daily: 15, global: 20000 },
+  admin: { hourly: 50, daily: 200, global: 20000 },
 };
 
 const ONE_HOUR_MS = 60 * 60_000;
