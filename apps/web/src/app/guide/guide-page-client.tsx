@@ -35,12 +35,6 @@ export default function GuidePageClient({ guides }: { guides: Guide[] }) {
     <main className={styles.main}>
       {/* Header */}
       <section className={styles.header}>
-        <nav className={styles.breadcrumb} aria-label="Breadcrumb">
-          <Link href="/">{t("guide.home")}</Link>
-          <span aria-hidden="true">›</span>
-          <span>{t("guide.breadcrumbGuide")}</span>
-        </nav>
-        <p className={styles.kicker}>{t("guide.kicker")}</p>
         <h1 className={styles.title}>{t("guide.title")}</h1>
         <p className={styles.subtitle}>{t("guide.subtitle")}</p>
 

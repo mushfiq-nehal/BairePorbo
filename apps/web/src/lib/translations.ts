@@ -291,7 +291,7 @@ export const translations = {
   // ── Guide page ────────────────────────────────────────────────────────────
   "guide.kicker": { en: "Knowledge hub", bn: " গাইডলাইন সেকশন" },
   "guide.title": { en: "Study Abroad Guides", bn: "বিদেশে পড়াশোনার গাইড" },
-  "guide.subtitle": { en: "Expert answers to the questions Bangladeshi students ask most — scholarships, language tests, applications, and destinations.", bn: "বাংলাদেশী শিক্ষার্থীরা সবচেয়ে বেশি যে প্রশ্নগুলো করেন তার বিশেষজ্ঞ উত্তর — scholarships, language tests, applications, ও destinations।" },
+  "guide.subtitle": { en: "Expert answers to the questions Bangladeshi students ask most", bn: "বাংলাদেশি শিক্ষার্থীদের সবচেয়ে বেশি জিজ্ঞাসিত প্রশ্নগুলোর বিশেষজ্ঞ উত্তর" },
   "guide.guidesPublished": { en: "guides published", bn: "টি গাইড প্রকাশিত" },
   "guide.freeToRead": { en: "Free to read", bn: "বিনামূল্যে পড়ুন" },
   "guide.updatedRegularly": { en: "Updated regularly", bn: "নিয়মিত আপডেট হয়" },
