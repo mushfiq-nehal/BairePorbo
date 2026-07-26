@@ -44,7 +44,7 @@ Traffic is organic — driven primarily through Facebook community groups and wo
 | **Auth** | [Clerk](https://clerk.com) — email/password + Google OAuth, webhook-seeded profiles |
 | **Database** | [Neon](https://neon.tech) Serverless PostgreSQL 18 + **pgvector** |
 | **Storage** | Cloudflare R2 (S3-compatible) — thumbnails, guide covers |
-| **Chat LLM** | [OpenRouter](https://openrouter.ai) — `deepseek/deepseek-v4-flash` with `mistralai/ministral-3b-2512` fallback |
+| **Chat LLM** | [OpenRouter](https://openrouter.ai) — `deepseek/deepseek-v4-flash` with `xiaomi/mimo-v2.5` fallback |
 | **Embeddings / Admin AI** | [NVIDIA NIM](https://build.nvidia.com) — `nvidia/nv-embedqa-e5-v5` embeddings + completions |
 | **Rate Limiting** | Redis via `ioredis` (in-memory `Map` fallback) |
 | **Analytics** | Vercel Analytics |

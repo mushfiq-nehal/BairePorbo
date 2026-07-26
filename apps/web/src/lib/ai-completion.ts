@@ -7,6 +7,7 @@
  *   "nim"          → NVIDIA NIM (NIM_MODEL env, e.g. kimi/gemma)
  *   "kimi"         → NVIDIA NIM, explicitly moonshotai/kimi-k2.6
  *   "deepseek"     → OpenRouter deepseek/deepseek-v4-flash
+ *   "mimo"         → OpenRouter xiaomi/mimo-v2.5
  *   "mistral"      → OpenRouter mistralai/ministral-3b-2512
  *   "deepseek-pro" → OpenRouter deepseek/deepseek-v4-pro (+ web search plugin)
  *   "minimax-m3"   → OpenRouter minimax/minimax-m3 (+ web search plugin)
@@ -66,7 +67,11 @@ const resolveOpenRouterModel = (choice: ModelChoice): string => {
   }
   if (choice === "deepseek-pro") return "deepseek/deepseek-v4-pro";
   if (choice === "minimax-m3") return "minimax/minimax-m3";
-  return process.env.OPENROUTER_FALLBACK_MODEL ?? "mistralai/ministral-3b-2512";
+  if (choice === "mimo") return "xiaomi/mimo-v2.5";
+  // Pinned rather than read from OPENROUTER_FALLBACK_MODEL: that env now points
+  // at MiMo, and an admin picking "Mistral AI" in the dropdown should get
+  // Mistral. Pick "mimo" explicitly for MiMo.
+  return "mistralai/ministral-3b-2512";
 };
 
 const callOpenRouter = async (

@@ -1,10 +1,10 @@
 /**
  * AI-powered academic CV analysis.
  *
- * Uses OpenRouter's `deepseek/deepseek-v4-pro` (the "deepseek-pro" model
- * choice) to review an uploaded CV and return structured, actionable
- * feedback. The result is designed to gently push students toward building
- * a fresh, well-structured CV with our builder.
+ * Uses OpenRouter's `xiaomi/mimo-v2.5` (the "mimo" model choice) to review an
+ * uploaded CV and return structured, actionable feedback. The result is
+ * designed to gently push students toward building a fresh, well-structured CV
+ * with our builder.
  */
 
 import { fetchCompletion, parseJsonFromCompletion, extractJsonObject } from "@/lib/ai-completion";
@@ -98,17 +98,14 @@ export async function analyzeCVText(
   const trimmed = cvText.slice(0, 16000); // keep prompt within budget
 
   const { content, modelUsed } = await fetchCompletion({
-    model: "deepseek-pro",
+    model: "mimo",
     system: SYSTEM_PROMPT,
     user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
-    // deepseek-v4-pro is a reasoning model that, by default, spends 15-35s
-    // on invisible thinking tokens before answering — and those tokens ate
-    // into the old 2600-token budget, truncating the JSON (parse failures /
-    // 502s). Worse, the reasoning latency, stacked on file extraction and
-    // auth, regularly blew past Vercel's 60s function limit → 504s (the
-    // intermittent "works 1 in 5 times" behaviour). Reasoning adds little
-    // to this structured-extraction task, so disable it: this makes the
-    // call fast (~7-18s) and reliable. 4000 tokens is ample for the JSON.
+    // Reasoning stays off. Even on a fast model, invisible thinking tokens eat
+    // into maxTokens (truncating the JSON → parse failures) and the added
+    // latency, stacked on file extraction and auth, can blow past Vercel's 60s
+    // function limit → 504s. Reasoning adds little to structured extraction.
+    // 4000 tokens is ample for the JSON.
     maxTokens: 4000,
     temperature: 0.3,
     timeoutMs: 55_000,

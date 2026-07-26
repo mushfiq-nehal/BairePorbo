@@ -9,6 +9,8 @@
 const KNOWN_MODELS: Record<string, string> = {
   "deepseek/deepseek-v4-flash": "Deepseek V4",
   "deepseek/deepseek-v4-pro": "Deepseek V4",
+  "xiaomi/mimo-v2.5": "MiMo V2.5",
+  "xiaomi/mimo-v2.5-pro": "MiMo V2.5 Pro",
   "mistralai/ministral-3b-2512": "Mistral AI",
   "mistralai/ministral-8b-2410": "Mistral AI",
   "moonshotai/kimi-k2.6": "Kimi K2",
@@ -36,6 +38,8 @@ const PROVIDER_BRAND: Record<string, string> = {
   nvidia: "NVIDIA",
   qwen: "Qwen",
   alibaba: "Qwen",
+  xiaomi: "MiMo",
+  minimax: "MiniMax",
 };
 
 /**

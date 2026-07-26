@@ -29,7 +29,7 @@ is also installable as an Android app via a **TWA APK** generated from the PWA.
    │       Supabase       │                        │     AI providers        │
    │  Postgres + pgvector │                        │  OpenRouter (chat)      │
    │  Auth (cookies)      │                        │   - deepseek-v4-flash   │
-   │  Storage (thumbnails)│                        │   - ministral-3b (fb)   │
+   │  Storage (thumbnails)│                        │   - mimo-v2.5 (fb)      │
    │  RLS policies        │                        │  NVIDIA NIM             │
    └──────────────────────┘                        │   - nv-embedqa-e5-v5    │
                                                     │   - chat (admin tools)  │
@@ -47,7 +47,7 @@ is also installable as an Android app via a **TWA APK** generated from the PWA.
 | Language | TypeScript |
 | DB / Auth / Storage | Supabase (`@supabase/ssr`, `@supabase/supabase-js`) |
 | Vector search | Supabase pgvector (`ScholarshipDoc` table, HNSW index) |
-| Chat LLM | OpenRouter (DeepSeek V4 Flash primary, Ministral 3B fallback) |
+| Chat LLM | OpenRouter (DeepSeek V4 Flash primary, MiMo V2.5 fallback) |
 | Embeddings | NVIDIA NIM `nv-embedqa-e5-v5` (1024-dim) |
 | Rate limiting | Redis (ioredis) with in-memory fallback |
 | Markdown | react-markdown + remark-gfm |
@@ -228,7 +228,7 @@ There are three distinct AI flows. Keep them separate when modifying.
 ### 5.1 User-facing chat (`/api/chat`)
 Provider: **OpenRouter** (streaming). Library: `lib/openrouter.ts`.
 - Primary model `OPENROUTER_MODEL` (deepseek-v4-flash), fallback
-  `OPENROUTER_FALLBACK_MODEL` (ministral-3b). Tries primary, falls back on error.
+  `OPENROUTER_FALLBACK_MODEL` (mimo-v2.5). Tries primary, falls back on error.
 - Flow per request:
   1. Resolve caller + tier (admin / user / anonymous).
   2. **Rate limit** via `lib/rate-limit.ts` (see §6). Returns structured 429.
@@ -361,7 +361,7 @@ NIM_EMBEDDING_URL=
 # OpenRouter (user-facing chat)
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=deepseek/deepseek-v4-flash
-OPENROUTER_FALLBACK_MODEL=mistralai/ministral-3b-2512
+OPENROUTER_FALLBACK_MODEL=xiaomi/mimo-v2.5
 OPENROUTER_SITE_URL=           # optional attribution
 OPENROUTER_APP_NAME=
 

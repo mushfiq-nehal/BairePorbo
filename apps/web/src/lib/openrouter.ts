@@ -20,7 +20,7 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 const getOpenRouterModels = () => {
   const primary = process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-  const fallback = process.env.OPENROUTER_FALLBACK_MODEL ?? "mistralai/ministral-3b-2512";
+  const fallback = process.env.OPENROUTER_FALLBACK_MODEL ?? "xiaomi/mimo-v2.5";
   const models = [primary, fallback].filter((value): value is string => Boolean(value));
   return Array.from(new Set(models));
 };
