@@ -51,6 +51,12 @@ type CompletionOpts = {
     effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
     exclude?: boolean;
   };
+  /** Ask the provider to constrain output to a valid JSON object
+   * (`response_format: json_object`). Every OpenRouter model we use supports
+   * it. Without this, models routinely emit *almost*-valid JSON — a trailing
+   * comma or unescaped quote inside an array — which no amount of lenient
+   * client-side parsing can recover. Ignored for NIM. */
+  json?: boolean;
 };
 
 type CompletionResult = {
@@ -74,15 +80,27 @@ const resolveOpenRouterModel = (choice: ModelChoice): string => {
   return "mistralai/ministral-3b-2512";
 };
 
-const callOpenRouter = async (
-  messages: Message[],
-  model: string,
-  maxTokens: number,
-  temperature: number,
-  webSearch?: { maxResults: number },
-  timeoutMs?: number,
-  reasoning?: CompletionOpts["reasoning"],
-): Promise<{ content: string; citations?: { url: string; title?: string }[] }> => {
+type OpenRouterCall = {
+  messages: Message[];
+  model: string;
+  maxTokens: number;
+  temperature: number;
+  webSearch?: { maxResults: number };
+  timeoutMs?: number;
+  reasoning?: CompletionOpts["reasoning"];
+  json?: boolean;
+};
+
+const callOpenRouter = async ({
+  messages,
+  model,
+  maxTokens,
+  temperature,
+  webSearch,
+  timeoutMs,
+  reasoning,
+  json,
+}: OpenRouterCall): Promise<{ content: string; citations?: { url: string; title?: string }[] }> => {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured.");
 
@@ -107,41 +125,49 @@ const callOpenRouter = async (
   if (reasoning) {
     body.reasoning = reasoning;
   }
+  if (json) {
+    body.response_format = { type: "json_object" };
+  }
 
   const controller = timeoutMs ? new AbortController() : undefined;
   const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : undefined;
 
-  let res: Response;
+  // The timer must stay armed until the body is fully read, not just until
+  // headers arrive: OpenRouter sends headers early and then holds the
+  // connection open while the model generates, so clearing the timeout after
+  // `fetch()` resolves left `res.json()` completely unbounded. That let slow
+  // models run for minutes and get killed by Vercel's function limit instead
+  // of failing fast here.
   try {
-    res = await fetch(OPENROUTER_URL, {
+    const res = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
       signal: controller?.signal,
     });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`OpenRouter error (${res.status}) for ${model}: ${text}`);
+    }
+
+    type Annotation = { type: string; url_citation?: { url: string; title?: string } };
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string; annotations?: Annotation[] } }[];
+    };
+    const message = data?.choices?.[0]?.message;
+    const citations = message?.annotations
+      ?.filter((a) => a.type === "url_citation" && a.url_citation)
+      .map((a) => ({ url: a.url_citation!.url, title: a.url_citation!.title }));
+    return { content: message?.content ?? "", citations: citations?.length ? citations : undefined };
   } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
+    if (err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError")) {
       throw new Error(`OpenRouter request to ${model} timed out after ${timeoutMs}ms`);
     }
     throw err;
   } finally {
     if (timer) clearTimeout(timer);
   }
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenRouter error (${res.status}) for ${model}: ${text}`);
-  }
-
-  type Annotation = { type: string; url_citation?: { url: string; title?: string } };
-  const data = (await res.json()) as {
-    choices?: { message?: { content?: string; annotations?: Annotation[] } }[];
-  };
-  const message = data?.choices?.[0]?.message;
-  const citations = message?.annotations
-    ?.filter((a) => a.type === "url_citation" && a.url_citation)
-    .map((a) => ({ url: a.url_citation!.url, title: a.url_citation!.title }));
-  return { content: message?.content ?? "", citations: citations?.length ? citations : undefined };
 };
 
 const callNim = async (
@@ -186,7 +212,7 @@ const callNim = async (
 };
 
 export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionResult> => {
-  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs, reasoning } = opts;
+  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs, reasoning, json } = opts;
   const messages: Message[] = [
     { role: "system", content: system },
     { role: "user", content: user },
@@ -206,15 +232,16 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
 
   const orModel = resolveOpenRouterModel(model);
   const useWebSearch = Boolean(webSearch) && WEB_SEARCH_MODELS.includes(model);
-  const { content, citations } = await callOpenRouter(
+  const { content, citations } = await callOpenRouter({
     messages,
-    orModel,
+    model: orModel,
     maxTokens,
     temperature,
-    useWebSearch ? { maxResults: webSearchMaxResults } : undefined,
+    webSearch: useWebSearch ? { maxResults: webSearchMaxResults } : undefined,
     timeoutMs,
     reasoning,
-  );
+    json,
+  });
   logRequest("ai.completion", { provider: "openrouter", model: orModel, webSearch: useWebSearch });
   return { content, modelUsed: orModel, citations };
 };
