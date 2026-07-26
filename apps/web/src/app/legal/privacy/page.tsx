@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LegalLayout, { LegalSection } from "../legal-layout";
 
-const LAST_UPDATED = "July 23, 2026";
+const LAST_UPDATED = "July 26, 2026";
 const SUPPORT_EMAIL = "support@baireporbo.app";
 
 export const metadata: Metadata = {
@@ -219,20 +219,25 @@ const sections: LegalSection[] = [
   },
   {
     id: "ai-prompts",
-    title: "AI prompt caching",
+    title: "How the AI Mentor uses your profile",
     body: (
       <>
         <p>
-          To reduce cost and improve response time, we cache anonymised AI responses
-          for popular questions (for example, &ldquo;What is Chevening?&rdquo;) for up
-          to 24 hours. The cache is keyed by question content only — never by your
-          identity. If two users ask an identical question, they may receive the same
-          cached answer.
+          So that its advice is specific to you rather than generic, the AI Mentor
+          receives a summary of your BairePorbo profile — such as your CGPA, degree
+          target, test scores and preferred countries — alongside each message you
+          send. This lets it compare your background against a scholarship&apos;s
+          actual requirements instead of asking you to repeat yourself.
         </p>
         <p>
-          If you ask a personal or specific question (one that includes your CGPA or
-          background details), it is treated as a follow-up and is <strong>not</strong>{" "}
-          eligible for caching.
+          Only fields you have filled in are included. If you would rather the Mentor
+          not see a particular detail, remove it from your{" "}
+          <Link href="/profile">profile</Link> and it will stop being sent.
+        </p>
+        <p>
+          Mentor answers are generated fresh for every message and are{" "}
+          <strong>never</strong> stored and replayed to another user. Your
+          conversations are visible only to you.
         </p>
       </>
     ),

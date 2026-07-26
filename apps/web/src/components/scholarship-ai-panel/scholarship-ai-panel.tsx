@@ -3,14 +3,14 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import styles from "./scholarship-ai-panel.module.css";
 
-type Message = { role: "system" | "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string };
 
 export default function ScholarshipAiPanel({
+  scholarshipId,
   scholarshipTitle,
-  contextText,
 }: {
+  scholarshipId: string;
   scholarshipTitle: string;
-  contextText: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -38,26 +38,8 @@ export default function ScholarshipAiPanel({
     if (!text || isLoading) return;
 
     const userMessage: Message = { role: "user", content: text };
-    
-    // We need to inject the context as a system message if it's the first turn
-    const currentMessages = [...messages];
-    let apiMessages: Message[] = [];
-    
-    if (currentMessages.length === 0) {
-      const systemMessage: Message = { 
-        role: "system", 
-        content: `You are helping a student explore this specific scholarship context. Answer their questions based on this context. \n\nContext:\n${contextText}` 
-      };
-      apiMessages = [systemMessage, userMessage];
-      setMessages([userMessage]); // Only show user message in UI
-    } else {
-      apiMessages = [
-        { role: "system", content: `You are helping a student explore this specific scholarship context. Answer their questions based on this context. \n\nContext:\n${contextText}` },
-        ...currentMessages, 
-        userMessage
-      ];
-      setMessages([...currentMessages, userMessage]);
-    }
+    const apiMessages: Message[] = [...messages, userMessage];
+    setMessages(apiMessages);
 
     setInputValue("");
     setIsLoading(true);
@@ -68,6 +50,9 @@ export default function ScholarshipAiPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: apiMessages,
+          // The server pulls this scholarship's exact facts and the signed-in
+          // student's profile straight from the database.
+          scholarshipId,
           // We don't send sessionId, so it's ephemeral
         }),
       });

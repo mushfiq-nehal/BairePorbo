@@ -53,7 +53,6 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
   const [activeTab, setActiveTab] = useState<SummaryTab>("Overview");
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
 
   // Sync bookmark state for the mobile sticky bar
   useEffect(() => {
@@ -69,20 +68,6 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
       })
       .catch(() => setIsBookmarked(false));
   }, [userId, scholarship.id]);
-
-  // Profile context for the AI panel
-  useEffect(() => {
-    if (!userId) {
-      setProfile(null);
-      return;
-    }
-    fetch("/api/profile")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { profile?: Record<string, unknown> } | null) => {
-        setProfile(data?.profile ?? null);
-      })
-      .catch(() => setProfile(null));
-  }, [userId]);
 
   const handleBookmark = async () => {
     if (!userId) {
@@ -116,34 +101,6 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
     }
     setIsBookmarking(false);
   };
-
-  const contextText = [
-    `Title: ${scholarship.title}`,
-    `Country: ${scholarship.country}`,
-    `Degree level: ${scholarship.degree_level}`,
-    `Funding: ${scholarship.funding_type}`,
-    `Deadline: ${scholarship.deadline ?? "Open"}`,
-    `Tags: ${scholarship.tags?.join(", ") ?? "None"}`,
-    "",
-    `AI Summary: ${scholarship.ai_summary ?? "None"}`,
-    `Eligibility: ${scholarship.eligibility_summary ?? "None"}`,
-    `Tips: ${scholarship.tips ?? "None"}`,
-    ...(profile
-      ? [
-          "",
-          "---",
-          "Student Profile:",
-          `BSc Major: ${profile.bsc_major ?? "Not provided"}`,
-          `University: ${profile.university ?? "Not provided"}`,
-          `Graduation Year: ${profile.graduation_year ?? "Not provided"}`,
-          `IELTS Score: ${profile.ielts_score ?? "Not provided"}`,
-          `GRE/GMAT Score: ${profile.gre_gmat_score ?? "Not provided"}`,
-          `Research Interests: ${profile.research_interests ?? "Not provided"}`,
-          `Published Papers: ${profile.published_papers ?? "Not provided"}`,
-          `Internships: ${profile.internships ?? "Not provided"}`,
-        ]
-      : []),
-  ].join("\n");
 
   return (
     <>
@@ -196,8 +153,8 @@ export default function ScholarshipDetailClient({ scholarship }: Props) {
 
       {/* ── AI contextual chat panel ── */}
       <ScholarshipAiPanel
+        scholarshipId={scholarship.id}
         scholarshipTitle={scholarship.title}
-        contextText={contextText}
       />
 
       {/* ── Mobile-only sticky action bar ── */}

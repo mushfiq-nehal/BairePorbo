@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "reingest": "tsx --env-file=.env.local --tsconfig tsconfig.json scripts/reingest-scholarships.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1068.0",

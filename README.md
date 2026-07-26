@@ -74,13 +74,13 @@ Embed query → NVIDIA NIM (1024-dim)
 Vector similarity search → Neon pgvector (HNSW, cosine)
     │
     ▼
-Top-K scholarship chunks injected into system prompt
+Matched scholarships re-read from Postgres → verified-facts block
+    │
+    ▼
+System prompt = grounding rules + today's date + student profile + facts
     │
     ▼
 OpenRouter streaming chat (DeepSeek → Mistral fallback)
-    │
-    ▼
-Postgres prompt cache (SHA256 key, 24h TTL)
     │
     ▼
 Streamed response to client
@@ -114,8 +114,6 @@ Streamed response to client
 | `user_bookmarks` | Saved scholarships per user |
 | `user_tasks` | Application to-do tracker |
 | `guides` | Educational guide content with slugs and FAQs |
-| `prompt_cache` | SHA256-keyed AI response cache with TTL and hit counter |
-
 ---
 
 ## Project Structure

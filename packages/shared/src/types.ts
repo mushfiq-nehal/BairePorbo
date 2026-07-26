@@ -117,12 +117,23 @@ export interface ChatMessage {
   content: string;
 }
 
-/** Request body for `POST /api/chat`. `anonKey` travels as the `x-anon-key` header. */
+/**
+ * Request body for `POST /api/chat`. `anonKey` travels as the `x-anon-key` header.
+ *
+ * The server owns the system prompt: it injects the signed-in student's profile
+ * summary and the retrieved scholarship facts on every turn. Any `system`
+ * message sent here is folded in as supplementary page context, not used as-is.
+ */
 export interface ChatRequestBody {
   messages: ChatMessage[];
   sessionId?: string | null;
   /** The single new user turn, persisted server-side when a session is attached. */
   userMessage?: string;
+  /**
+   * Scholarship the student is currently viewing. The server pins that
+   * scholarship's exact deadline and eligibility into the prompt.
+   */
+  scholarshipId?: string;
 }
 
 /** SSE frames emitted by `POST /api/chat` (`data: {...}\n\n`). */

@@ -1,19 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { sql } from "@/utils/db";
-import { generateEmbedding, getClientIp, logRequest } from "@/lib/nim";
+import { getClientIp, logRequest } from "@/lib/nim";
 import { fetchOpenRouterChatWithFallback } from "@/lib/openrouter";
 import { checkChatRateLimit, formatResetWindow, type ChatTier } from "@/lib/rate-limit";
-import { lookupPromptCache, writePromptCache } from "@/lib/prompt-cache";
+import {
+  buildProfileBlock,
+  loadMentorProfile,
+  loadScholarshipFacts,
+  retrieveScholarshipContext,
+} from "@/lib/mentor-context";
+import { formatScholarshipFacts } from "@/lib/scholarship-facts";
 
-const SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangladeshi students pursuing higher education and scholarships abroad. You have deep knowledge of:
+const BASE_SYSTEM_PROMPT = `You are BairePorbo Mentor, an expert AI advisor for Bangladeshi students pursuing higher education and scholarships abroad. You have deep knowledge of:
 - International scholarships (DAAD, Erasmus Mundus, Commonwealth, Chevening, Fulbright, etc.)
 - University admission requirements and processes
 - CGPA/GPA requirements, English proficiency tests (IELTS, TOEFL, Duolingo)
 - Statement of Purpose, recommendation letters, and application strategies
 - Country-specific study permit and visa processes
 
+GROUNDING RULES — follow these strictly:
+1. When a "VERIFIED SCHOLARSHIP DATA" block is present, it comes from the BairePorbo database and overrides anything you remember about that scholarship.
+2. Report deadlines, funding amounts and eligibility from that block EXACTLY as written. Never round a date to a month, never give a range like "usually around May", and never say "typically" or "approximately" about a value that is stated there.
+3. If a student asks about something not covered by the verified data, say plainly that BairePorbo does not list it, then answer from general knowledge and label it clearly as general guidance to confirm on the official website.
+4. Never invent a deadline, award amount, or URL.
+
+PERSONALISATION:
+- When a "STUDENT PROFILE" block is present, tailor every answer to it. Compare their CGPA, test scores, major and target countries against the requirements you cite, and tell them concretely where they stand.
+- Do not ask for information the profile already contains. If a field they need is listed as not filled in, mention it once and point them to their profile page.
+
 Be concise, practical, and encouraging. Always cite specific scholarships or programs when relevant.`;
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const MAX_MSG_LENGTH = 8000;
 const MAX_HISTORY = 12;
@@ -73,6 +91,8 @@ export async function POST(req: NextRequest) {
     messages?: { role: string; content: string }[];
     sessionId?: string;
     userMessage?: string;
+    /** Set by the scholarship detail panel so its facts are grounded server-side. */
+    scholarshipId?: string;
   };
   try {
     body = await req.json();
@@ -95,16 +115,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const trimmedMessages = userMessages.slice(-MAX_HISTORY);
+  // The scholarship panel sends its page context as a system message. Pull those
+  // out so they can be merged into the single server-owned system prompt —
+  // sending two competing system messages made the model pick one arbitrarily.
+  const history = userMessages.filter((m) => m.role === "user" || m.role === "assistant");
+  const clientContext = userMessages
+    .filter((m) => m.role === "system")
+    .map((m) => m.content)
+    .join("\n\n")
+    .trim();
+
+  const trimmedMessages = history.slice(-MAX_HISTORY);
   const sessionId = body.sessionId ?? null;
   const anonKey = req.headers.get("x-anon-key");
   const { userId } = await auth();
 
   let tier: ChatTier = "anonymous";
   let callerId: string;
+  const profile = userId ? await loadMentorProfile(userId) : null;
   if (userId) {
-    const rows = await sql`SELECT role FROM profiles WHERE id = ${userId} LIMIT 1`;
-    tier = rows[0]?.role === "admin" ? "admin" : "user";
+    tier = profile?.role === "admin" ? "admin" : "user";
     callerId = userId;
   } else if (anonKey) {
     callerId = `anon:${anonKey}`;
@@ -159,69 +189,62 @@ export async function POST(req: NextRequest) {
     `.catch((err: unknown) => console.error("[chat] failed to save user message:", err));
   }
 
-  // ── RAG context ──
-  let contextBlock = "";
   const lastUserMessage = [...trimmedMessages].reverse().find((m) => m.role === "user");
-    try {
-      if (lastUserMessage?.content) {
-        const embedding = await generateEmbedding(lastUserMessage.content, apiKey, "query");
-        const matches = await sql`
-          SELECT content, similarity
-          FROM match_scholarship_docs(${JSON.stringify(embedding)}::vector, 0.7, 5)
-        ` as { content: string; similarity: number }[];
-      if (matches.length) {
-        const formatted = matches
-          .map((match, index) => `Source ${index + 1}: ${match.content}`)
-          .join("\n\n");
-        contextBlock = `\n\nRelevant scholarship context:\n${formatted}`;
-      }
+
+  // ── Profile context ──
+  const profileBlock = buildProfileBlock(profile);
+
+  // ── Scholarship context ──
+  // Retrieval runs against the last user turn; when the request comes from a
+  // scholarship detail page, that scholarship's facts are always included even
+  // if the question ("Am I eligible?") carries no searchable keywords.
+  let retrieved: { block: string; scholarshipIds: string[] } = { block: "", scholarshipIds: [] };
+  try {
+    if (lastUserMessage?.content) {
+      retrieved = await retrieveScholarshipContext(lastUserMessage.content, apiKey);
     }
   } catch (err) {
     logRequest("rag.context.error", { ip, error: String(err) });
   }
 
-  // ── Cache lookup (only for fresh single-turn questions) ──
-  const primaryModel =
-    process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-  // Cache only when this is a single-user-turn question. We count user-role
-  // messages instead of total because the UI seeds a welcome assistant turn
-  // into the visible history, which would otherwise always disable the cache.
-  const userTurnCount = trimmedMessages.filter((m) => m.role === "user").length;
-  const cacheEligible = !!lastUserMessage?.content && userTurnCount === 1;
-
-  // Extract any scholarship-specific context from the system message so it can
-  // be hashed into the cache key. Without this, "Am I eligible for this?" on
-  // ANY scholarship page would collide to the same cache entry.
-  const systemMessageContent = trimmedMessages.find((m) => m.role === "system")?.content ?? "";
-
-  let cacheKey: string | null = null;
-  if (cacheEligible && lastUserMessage?.content) {
-    const lookup = await lookupPromptCache({
-      model: primaryModel,
-      userMessage: lastUserMessage.content,
-      systemContext: systemMessageContent || undefined,
-    });
-    cacheKey = lookup.cacheKey;
-    if (lookup.hit && lookup.response) {
-      logRequest("chat.cache.hit", { tier, callerId });
-      return streamCachedResponse({
-        response: lookup.response,
-        modelLabel: primaryModel,
-        sessionId,
-        userMessageText: body.userMessage ?? null,
-      });
+  let pinnedBlock = "";
+  const pinnedId = UUID_PATTERN.test(body.scholarshipId ?? "") ? body.scholarshipId! : null;
+  if (pinnedId && !retrieved.scholarshipIds.includes(pinnedId)) {
+    try {
+      const [pinned] = await loadScholarshipFacts([pinnedId]);
+      if (pinned) {
+        pinnedBlock = [
+          "",
+          "=== SCHOLARSHIP THE STUDENT IS CURRENTLY VIEWING (authoritative) ===",
+          formatScholarshipFacts(pinned),
+          "=== END ===",
+        ].join("\n");
+      }
+    } catch (err) {
+      logRequest("rag.pinned.error", { ip, error: String(err) });
     }
-  } else {
-    logRequest("chat.cache.skip", {
-      tier,
-      reason: !lastUserMessage?.content ? "no_user_message" : "multi_turn",
-      userTurnCount,
-    });
   }
+
+  const contextBlock = `${pinnedBlock}${retrieved.block}`;
+
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    dateStyle: "full",
+  }).format(new Date());
+
+  const systemPrompt = [
+    BASE_SYSTEM_PROMPT,
+    `Today's date is ${today} (Asia/Dhaka). Use it when judging whether a deadline has passed.`,
+    profileBlock,
+    clientContext ? `PAGE CONTEXT PROVIDED BY THE APP:\n${clientContext}` : "",
+    contextBlock,
+  ]
+    .filter(Boolean)
+    .join("\n\n");
 
   // ── Live model call ──
   const chatPayload = {
-    messages: [{ role: "system", content: SYSTEM_PROMPT + contextBlock }, ...trimmedMessages],
+    messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
     max_tokens: MAX_OUTPUT_TOKENS,
     temperature: 0.7,
     top_p: 0.95,
@@ -306,17 +329,6 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Write to cache if eligible. Done after streaming so the user
-        // never waits on the cache write path.
-        if (cacheEligible && cacheKey && lastUserMessage?.content && fullAssistantContent) {
-          writePromptCache(
-            cacheKey,
-            upstreamModel,
-            lastUserMessage.content,
-            fullAssistantContent,
-          ).catch(() => {});
-        }
-
         controller.enqueue(encoder.encode("data: [DONE]\n\n"));
       } catch (err) {
         controller.enqueue(
@@ -328,66 +340,6 @@ export async function POST(req: NextRequest) {
         logRequest("chat.stream.end", { ip, model: upstreamModel });
         controller.close();
       }
-    },
-  });
-
-  return new Response(readable, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-}
-
-/**
- * Streams a cached response back to the client in the same SSE format
- * as a live model call so the UI doesn't need a separate code path.
- * Splits the response into small chunks to preserve the typewriter feel.
- */
-function streamCachedResponse(args: {
-  response: string;
-  modelLabel: string;
-  sessionId: string | null;
-  userMessageText: string | null;
-}) {
-  const { response, modelLabel, sessionId, userMessageText } = args;
-  const encoder = new TextEncoder();
-
-  const readable = new ReadableStream({
-    async start(controller) {
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ model: modelLabel, cached: true })}\n\n`),
-      );
-
-      // Stream in ~40-char chunks for a typewriter feel.
-      const chunkSize = 40;
-      for (let i = 0; i < response.length; i += chunkSize) {
-        const token = response.slice(i, i + chunkSize);
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ token })}\n\n`),
-        );
-        // Tiny delay so the UI updates feel natural without slowing it down too much.
-        await new Promise((r) => setTimeout(r, 12));
-      }
-
-      if (sessionId && response) {
-        sql`
-          INSERT INTO chat_messages (session_id, role, content)
-          VALUES (${sessionId}, 'assistant', ${response})
-        `.catch((err: unknown) => console.error("[chat] failed to save assistant message:", err));
-
-        if (userMessageText) {
-          const title = userMessageText.slice(0, 60).trim();
-          sql`
-            UPDATE chat_sessions SET title = ${title}
-            WHERE id = ${sessionId} AND title = 'New conversation'
-          `.catch(() => {});
-        }
-      }
-
-      controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-      controller.close();
     },
   });
 
