@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql, sqlQuery } from "@/utils/db";
-import { isPushConfigured, sendPushToTokens, type PushLang } from "@/utils/push";
+import {
+  CHANNEL_DEADLINES,
+  isPushConfigured,
+  sendPushToTokens,
+  type PushLang,
+} from "@/utils/push";
 
 /**
  * Daily deadline reminders for bookmarked scholarships.
@@ -37,7 +42,8 @@ function copyFor(days: Milestone, title: string, lang: PushLang, url: string) {
     days === 1 ? "Deadline tomorrow ⏳" : `Deadline in ${days} days ⏳`;
   const bn =
     days === 1 ? "আগামীকাল ডেডলাইন ⏳" : `${days} দিনে ডেডলাইন ⏳`;
-  return { title: lang === "bn" ? bn : en, body: title, url };
+  // Deadlines interrupt; new content doesn't.
+  return { title: lang === "bn" ? bn : en, body: title, url, channelId: CHANNEL_DEADLINES };
 }
 
 interface Candidate {

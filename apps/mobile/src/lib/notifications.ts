@@ -25,7 +25,14 @@ import { translations, type Lang, type TranslationKey } from "@/i18n/translation
  *      into the tray the instant the app was opened.
  */
 const TASK_NAME = "bp-content-check";
+/**
+ * Two channels, because they warrant different levels of interruption: a newly
+ * published scholarship can wait in the shade, an application deadline three
+ * days out should interrupt. Android won't let an app raise the importance of a
+ * channel that already exists on a device, so these must stay separate.
+ */
 const CHANNEL_ID = "content";
+const CHANNEL_DEADLINES = "deadlines";
 const SEEN_SCHOLARSHIPS = "bp_seen_scholarships";
 const SEEN_GUIDES = "bp_seen_guides";
 /** "1" once FCM registration succeeded; disables the polling fallback. */
@@ -232,6 +239,12 @@ export async function registerPushNotifications(api: PushRegistrar, lang: Lang):
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: "New scholarships & guides",
     importance: Notifications.AndroidImportance.DEFAULT,
+  }).catch(() => {});
+
+  await Notifications.setNotificationChannelAsync(CHANNEL_DEADLINES, {
+    name: "Application deadlines",
+    description: "Reminders before a saved scholarship closes",
+    importance: Notifications.AndroidImportance.HIGH,
   }).catch(() => {});
 
   const pushReady = await registerDeviceToken(api, lang);

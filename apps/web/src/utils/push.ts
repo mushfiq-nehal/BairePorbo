@@ -28,11 +28,23 @@ interface ServiceAccount {
   private_key: string;
 }
 
+/**
+ * Android notification channels, declared on the device in
+ * apps/mobile/src/lib/notifications.ts. "content" sits quietly in the shade;
+ * "deadlines" is HIGH importance and pops up as a heads-up banner. Sending an
+ * unknown channel_id means the notification is dropped, so these two strings
+ * have to stay in step with the client.
+ */
+export const CHANNEL_CONTENT = "content";
+export const CHANNEL_DEADLINES = "deadlines";
+
 export interface PushMessage {
   title: string;
   body: string;
   /** In-app route the tap should open, e.g. "/scholarship/<id>". */
   url: string;
+  /** Defaults to the quieter "content" channel. */
+  channelId?: string;
 }
 
 export type PushLang = "en" | "bn";
@@ -145,7 +157,7 @@ async function sendOne(
       android: {
         priority: "HIGH",
         notification: {
-          channel_id: "content",
+          channel_id: msg.channelId ?? CHANNEL_CONTENT,
           color: "#0f8f8d",
           default_sound: true,
         },
