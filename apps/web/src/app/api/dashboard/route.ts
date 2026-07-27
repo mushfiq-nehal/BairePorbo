@@ -22,6 +22,33 @@ const PROFILE_FIELDS: { key: string; label: string }[] = [
 
 type Profile = Record<string, unknown>;
 
+/** How many characters of the mentor's last reply the previews show. */
+const PREVIEW_LENGTH = 120;
+
+/**
+ * The mentor answers in Markdown, but every consumer of `lastSession.preview`
+ * renders it as plain text, so the raw `**bold**` and `[label](url)` syntax
+ * would otherwise show through verbatim. Code fences keep their contents —
+ * dropping them outright would leave a blank preview for a code-only reply.
+ */
+function plainTextPreview(markdown: string): string {
+  return markdown
+    .replace(/```[a-zA-Z0-9]*\n?/g, " ")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s*([-*+]|\d+[.)])\s+/gm, "")
+    .replace(/^\s*([-*_]\s*){3,}$/gm, " ")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, PREVIEW_LENGTH);
+}
+
 type BookmarkScholarship = {
   id: string;
   title: string;
@@ -145,7 +172,7 @@ export async function GET() {
     `;
     const lastMessage = msgRows[0] ?? null;
     const preview = lastMessage?.content
-      ? String(lastMessage.content).replace(/\s+/g, " ").trim().slice(0, 120)
+      ? plainTextPreview(String(lastMessage.content)) || null
       : null;
     lastSession = {
       id: lastSessionRow.id as string,
