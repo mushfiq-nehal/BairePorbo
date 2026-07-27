@@ -10,6 +10,7 @@ import { useApi } from "@/lib/api";
 import { API_BASE } from "@/lib/config";
 import { useLang, useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
+import { unregisterPushNotifications } from "@/lib/notifications";
 import { Txt } from "@/components/ui";
 import { colors, gradients, shadow } from "@/theme";
 
@@ -152,7 +153,12 @@ export default function Profile() {
 
           {/* Sign out */}
           <Pressable
-            onPress={() => signOut()}
+            onPress={async () => {
+              // Retire the device token first — after signOut there's no Clerk
+              // session left to authenticate the unregister call.
+              await unregisterPushNotifications(api);
+              await signOut();
+            }}
             style={shadow.sm}
             className="bg-surface border border-sand-200 rounded-2xl p-4 mt-3.5 items-center"
           >

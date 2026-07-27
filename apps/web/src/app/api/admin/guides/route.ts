@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
+import { pushNewGuide } from "@/lib/push-content";
 
 export async function GET() {
   const auth = await requireAdmin();
@@ -56,6 +57,7 @@ export async function POST(req: NextRequest) {
 
     if (status === "published" && rows[0]?.slug) {
       revalidateGuidePages(rows[0].slug as string);
+      after(() => pushNewGuide(rows[0].id as string));
     }
 
     return NextResponse.json({ guide: rows[0] }, { status: 201 });

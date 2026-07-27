@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { sql, sqlQuery } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
+import { pushNewScholarship } from "@/lib/push-content";
 
 export async function GET(
   _req: NextRequest,
@@ -80,6 +81,13 @@ export async function PATCH(
   }
 
   if (!rows[0]) return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
+
+  // Fan out after the admin gets their response — the send is claimed inside,
+  // so re-saving an already-announced scholarship is a no-op.
+  if (rows[0].status === "published") {
+    after(() => pushNewScholarship(id));
+  }
+
   return NextResponse.json({ scholarship: rows[0] });
 }
 

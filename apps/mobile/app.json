@@ -2,7 +2,7 @@
   "expo": {
     "name": "BairePorbo",
     "slug": "baireporbo",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "scheme": "baireporbo",
     "userInterfaceStyle": "light",
@@ -13,6 +13,8 @@
     },
     "android": {
       "package": "app.baireporbo.android",
+      "googleServicesFile": "./android/app/google-services.json",
+      "permissions": ["android.permission.POST_NOTIFICATIONS"],
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

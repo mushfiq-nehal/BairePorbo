@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { sql, sqlQuery } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
+import { pushNewGuide } from "@/lib/push-content";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -68,6 +69,11 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
   if (!rows[0]) return NextResponse.json({ error: "Guide not found" }, { status: 404 });
 
   revalidateGuidePages(rows[0].slug as string);
+
+  if (rows[0].status === "published") {
+    after(() => pushNewGuide(id));
+  }
+
   return NextResponse.json({ guide: rows[0] });
 }
 

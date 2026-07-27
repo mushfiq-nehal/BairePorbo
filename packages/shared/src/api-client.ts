@@ -201,6 +201,20 @@ export function createApiClient(config: ApiClientConfig) {
       });
     },
 
+    // ── Push tokens (auth) — device registry for FCM fan-out ──
+    /** Called on every launch: FCM rotates tokens and we only learn by re-sending. */
+    registerPushToken(body: {
+      token: string;
+      platform: string;
+      lang: string;
+      appVersion?: string;
+    }) {
+      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "POST", body);
+    },
+    unregisterPushToken(body: { token: string }) {
+      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "DELETE", body);
+    },
+
     // ── Profile (auth) — the Bearer-token canary (§3.4) ──
     getProfile() {
       return request<ProfileResponse>(`/api/profile`);

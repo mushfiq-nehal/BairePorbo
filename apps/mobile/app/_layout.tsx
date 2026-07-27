@@ -31,9 +31,9 @@ import {
 import { CLERK_PUBLISHABLE_KEY } from "@/lib/config";
 import { tokenCache } from "@/lib/token-cache";
 import { queryClient } from "@/lib/query";
-import { ApiProvider } from "@/lib/api";
+import { ApiProvider, useApi } from "@/lib/api";
 import { LangProvider, useLang } from "@/i18n";
-import { registerContentNotifications } from "@/lib/notifications";
+import { notificationUrl, registerPushNotifications } from "@/lib/notifications";
 import { colors } from "@/theme";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -50,6 +50,8 @@ function AuthGate() {
   const { isLoaded, isSignedIn } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const api = useApi();
+  const { lang } = useLang();
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -62,24 +64,28 @@ function AuthGate() {
     }
   }, [isLoaded, isSignedIn, segments, router]);
 
-  // Background content notifications: register once signed in (permission
-  // prompt lands after auth, not on the sign-in screen), and route taps.
+  // Push registration happens once signed in, so the permission prompt lands
+  // after auth rather than on the sign-in screen. Re-runs on a language change
+  // to keep the server sending copy in the language this device is using.
   useEffect(() => {
     if (!isLoaded || !isSignedIn) return;
-    registerContentNotifications().catch(() => {});
+    registerPushNotifications(api, lang).catch(() => {});
+  }, [isLoaded, isSignedIn, api, lang]);
 
+  // Route notification taps, whether they cold-started the app or arrived while
+  // it was already running.
+  useEffect(() => {
     const openFromNotification = (resp: Notifications.NotificationResponse | null) => {
-      const url = resp?.notification.request.content.data?.url;
-      if (typeof url === "string") router.push(url as Href);
+      const url = notificationUrl(resp);
+      if (url) router.push(url as Href);
     };
-    // Tap that cold-started the app, then taps while running.
     if (!handledColdStartTap) {
       handledColdStartTap = true;
       Notifications.getLastNotificationResponseAsync().then(openFromNotification).catch(() => {});
     }
     const sub = Notifications.addNotificationResponseReceivedListener(openFromNotification);
     return () => sub.remove();
-  }, [isLoaded, isSignedIn, router]);
+  }, [router]);
 
   if (!isLoaded) {
     return (

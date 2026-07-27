@@ -92,8 +92,8 @@ android {
         applicationId 'app.baireporbo.android'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0"
+        versionCode 2
+        versionName "0.2.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -192,4 +192,13 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+}
+
+// FCM. Applied only when the config file is present so the project still builds
+// (without push) on a checkout that hasn't been given google-services.json.
+// Google requires this plugin be applied last.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.warn("google-services.json not found in android/app — building without push notifications.")
 }
