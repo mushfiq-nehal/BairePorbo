@@ -37,19 +37,26 @@ function daysUntil(deadline: string, now: number): number | null {
   return Math.round((startOfDay(parsed) - startOfDay(now)) / 86_400_000);
 }
 
-function copyFor(days: Milestone, title: string, lang: PushLang, url: string) {
+function copyFor(c: Candidate, lang: PushLang, url: string) {
   const en =
-    days === 1 ? "Deadline tomorrow ⏳" : `Deadline in ${days} days ⏳`;
+    c.milestone === 1 ? "Deadline tomorrow ⏳" : `Deadline in ${c.milestone} days ⏳`;
   const bn =
-    days === 1 ? "আগামীকাল ডেডলাইন ⏳" : `${days} দিনে ডেডলাইন ⏳`;
+    c.milestone === 1 ? "আগামীকাল ডেডলাইন ⏳" : `${c.milestone} দিনে ডেডলাইন ⏳`;
   // Deadlines interrupt; new content doesn't.
-  return { title: lang === "bn" ? bn : en, body: title, url, channelId: CHANNEL_DEADLINES };
+  return {
+    title: lang === "bn" ? bn : en,
+    body: c.title,
+    url,
+    channelId: CHANNEL_DEADLINES,
+    imageUrl: c.thumbnailUrl,
+  };
 }
 
 interface Candidate {
   userId: string;
   scholarshipId: string;
   title: string;
+  thumbnailUrl: string | null;
   milestone: Milestone;
 }
 
@@ -65,7 +72,7 @@ export async function GET(req: NextRequest) {
   const now = Date.now();
 
   const bookmarks = await sql`
-    SELECT ub.user_id, s.id AS scholarship_id, s.title, s.deadline
+    SELECT ub.user_id, s.id AS scholarship_id, s.title, s.deadline, s.thumbnail_url
     FROM user_bookmarks ub
     JOIN scholarships s ON s.id = ub.scholarship_id
     WHERE s.deadline IS NOT NULL
@@ -84,6 +91,7 @@ export async function GET(req: NextRequest) {
       userId: row.user_id as string,
       scholarshipId: row.scholarship_id as string,
       title: row.title as string,
+      thumbnailUrl: (row.thumbnail_url as string | null) ?? null,
       milestone,
     });
   }
@@ -140,7 +148,7 @@ export async function GET(req: NextRequest) {
     for (const lang of ["en", "bn"] as const) {
       const tokens = userDevices.filter((d) => d.lang === lang).map((d) => d.token);
       if (tokens.length === 0) continue;
-      const result = await sendPushToTokens(tokens, copyFor(c.milestone, c.title, lang, url));
+      const result = await sendPushToTokens(tokens, copyFor(c, lang, url));
       sent += result.sent;
     }
     delivered.push(c);

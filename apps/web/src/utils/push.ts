@@ -45,6 +45,8 @@ export interface PushMessage {
   url: string;
   /** Defaults to the quieter "content" channel. */
   channelId?: string;
+  /** Absolute https image shown as an expandable big picture. */
+  imageUrl?: string | null;
 }
 
 export type PushLang = "en" | "bn";
@@ -149,6 +151,10 @@ async function sendOne(
   // guarantees the system tray renders it when the app is backgrounded or
   // killed; the data block carries the deep link, which expo-notifications
   // surfaces to the tap handler either way.
+  // The device downloads this itself, so a relative or http URL just yields a
+  // silently image-less notification. Only pass one we know it can fetch.
+  const image = msg.imageUrl?.startsWith("https://") ? msg.imageUrl : undefined;
+
   const body = {
     message: {
       token,
@@ -160,6 +166,7 @@ async function sendOne(
           channel_id: msg.channelId ?? CHANNEL_CONTENT,
           color: "#0f8f8d",
           default_sound: true,
+          ...(image ? { image } : {}),
         },
       },
     },
