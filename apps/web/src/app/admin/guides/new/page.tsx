@@ -180,13 +180,18 @@ export default function NewGuidePage() {
     setSaving(true);
     setSaveError("");
     try {
+      // Always created as a draft, even when the admin asked to publish: the
+      // cover upload below needs the guide's id, and publishing is what fires
+      // the push notification. Publishing in this same request — before a
+      // cover exists — is how the very first push for a new guide always went
+      // out without its thumbnail.
       const res = await fetch("/api/admin/guides", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...guide,
           cover_image_url: null,
-          status: publish ? "published" : "draft",
+          status: "draft",
           writer_name: writerName.trim() || null,
           writer_designation: writerDesignation.trim() || null,
           published_at: authorDate || null,
@@ -198,16 +203,34 @@ export default function NewGuidePage() {
         return;
       }
 
-      if (coverFile && json.guide?.id) {
+      const guideId = json.guide?.id as string | undefined;
+
+      if (coverFile && guideId) {
         const fd = new FormData();
         fd.append("file", coverFile);
-        const upRes = await fetch(`/api/admin/guides/${json.guide.id}/cover`, {
+        const upRes = await fetch(`/api/admin/guides/${guideId}/cover`, {
           method: "POST",
           body: fd,
         });
         if (!upRes.ok) {
           const upJson = await upRes.json().catch(() => ({}));
           setSaveError(upJson.error ?? "Guide saved but cover upload failed.");
+          return;
+        }
+      }
+
+      if (publish && guideId) {
+        // Re-send the author-chosen date: the PATCH route defaults
+        // published_at to "now" whenever it's omitted, which would clobber
+        // it otherwise.
+        const pubRes = await fetch(`/api/admin/guides/${guideId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "published", published_at: authorDate || undefined }),
+        });
+        if (!pubRes.ok) {
+          const pubJson = await pubRes.json().catch(() => ({}));
+          setSaveError(pubJson.error ?? "Guide and cover saved, but publishing failed.");
           return;
         }
       }

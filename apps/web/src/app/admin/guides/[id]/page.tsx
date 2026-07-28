@@ -148,6 +148,21 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
     setSaving(true);
     setError("");
     try {
+      // Cover uploads before the publish PATCH: publishing fires a push
+      // notification immediately, and it reads whatever cover_image_url is in
+      // the DB at that instant. Uploading after would mean the very first
+      // "new guide" push for a guide always went out thumbnail-less.
+      if (coverFile) {
+        const fd = new FormData();
+        fd.append("file", coverFile);
+        const upRes = await fetch(`/api/admin/guides/${id}/cover`, { method: "POST", body: fd });
+        if (!upRes.ok) {
+          const upJson = await upRes.json().catch(() => ({}));
+          setError(upJson.error ?? "Cover upload failed.");
+          return;
+        }
+      }
+
       const res = await fetch(`/api/admin/guides/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -165,19 +180,8 @@ export default function EditGuidePage({ params }: { params: Promise<{ id: string
       });
       const json = await res.json();
       if (!res.ok) {
-        setError(json.error ?? "Failed to save guide.");
+        setError(json.error ?? "Guide's cover was updated, but saving the rest failed.");
         return;
-      }
-
-      if (coverFile) {
-        const fd = new FormData();
-        fd.append("file", coverFile);
-        const upRes = await fetch(`/api/admin/guides/${id}/cover`, { method: "POST", body: fd });
-        if (!upRes.ok) {
-          const upJson = await upRes.json().catch(() => ({}));
-          setError(upJson.error ?? "Guide saved but cover upload failed.");
-          return;
-        }
       }
 
       router.push("/admin/guides");

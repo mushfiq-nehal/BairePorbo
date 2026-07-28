@@ -219,6 +219,10 @@ export interface GuidesResponse {
   guides: Guide[];
 }
 
+export interface GuideDetailResponse {
+  guide: Guide;
+}
+
 // ── CV Builder (auth) ────────────────────────────────────────────────────────
 
 export type CVTemplateId = "classic" | "modern" | "europass" | "photo";

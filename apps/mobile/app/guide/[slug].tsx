@@ -49,9 +49,21 @@ export default function GuideDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data, isLoading } = useQuery({ queryKey: ["guides"], queryFn: () => api.getGuides() });
-  const guide: Guide | undefined = data?.guides.find((g) => g.slug === slug);
-  const related = (data?.guides ?? []).filter((g) => g.slug !== slug && g.category === guide?.category).slice(0, 3);
+  // Fetched by slug directly rather than found in the ["guides"] list: that
+  // list is CDN-cached for 5 minutes, so a guide published moments ago —
+  // exactly the case when this screen was opened from its own push
+  // notification — could still 404 there. The list query stays around only
+  // to populate "related guides" below.
+  const { data, isLoading } = useQuery({
+    queryKey: ["guide", slug],
+    queryFn: () => api.getGuide(slug!),
+    enabled: !!slug,
+    retry: false,
+  });
+  const guide: Guide | undefined = data?.guide;
+
+  const { data: listData } = useQuery({ queryKey: ["guides"], queryFn: () => api.getGuides() });
+  const related = (listData?.guides ?? []).filter((g) => g.slug !== slug && g.category === guide?.category).slice(0, 3);
 
   if (isLoading) {
     return (

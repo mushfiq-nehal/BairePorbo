@@ -17,6 +17,7 @@ import type {
   CvResponse,
   CvsResponse,
   DashboardResponse,
+  GuideDetailResponse,
   GuidesResponse,
   MetaResponse,
   ProfileResponse,
@@ -135,6 +136,11 @@ export function createApiClient(config: ApiClientConfig) {
     // ── Guides (public) — must be fetched anonymously; the endpoint 403s on auth. ──
     getGuides() {
       return request<GuidesResponse>(`/api/guides`, {}, { skipAuth: true });
+    },
+    /** Fetched by slug so a just-published guide (e.g. opened from its push
+     * notification) is reachable before the cached /api/guides list catches up. */
+    getGuide(slug: string) {
+      return request<GuideDetailResponse>(`/api/guides/${encodeURIComponent(slug)}`, {}, { skipAuth: true });
     },
 
     // ── Meta (public) ──
