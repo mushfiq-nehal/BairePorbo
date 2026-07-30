@@ -18,7 +18,7 @@ export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
   { value: "mimo", label: "MiMo V2.5 (fast, cheap, 1M context)" },
   { value: "mistral", label: "Mistral AI (fast, cheap)" },
   { value: "nim", label: "NVIDIA NIM (env model)" },
-  { value: "kimi", label: "Kimi K2.6 (Moonshot / NIM)" },
+  { value: "kimi", label: "MiniMax M3 (NIM)" },
   { value: "deepseek-pro", label: "Deepseek V4 Pro + Web Search (experimental)" },
   { value: "minimax-m3", label: "MiniMax M3 + Web Search (experimental)" },
 ];

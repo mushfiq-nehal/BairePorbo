@@ -13,7 +13,7 @@ const KNOWN_MODELS: Record<string, string> = {
   "xiaomi/mimo-v2.5-pro": "MiMo V2.5 Pro",
   "mistralai/ministral-3b-2512": "Mistral AI",
   "mistralai/ministral-8b-2410": "Mistral AI",
-  "moonshotai/kimi-k2.6": "Kimi K2",
+  "minimaxai/minimax-m3": "MiniMax M3",
   "google/gemma-4-31b-it": "Gemma 4",
   "google/gemini-2.5-flash": "Gemini 2.5",
   "google/gemini-2.5-flash-lite": "Gemini 2.5 Lite",
@@ -40,6 +40,7 @@ const PROVIDER_BRAND: Record<string, string> = {
   alibaba: "Qwen",
   xiaomi: "MiMo",
   minimax: "MiniMax",
+  minimaxai: "MiniMax",
 };
 
 /**

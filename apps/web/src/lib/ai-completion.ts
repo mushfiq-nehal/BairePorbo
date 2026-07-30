@@ -4,8 +4,8 @@
  * in openrouter.ts; this is for one-shot JSON extraction tasks.
  *
  * Supported model choices:
- *   "nim"          → NVIDIA NIM (NIM_MODEL env, e.g. kimi/gemma)
- *   "kimi"         → NVIDIA NIM, explicitly moonshotai/kimi-k2.6
+ *   "nim"          → NVIDIA NIM (NIM_MODEL env, e.g. minimax/gemma)
+ *   "kimi"         → NVIDIA NIM, explicitly minimaxai/minimax-m3
  *   "deepseek"     → OpenRouter deepseek/deepseek-v4-flash
  *   "mimo"         → OpenRouter xiaomi/mimo-v2.5
  *   "mistral"      → OpenRouter mistralai/ministral-3b-2512
@@ -182,7 +182,7 @@ const callNim = async (
   const models = explicitModel
     ? [explicitModel]
     : [
-        process.env.NIM_MODEL ?? "moonshotai/kimi-k2.6",
+        process.env.NIM_MODEL ?? "minimaxai/minimax-m3",
         process.env.NIM_FALLBACK_MODEL,
       ].filter((m): m is string => Boolean(m));
 
@@ -225,7 +225,7 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
   }
 
   if (model === "kimi") {
-    const { content, model: modelUsed } = await callNim(messages, maxTokens, temperature, "moonshotai/kimi-k2.6");
+    const { content, model: modelUsed } = await callNim(messages, maxTokens, temperature, "minimaxai/minimax-m3");
     logRequest("ai.completion", { provider: "nim", model: modelUsed });
     return { content, modelUsed };
   }
