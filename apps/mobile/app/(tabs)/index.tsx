@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { BookmarkScholarship, ScholarshipListItem } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { isExpired } from "@/lib/deadline";
+import { useRateAppPrompt } from "@/lib/rate-app";
 import { useLang, useT } from "@/i18n";
 import { Txt, Logo } from "@/components/ui";
 import { colors, gradients, shadow, tintFor } from "@/theme";
@@ -35,6 +36,7 @@ export default function Home() {
   const api = useApi();
   const { user } = useUser();
   const { lang, setLang } = useLang();
+  useRateAppPrompt();
 
   const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
   const { data: schData } = useQuery({ queryKey: ["scholarships"], queryFn: () => api.getScholarships() });

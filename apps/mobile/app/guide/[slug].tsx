@@ -7,6 +7,7 @@ import Markdown from "react-native-markdown-display";
 import { useQuery } from "@tanstack/react-query";
 import type { Guide } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { Txt } from "@/components/ui";
 import { colors, fonts } from "@/theme";
@@ -48,6 +49,7 @@ export default function GuideDetail() {
   const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useRateAppEngagement();
 
   // Fetched by slug directly rather than found in the ["guides"] list: that
   // list is CDN-cached for 5 minutes, so a guide published moments ago —

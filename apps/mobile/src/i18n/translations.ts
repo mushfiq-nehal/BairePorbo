@@ -30,6 +30,8 @@ export const translations = {
   },
   "auth.email": { en: "Email", bn: "Email" },
   "auth.password": { en: "Password", bn: "Password" },
+  "auth.showPassword": { en: "Show password", bn: "পাসওয়ার্ড দেখান" },
+  "auth.hidePassword": { en: "Hide password", bn: "পাসওয়ার্ড লুকান" },
   "auth.signIn": { en: "Sign in", bn: "সাইন ইন" },
   "auth.signInFailed": {
     en: "Sign in failed. Check your email and password.",
@@ -292,6 +294,11 @@ export const translations = {
   "profile.myCVs": { en: "My CVs", bn: "আমার CV" },
   "profile.settings": { en: "Settings", bn: "সেটিংস" },
   "profile.notifications": { en: "Notifications", bn: "নোটিফিকেশন" },
+  "profile.rateApp": { en: "Rate this app", bn: "অ্যাপটি রেট করুন" },
+  "profile.rateAppFailed": {
+    en: "Couldn't open the Play Store. Search for BairePorbo there to leave a rating.",
+    bn: "Play Store খোলা যায়নি। রেটিং দিতে সেখানে BairePorbo খুঁজুন।",
+  },
 
   // ── Redesign: Bookmarks ──
   "bookmarks.title": { en: "My bookmarks", bn: "আমার বুকমার্ক" },

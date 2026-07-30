@@ -9,6 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { CVAnalysis, SectionFeedback } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/translations";
 import { Txt, Button } from "@/components/ui";
@@ -102,6 +103,7 @@ export default function CvAnalyze() {
   const [result, setResult] = useState<CVAnalysis | null>(null);
   const [source, setSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useRateAppEngagement();
 
   const onDone = (res: { analysis: CVAnalysis; sourceName: string | null }) => {
     setResult(res.analysis);

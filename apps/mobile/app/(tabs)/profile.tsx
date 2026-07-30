@@ -11,6 +11,7 @@ import { API_BASE } from "@/lib/config";
 import { useLang, useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
 import { unregisterPushNotifications } from "@/lib/notifications";
+import { openStoreListing } from "@/lib/rate-app";
 import { Txt } from "@/components/ui";
 import { colors, gradients, shadow } from "@/theme";
 
@@ -60,6 +61,10 @@ export default function Profile() {
         },
       },
     ]);
+  };
+
+  const onRateApp = async () => {
+    if (!(await openStoreListing())) Alert.alert(t("profile.rateAppFailed"));
   };
 
   const name = dash?.user.name || user?.fullName || t("profile.signedIn");
@@ -142,6 +147,7 @@ export default function Profile() {
             <MenuRow icon="bookmark-outline" label={t("profile.myBookmarks")} onPress={() => router.push("/bookmarks")} />
             <MenuRow icon="document-text-outline" label={t("profile.myCVs")} onPress={() => router.push("/cv")} />
             <MenuRow icon="notifications-outline" label={t("profile.notifications")} onPress={() => router.push("/notifications")} />
+            <MenuRow icon="star-outline" label={t("profile.rateApp")} onPress={onRateApp} />
             <MenuRow icon="globe-outline" label={t("profile.language")} onPress={() => setLang(lang === "en" ? "bn" : "en")} last />
           </View>
 

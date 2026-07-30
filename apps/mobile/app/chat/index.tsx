@@ -10,6 +10,7 @@ import type { ChatMessage } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { consumePendingChatSession } from "@/lib/chat-handoff";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useLang, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/translations";
 import { Txt } from "@/components/ui";
@@ -103,6 +104,7 @@ export default function Chat() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ sessionId?: string }>();
+  useRateAppEngagement();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");

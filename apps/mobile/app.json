@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "app.baireporbo.android",
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=app.baireporbo.android",
       "googleServicesFile": "./android/app/google-services.json",
       "permissions": ["android.permission.POST_NOTIFICATIONS"],
       "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"],

@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
 import type { Guide } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { Txt } from "@/components/ui";
 import { colors, gradients, shadow, tintFor } from "@/theme";
@@ -64,6 +65,7 @@ export default function Guides() {
   const t = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  useRateAppEngagement();
 
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: ["guides"], queryFn: () => api.getGuides() });
   const guides = data?.guides ?? [];

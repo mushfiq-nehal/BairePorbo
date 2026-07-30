@@ -4,11 +4,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 import { useSignUp } from "@clerk/clerk-expo";
 import { useT } from "@/i18n";
-import { Txt, Button, Logo } from "@/components/ui";
+import { Txt, Button, Logo, PasswordInput } from "@/components/ui";
 import { GoogleButton } from "@/components/GoogleButton";
 import { colors } from "@/theme";
 
 const inputClass = "bg-surface border border-sand-200 text-ink-900 rounded-2xl px-4 py-4";
+const passwordShellClass = "flex-row items-center gap-2.5 bg-surface border border-sand-200 rounded-2xl px-4 py-4";
 const inputFont = { fontFamily: "Manrope_400Regular" };
 
 export default function SignUp() {
@@ -84,12 +85,10 @@ export default function SignUp() {
                 value={email}
                 onChangeText={setEmail}
               />
-              <TextInput
-                className={inputClass}
-                style={inputFont}
+              <PasswordInput
+                containerClassName={passwordShellClass}
                 placeholder={t("auth.password")}
                 placeholderTextColor={colors.ink400}
-                secureTextEntry
                 value={password}
                 onChangeText={setPassword}
               />

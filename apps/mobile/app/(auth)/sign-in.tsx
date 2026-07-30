@@ -6,7 +6,7 @@ import { Link, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useSignIn } from "@clerk/clerk-expo";
 import { useLang, useT } from "@/i18n";
-import { Txt, Button, Logo } from "@/components/ui";
+import { Txt, Button, Logo, PasswordInput } from "@/components/ui";
 import { GoogleButton } from "@/components/GoogleButton";
 import { colors, gradients, shadow } from "@/theme";
 
@@ -88,18 +88,15 @@ export default function SignIn() {
                   onChangeText={setEmail}
                 />
               </View>
-              <View style={shadow.sm} className="flex-row items-center gap-2.5 bg-surface border border-sand-200 rounded-2xl px-4 py-3.5">
-                <Ionicons name="lock-closed-outline" size={19} color={colors.ink400} />
-                <TextInput
-                  className="flex-1 text-ink-900 p-0"
-                  style={{ fontFamily: "Manrope_400Regular", fontSize: 15 }}
-                  placeholder={t("auth.password")}
-                  placeholderTextColor={colors.ink400}
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                />
-              </View>
+              <PasswordInput
+                containerStyle={shadow.sm}
+                leadingIcon="lock-closed-outline"
+                style={{ fontSize: 15 }}
+                placeholder={t("auth.password")}
+                placeholderTextColor={colors.ink400}
+                value={password}
+                onChangeText={setPassword}
+              />
 
               {error ? <Txt className="text-coral-700 text-sm">{error}</Txt> : null}
 

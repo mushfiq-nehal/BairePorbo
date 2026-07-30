@@ -9,6 +9,7 @@ import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
 import { isExpired } from "@/lib/deadline";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { Txt, Button, Card } from "@/components/ui";
 import { CoverArt } from "@/components/CoverArt";
 import { colors } from "@/theme";
@@ -82,6 +83,7 @@ export default function ScholarshipDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { has, toggle } = useBookmarks();
+  useRateAppEngagement();
   const [docs, setDocs] = useState<RequiredDocuments | null>(null);
 
   const { data, isLoading, isError } = useQuery({

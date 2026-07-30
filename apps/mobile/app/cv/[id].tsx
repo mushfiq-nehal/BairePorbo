@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CVData, CVTemplateId, EducationEntry, ExperienceEntry, SkillGroup } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
 import { Txt, Button } from "@/components/ui";
@@ -66,6 +67,7 @@ export default function CvEditor() {
   const t = useT();
   const router = useRouter();
   const qc = useQueryClient();
+  useRateAppEngagement();
 
   const { data, isLoading, isError } = useQuery({ queryKey: ["cv", id], queryFn: () => api.getCv(id), enabled: !!id });
 

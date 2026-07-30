@@ -9,6 +9,7 @@ import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
 import { isClosingSoon, isExpired, isRecentlyClosed } from "@/lib/deadline";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { Txt, Button } from "@/components/ui";
 import { CoverArt } from "@/components/CoverArt";
 import { colors, shadow } from "@/theme";
@@ -134,6 +135,7 @@ export default function Scholarships() {
   const [query, setQuery] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [facets, setFacets] = useState<Facets>({ country: new Set(), funding: new Set(), level: new Set() });
+  useRateAppEngagement();
 
   const { data, isLoading, isError, refetch, isRefetching } = useQuery({
     queryKey: ["scholarships"],
