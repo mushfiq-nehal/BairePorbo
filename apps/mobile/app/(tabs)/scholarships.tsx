@@ -20,6 +20,36 @@ function uniqueSorted(values: (string | null)[]): string[] {
   return Array.from(new Set(values.filter((v): v is string => !!v))).sort();
 }
 
+const LEVEL_MAP: Record<string, string> = {
+  bachelors: "Bachelors",
+  masters: "Masters",
+  phd: "PhD",
+  postdoc: "Postdoc",
+  any: "Any",
+};
+
+// Canonical order/subset shown in the Level filter.
+const LEVEL_FILTER_ORDER = ["Any", "Bachelors", "Masters", "PhD"];
+
+// Some records store combined values like "masters | phd" or "masters, phd"
+// instead of a single enum value. Split those into their constituent levels
+// so they can be matched against the (single-value) Level filter options —
+// mirrors the same fix applied on the web app.
+function normalizeLevels(raw: string | null): string[] {
+  if (!raw) return [];
+  const tokens = raw
+    .toLowerCase()
+    .split(/[|,/]|\band\b|\bor\b/i)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  const labels = tokens
+    .map((tok) => LEVEL_MAP[tok])
+    .filter((label): label is string => Boolean(label));
+  if (labels.length) return Array.from(new Set(labels));
+  const fallback = LEVEL_MAP[raw.toLowerCase().trim()] ?? raw;
+  return [fallback];
+}
+
 function ScholarshipCard({
   item,
   closed,
@@ -147,20 +177,25 @@ export default function Scholarships() {
     () => ({
       country: uniqueSorted(all.map((s) => s.country)),
       funding: uniqueSorted(all.map((s) => s.funding_type)),
-      level: uniqueSorted(all.map((s) => s.degree_level)),
+      level: (() => {
+        const present = new Set(all.flatMap((s) => normalizeLevels(s.degree_level)));
+        return LEVEL_FILTER_ORDER.filter((lvl) => present.has(lvl));
+      })(),
     }),
     [all],
   );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return all.filter(
-      (s) =>
+    return all.filter((s) => {
+      const levelLabels = normalizeLevels(s.degree_level);
+      return (
         (facets.country.size === 0 || (s.country && facets.country.has(s.country))) &&
         (facets.funding.size === 0 || (s.funding_type && facets.funding.has(s.funding_type))) &&
-        (facets.level.size === 0 || (s.degree_level && facets.level.has(s.degree_level))) &&
-        (!q || s.title.toLowerCase().includes(q) || (s.country ?? "").toLowerCase().includes(q)),
-    );
+        (facets.level.size === 0 || levelLabels.some((l) => facets.level.has(l))) &&
+        (!q || s.title.toLowerCase().includes(q) || (s.country ?? "").toLowerCase().includes(q))
+      );
+    });
   }, [all, facets, query]);
 
   // Mirror the web's buckets: live = is_live and deadline not passed;
