@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { Txt } from "@/components/ui";
 import { colors, shadow, tintFor } from "@/theme";
 
@@ -25,6 +26,7 @@ export default function Bookmarks() {
   const t = useT();
   const router = useRouter();
   const { toggle } = useBookmarks();
+  useRateAppEngagement();
 
   const { data, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
   const bookmarks = data?.bookmarks ?? [];

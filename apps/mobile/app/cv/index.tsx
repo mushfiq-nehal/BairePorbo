@@ -6,6 +6,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CVTemplateId } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
 import { Txt } from "@/components/ui";
@@ -40,6 +41,7 @@ export default function CvHub() {
   const t = useT();
   const router = useRouter();
   const qc = useQueryClient();
+  useRateAppEngagement();
 
   const { data, isLoading } = useQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
   const cvs = data?.cvs ?? [];

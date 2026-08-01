@@ -11,16 +11,29 @@ import { API_BASE } from "@/lib/config";
 import { useLang, useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
 import { unregisterPushNotifications } from "@/lib/notifications";
-import { openStoreListing } from "@/lib/rate-app";
+import { forceReviewSheet, openStoreListing, rateDebugSummary, useRateAppPrompt } from "@/lib/rate-app";
 import { Txt } from "@/components/ui";
 import { colors, gradients, shadow } from "@/theme";
 
 type MenuIcon = keyof typeof Ionicons.glyphMap;
 
-function MenuRow({ icon, label, onPress, last }: { icon: MenuIcon; label: string; onPress: () => void; last?: boolean }) {
+function MenuRow({
+  icon,
+  label,
+  onPress,
+  onLongPress,
+  last,
+}: {
+  icon: MenuIcon;
+  label: string;
+  onPress: () => void;
+  onLongPress?: () => void;
+  last?: boolean;
+}) {
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       className={`flex-row items-center gap-3 p-4 ${last ? "" : "border-b border-sand-100"}`}
     >
       <Ionicons name={icon} size={20} color={colors.teal600} />
@@ -39,6 +52,7 @@ export default function Profile() {
   const { signOut } = useAuth();
   const { user } = useUser();
   const { count: bookmarkCount } = useBookmarks();
+  useRateAppPrompt();
 
   const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
   const { data: cvs } = useQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
@@ -65,6 +79,20 @@ export default function Profile() {
 
   const onRateApp = async () => {
     if (!(await openStoreListing())) Alert.alert(t("profile.rateAppFailed"));
+  };
+
+  // Hidden long-press: Play never reports whether it showed the review sheet, so
+  // this is how we tell our own gating apart from Play staying silent.
+  const onRateAppDebug = async () => {
+    Alert.alert("Rating diagnostics", await rateDebugSummary(), [
+      { text: t("common.close"), style: "cancel" },
+      {
+        text: "Force sheet",
+        onPress: async () => {
+          if (!(await forceReviewSheet())) Alert.alert("Play review API unavailable on this device.");
+        },
+      },
+    ]);
   };
 
   const name = dash?.user.name || user?.fullName || t("profile.signedIn");
@@ -147,7 +175,7 @@ export default function Profile() {
             <MenuRow icon="bookmark-outline" label={t("profile.myBookmarks")} onPress={() => router.push("/bookmarks")} />
             <MenuRow icon="document-text-outline" label={t("profile.myCVs")} onPress={() => router.push("/cv")} />
             <MenuRow icon="notifications-outline" label={t("profile.notifications")} onPress={() => router.push("/notifications")} />
-            <MenuRow icon="star-outline" label={t("profile.rateApp")} onPress={onRateApp} />
+            <MenuRow icon="star-outline" label={t("profile.rateApp")} onPress={onRateApp} onLongPress={onRateAppDebug} />
             <MenuRow icon="globe-outline" label={t("profile.language")} onPress={() => setLang(lang === "en" ? "bn" : "en")} last />
           </View>
 
