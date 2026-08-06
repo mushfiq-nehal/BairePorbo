@@ -9,6 +9,7 @@ import type { BookmarkScholarship, ScholarshipListItem } from "@baireporbo/share
 import { useApi } from "@/lib/api";
 import { isExpired } from "@/lib/deadline";
 import { useRateAppPrompt } from "@/lib/rate-app";
+import { fill, readinessView, useRoadmap } from "@/lib/roadmap";
 import { useLang, useT } from "@/i18n";
 import { Txt, Logo } from "@/components/ui";
 import { colors, gradients, shadow, tintFor } from "@/theme";
@@ -47,9 +48,16 @@ export default function Home() {
     user?.primaryEmailAddress?.emailAddress?.split("@")[0] ||
     "";
 
-  const readiness = dash?.stats.readiness ?? 0;
-  const missing = (dash?.stats.missingFields ?? []).slice(0, 2).join(", ");
-  const hasUnread = (dash?.stats.newScholarshipsCount ?? 0) > 0 || readiness < 100;
+  // Profile completeness still drives the notification dot, but it is no longer
+  // rendered: the roadmap card owns the one percentage this screen shows.
+  const profileCompleteness = dash?.stats.readiness ?? 0;
+  const hasUnread = (dash?.stats.newScholarshipsCount ?? 0) > 0 || profileCompleteness < 100;
+
+  const { data: roadmap } = useRoadmap();
+  const roadmapView = roadmap ? readinessView(roadmap) : null;
+  const nextStep = roadmap?.next_action
+    ? roadmap.milestones.find((m) => m.key === roadmap.next_action?.key)
+    : undefined;
 
   const closing = dash?.bookmarksClosingSoon ?? [];
   const picks: (BookmarkScholarship | ScholarshipListItem)[] =
@@ -125,16 +133,30 @@ export default function Home() {
 
         {/* Quick actions */}
         <View className="flex-row gap-3 mt-4">
+          {/* The hero above already has a "Browse scholarships" button, so this
+              slot goes to the roadmap — and it carries the only percentage on
+              this screen. */}
           <Pressable
-            onPress={() => router.push("/(tabs)/scholarships")}
+            onPress={() => router.push("/roadmap")}
             style={shadow.sm}
             className="flex-1 bg-surface border border-sand-200 rounded-[18px] p-4"
           >
             <View className="w-10 h-10 rounded-xl bg-teal-100 items-center justify-center mb-3">
-              <Ionicons name="compass" size={22} color={colors.teal600} />
+              <Ionicons name="trail-sign" size={22} color={colors.teal600} />
             </View>
-            <Txt weight="bold" className="text-ink-900 text-sm">{t("home.qaScholar")}</Txt>
-            <Txt className="text-ink-400 text-xs mt-0.5">{t("home.qaScholarSub")}</Txt>
+            <View className="flex-row items-baseline gap-1.5">
+              <Txt weight="bold" className="text-ink-900 text-sm">{t("roadmap.qaTitle")}</Txt>
+              {roadmapView?.kind === "score" ? (
+                <Txt font="display" weight="bold" className="text-teal-600 text-[13px]">
+                  {roadmapView.score}%
+                </Txt>
+              ) : null}
+            </View>
+            <Txt className="text-ink-400 text-xs mt-0.5" numberOfLines={1}>
+              {nextStep
+                ? fill(t("roadmap.nextUpShort"), { title: lang === "bn" ? nextStep.title.bn : nextStep.title.en })
+                : t("roadmap.qaSub")}
+            </Txt>
           </Pressable>
           <Pressable
             onPress={() => router.push("/cv")}
@@ -148,32 +170,6 @@ export default function Home() {
             <Txt className="text-ink-400 text-xs mt-0.5">{t("home.qaCVSub")}</Txt>
           </Pressable>
         </View>
-
-        {/* Profile completeness */}
-        <Pressable
-          onPress={() => router.push("/(tabs)/profile")}
-          className="mt-4 bg-surface border border-sand-200 rounded-[18px] p-4"
-        >
-          <View className="flex-row items-center justify-between">
-            <Txt weight="bold" className="text-ink-400 text-[11px] uppercase" style={{ letterSpacing: 0.8 }}>
-              {t("home.yourProfile")}
-            </Txt>
-            <Txt font="display" weight="bold" className="text-teal-600 text-[15px]">{readiness}%</Txt>
-          </View>
-          <View className="h-2 rounded-full bg-sand-100 mt-2.5 overflow-hidden">
-            <LinearGradient
-              colors={[colors.teal500, colors.coral400]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ height: "100%", width: `${Math.max(readiness, 4)}%`, borderRadius: 999 }}
-            />
-          </View>
-          {missing ? (
-            <Txt className="text-ink-500 text-[12.5px] mt-2.5">
-              {t("home.stillMissing")} <Txt weight="bold" className="text-ink-700 text-[12.5px]">{missing}</Txt>
-            </Txt>
-          ) : null}
-        </Pressable>
 
         {/* For you */}
         <View className="flex-row items-baseline justify-between mt-6 mb-3">

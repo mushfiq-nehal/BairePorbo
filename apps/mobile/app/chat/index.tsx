@@ -9,7 +9,7 @@ import Markdown from "react-native-markdown-display";
 import type { ChatMessage } from "@baireporbo/shared";
 import { ApiError } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
-import { consumePendingChatSession } from "@/lib/chat-handoff";
+import { consumePendingChatPrompt, consumePendingChatSession } from "@/lib/chat-handoff";
 import { useRateAppEngagement } from "@/lib/rate-app";
 import { useLang, useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/translations";
@@ -112,6 +112,9 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // `send` is redefined every render, and the focus effect below must not close
+  // over a stale copy — keep the latest one reachable through a ref.
+  const sendRef = useRef<(text: string, fresh?: boolean) => void>(() => {});
 
   // Hide the disclaimer while typing — screen space is scarce with the
   // keyboard up.
@@ -150,11 +153,14 @@ export default function Chat() {
     if (incoming && incoming !== sessionId) loadSession(incoming);
   }, [params.sessionId, sessionId, loadSession]);
 
-  // The history screen hands its pick over via the mailbox (see chat-handoff).
+  // The history screen hands its pick over via the mailbox (see chat-handoff),
+  // and the roadmap hands over a question to ask straight away.
   useFocusEffect(
     useCallback(() => {
       const pending = consumePendingChatSession();
       if (pending && pending !== sessionId) loadSession(pending);
+      const ask = consumePendingChatPrompt();
+      if (ask) sendRef.current(ask, true);
     }, [sessionId, loadSession]),
   );
 
@@ -166,16 +172,25 @@ export default function Chat() {
     router.setParams({ sessionId: undefined });
   }
 
-  async function send(text: string) {
+  /**
+   * `fresh` starts a new thread rather than appending. The roadmap hands over a
+   * question about one specific step, and threading that onto an unrelated
+   * conversation would give the mentor misleading context.
+   */
+  async function send(text: string, fresh = false) {
     const trimmed = text.trim();
     if (!trimmed || streaming) return;
     setError(null);
     setInput("");
-    const history: ChatMessage[] = [...messages, { role: "user", content: trimmed }];
+    const history: ChatMessage[] = [
+      ...(fresh ? [] : messages),
+      { role: "user", content: trimmed },
+    ];
     setMessages([...history, { role: "assistant", content: "" }]);
     setStreaming(true);
     try {
-      let activeSession = sessionId;
+      let activeSession = fresh ? null : sessionId;
+      if (fresh) setSessionId(null);
       if (!activeSession) {
         const created = await api.createChatSession();
         activeSession = created.session.id;
@@ -211,6 +226,10 @@ export default function Chat() {
       setStreaming(false);
     }
   }
+
+  useEffect(() => {
+    sendRef.current = send;
+  });
 
   const showGreeting = messages.length === 0;
 

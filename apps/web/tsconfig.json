@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@baireporbo/shared": ["../../packages/shared/src/types.ts"]
     }
   },
   "include": [

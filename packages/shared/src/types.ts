@@ -78,6 +78,17 @@ export interface Profile {
   gre_gmat_score: string | null;
   internships: string | null;
   portfolio_url: string | null;
+  // ── Roadmap inputs (Migration 026). Nullable on every existing row. ──
+  target_country: string | null;
+  target_intake_term: string | null;
+  target_intake_year: number | null;
+  english_test_type: string | null;
+  english_test_status: string | null;
+  english_test_date: string | null;
+  /** Allow-listed document statuses, merged at the key level server-side. */
+  docs: Record<string, string | number> | null;
+  /** Set once the roadmap wizard has been completed. */
+  roadmap_onboarded_at: string | null;
   created_at: string | null;
   updated_at: string | null;
 }
@@ -86,7 +97,11 @@ export interface ProfileResponse {
   profile: Profile;
 }
 
-/** Fields accepted by `PUT /api/profile`. All optional. */
+/**
+ * Fields accepted by `PUT /api/profile`. All optional, and the route writes
+ * **only** the keys present in the body — so a client that knows nothing about
+ * the roadmap columns cannot clear them by omission.
+ */
 export type ProfileUpdate = Partial<
   Pick<
     Profile,
@@ -106,7 +121,116 @@ export type ProfileUpdate = Partial<
     | "internships"
     | "portfolio_url"
   >
->;
+> & {
+  // ── Roadmap inputs (Migration 026). All nullable; `null` clears. ──
+  target_country?: string | null;
+  target_intake_term?: string | null;
+  target_intake_year?: number | null;
+  english_test_type?: string | null;
+  english_test_status?: string | null;
+  english_test_date?: string | null;
+  /** Merged at the key level server-side; an explicit `null` per key removes it. */
+  docs?: Record<string, string | number | null> | null;
+  /** `true` stamps the server clock; a string is stored as given. */
+  roadmap_onboarded_at?: string | boolean | null;
+};
+
+// ── Roadmap (auth) ───────────────────────────────────────────────────────────
+
+/**
+ * Wire shapes for `/api/roadmap*`. Hand-written snake_case, matching what the
+ * routes emit: the engine's own types stay inside apps/web, and one `toWire()`
+ * mapper in `GET /api/roadmap` is the only place the two vocabularies meet.
+ */
+export type Bilingual = { en: string; bn: string };
+export type RoadmapFeasibility = "on-track" | "tight" | "not-feasible";
+export type RoadmapNarrationStatus = "pending" | "ready" | "failed";
+export type MilestoneNodeState = "done" | "active" | "locked" | "skipped";
+export type MilestoneStatus = "todo" | "in_progress" | "done" | "skipped";
+
+export interface RoadmapPillar {
+  pillar: string;
+  earned: number;
+  available: number;
+  /** `false` ⇒ not enough is known to score this pillar; it cannot yield a weakness. */
+  known: boolean;
+  detail: Bilingual;
+}
+
+export interface RoadmapNote {
+  key: string;
+  pillar: string;
+  points_at_stake: number;
+  milestone_key: string | null;
+  text: Bilingual;
+}
+
+export type RoadmapAction =
+  | { kind: "cv" }
+  | { kind: "discover"; filters: { country?: string; degree?: string } }
+  | { kind: "mentor"; seed_key: string }
+  | { kind: "guide"; slug: string }
+  | { kind: "form"; section: string };
+
+export interface RoadmapMilestone {
+  key: string;
+  stage: string;
+  title: Bilingual;
+  description: Bilingual;
+  /** Narration when it landed, catalog copy otherwise. Never empty. */
+  why: Bilingual;
+  eta_days: number;
+  due_by: string;
+  priority: number;
+  status: MilestoneStatus;
+  state: MilestoneNodeState;
+  source: "auto" | "manual" | "none";
+  progress: number | null;
+  target_count: number | null;
+  evidence_satisfied: boolean;
+  evidence_label: Bilingual | null;
+  projected_readiness: number | null;
+  projected_gain: number;
+  action: RoadmapAction;
+}
+
+export interface RoadmapResponse {
+  engine_version: number;
+  /** `null` ⇒ not enough known to say. Different from 0. */
+  readiness: number | null;
+  previous_readiness: number | null;
+  previous_engine_version: number | null;
+  confidence: number;
+  highest_weight_unknown: string | null;
+  score_breakdown: { weighting: string; pillars: RoadmapPillar[] };
+  strengths: RoadmapNote[];
+  weaknesses: RoadmapNote[];
+  milestones: RoadmapMilestone[];
+  next_action: {
+    key: string;
+    readiness: number | null;
+    projected_readiness: number | null;
+    projected_gain: number;
+    evidence_label: Bilingual | null;
+  } | null;
+  feasibility: RoadmapFeasibility;
+  country_source: "rules" | "generic";
+  suggested_intake: { term: string; year: number } | null;
+  time_to_intake_days: number | null;
+  mentor: Bilingual;
+  narration_status: RoadmapNarrationStatus;
+  onboarded: boolean;
+}
+
+/** Response from `PATCH /api/roadmap/milestones/[key]`. */
+export interface MilestonePatchResponse {
+  readiness: number | null;
+  /** 0 when the milestone's evidence requirement is unsatisfied. */
+  delta: number;
+  evidence_label: Bilingual | null;
+  unlocked_keys: string[];
+  celebrate: boolean;
+}
 
 // ── Chat ────────────────────────────────────────────────────────────────────
 

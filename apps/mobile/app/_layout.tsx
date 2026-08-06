@@ -103,6 +103,7 @@ function AuthGate() {
       <Stack.Screen name="guide/[slug]" />
       <Stack.Screen name="chat" />
       <Stack.Screen name="cv" />
+      <Stack.Screen name="roadmap" />
       <Stack.Screen name="profile-edit" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="bookmarks" />

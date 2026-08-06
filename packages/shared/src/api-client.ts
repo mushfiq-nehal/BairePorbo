@@ -20,8 +20,11 @@ import type {
   GuideDetailResponse,
   GuidesResponse,
   MetaResponse,
+  MilestonePatchResponse,
+  MilestoneStatus,
   ProfileResponse,
   ProfileUpdate,
+  RoadmapResponse,
   ScholarshipDetailResponse,
   ScholarshipDocumentsResponse,
   ScholarshipsResponse,
@@ -227,6 +230,25 @@ export function createApiClient(config: ApiClientConfig) {
     },
     updateProfile(update: ProfileUpdate) {
       return jsonRequest<ProfileResponse>(`/api/profile`, "PUT", update);
+    },
+
+    // ── Roadmap (auth) ──
+    /** The deterministic roadmap. Always complete, whether or not the AI ran. */
+    getRoadmap() {
+      return request<RoadmapResponse>(`/api/roadmap`);
+    },
+    /** Asks for fresh narration. Returns 200 with `narration_status: 'failed'`
+     *  rather than an error when the model is unreachable. */
+    generateRoadmap() {
+      return jsonRequest<RoadmapResponse>(`/api/roadmap/generate`, "POST", {});
+    },
+    /** A status write. Never moves the readiness score. */
+    updateMilestone(key: string, body: { status?: MilestoneStatus; progress?: number }) {
+      return jsonRequest<MilestonePatchResponse>(
+        `/api/roadmap/milestones/${encodeURIComponent(key)}`,
+        "PATCH",
+        body,
+      );
     },
 
     // ── Chat sessions (auth or anon) ──
