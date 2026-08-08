@@ -55,3 +55,36 @@ export function isRecentlyClosed(d: string | null): boolean {
   const msSince = Date.now() - date.getTime();
   return msSince > 0 && msSince < 90 * 24 * 60 * 60 * 1000;
 }
+
+/**
+ * Sorts scholarships by deadline ascending (soonest first), mirroring the
+ * web app's default "Deadline" sort in scholarships-client.tsx:
+ * open deadlines first (soonest → latest), then no-deadline/unparseable
+ * items, then expired ones — with flagship items pinned to the top within
+ * that order.
+ */
+export function sortByDeadline<T extends { deadline: string | null; is_flagship?: boolean | null }>(
+  list: T[],
+): T[] {
+  const now = Date.now();
+  const bucket = (d: string | null) => {
+    if (!d) return 1;
+    const parsed = parseDeadlineDate(d);
+    if (!parsed) return 1;
+    return parsed.getTime() > now ? 0 : 2;
+  };
+
+  const sorted = [...list].sort((a, b) => {
+    const ba = bucket(a.deadline);
+    const bb = bucket(b.deadline);
+    if (ba !== bb) return ba - bb;
+    const ta = a.deadline ? (parseDeadlineDate(a.deadline)?.getTime() ?? Infinity) : Infinity;
+    const tb = b.deadline ? (parseDeadlineDate(b.deadline)?.getTime() ?? Infinity) : Infinity;
+    return ta - tb;
+  });
+
+  return sorted.sort((a, b) => {
+    if (!!a.is_flagship === !!b.is_flagship) return 0;
+    return a.is_flagship ? -1 : 1;
+  });
+}

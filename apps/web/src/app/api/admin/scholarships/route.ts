@@ -9,7 +9,8 @@ export async function GET() {
 
   const rows = await sql`
     SELECT id, title, country, status, created_at, updated_at,
-           thumbnail_url, degree_level, funding_type, deadline, is_flagship
+           thumbnail_url, degree_level, funding_type, deadline, is_flagship,
+           bangladeshi_eligible
     FROM scholarships
     ORDER BY created_at DESC
   `;
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   const slug = slugBase ? makeSlugUnique(slugBase, existingSlugs) : null;
 
   const rows = await sql`
-    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status, slug, is_live, opening_note)
+    INSERT INTO scholarships (created_by, title, country, degree_level, funding_type, deadline, official_url, raw_description, status, slug, is_live, opening_note, bangladeshi_eligible, bangladeshi_eligibility_note)
     VALUES (
       ${auth.userId},
       ${body.title as string},
@@ -48,7 +49,9 @@ export async function POST(req: NextRequest) {
       'draft',
       ${slug},
       ${(body.is_live as boolean | null) ?? true},
-      ${(body.opening_note as string | null) ?? null}
+      ${(body.opening_note as string | null) ?? null},
+      ${(body.bangladeshi_eligible as boolean | null) ?? true},
+      ${(body.bangladeshi_eligibility_note as string | null) ?? null}
     )
     RETURNING *
   `;

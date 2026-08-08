@@ -16,6 +16,7 @@ type Scholarship = {
   updated_at: string;
   thumbnail_url: string | null;
   is_flagship: boolean;
+  bangladeshi_eligible: boolean | null;
 };
 
 type TelegramModal = {
@@ -250,6 +251,14 @@ export default function AdminScholarshipsPage() {
                 )}
                 {s.is_flagship && (
                   <span title="Flagship" style={{ marginRight: 4, fontSize: 14 }}>⭐</span>
+                )}
+                {s.bangladeshi_eligible === false && (
+                  <span
+                    title="Not applicable for Bangladeshi students"
+                    style={{ marginRight: 4, fontSize: 11, fontWeight: 700, color: "#b91c1c", background: "#fee2e2", padding: "2px 6px", borderRadius: 999 }}
+                  >
+                    🚫 Not BD
+                  </span>
                 )}
                 {s.title}
               </span>

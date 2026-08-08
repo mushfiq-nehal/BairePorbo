@@ -8,7 +8,7 @@ import type { ScholarshipListItem } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
-import { isClosingSoon, isExpired, isRecentlyClosed } from "@/lib/deadline";
+import { isClosingSoon, isExpired, isRecentlyClosed, sortByDeadline } from "@/lib/deadline";
 import { useRateAppEngagement } from "@/lib/rate-app";
 import { Txt, Button } from "@/components/ui";
 import { CoverArt } from "@/components/CoverArt";
@@ -200,9 +200,11 @@ export default function Scholarships() {
 
   // Mirror the web's buckets: live = is_live and deadline not passed;
   // upcoming = is_live false; recently closed = live but expired within ~90d.
-  const open = filtered.filter((s) => s.is_live !== false && !isExpired(s.deadline));
-  const upcoming = filtered.filter((s) => s.is_live === false);
-  const closed = filtered.filter((s) => s.is_live !== false && isRecentlyClosed(s.deadline));
+  // Each bucket is then sorted by deadline (soonest first, flagship pinned
+  // to top), matching the web app's default "Deadline" sort.
+  const open = sortByDeadline(filtered.filter((s) => s.is_live !== false && !isExpired(s.deadline)));
+  const upcoming = sortByDeadline(filtered.filter((s) => s.is_live === false));
+  const closed = sortByDeadline(filtered.filter((s) => s.is_live !== false && isRecentlyClosed(s.deadline)));
   const activeCount = facets.country.size + facets.funding.size + facets.level.size;
 
   function toggle(key: keyof Facets, value: string) {

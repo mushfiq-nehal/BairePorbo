@@ -33,6 +33,8 @@ type ParsedFields = {
   official_url: string;
   raw_description_english: string;
   confidence_note?: string;
+  bangladeshi_eligible?: boolean;
+  bangladeshi_eligibility_note?: string;
 };
 
 type ModelChoice = "deepseek" | "mistral" | "nim" | "kimi";
@@ -61,7 +63,12 @@ export default function NewScholarshipPage() {
     title: "", country: "", degree_level: "masters", funding_type: "full",
     deadline: "", official_url: "", raw_description: "",
     is_live: true, opening_note: "",
+    bangladeshi_eligible: true as boolean | null,
+    bangladeshi_eligibility_note: "",
   });
+  // Admin has explicitly acknowledged the "not applicable for Bangladeshi
+  // student" warning and wants to save anyway.
+  const [bdOverride, setBdOverride] = useState(false);
 
   // Step 2 state
   const [scholarshipId, setScholarshipId] = useState<string | null>(null);
@@ -125,7 +132,7 @@ export default function NewScholarshipPage() {
   // ── Parse raw text with AI ────────────────────────────────────────────────
   const parseWithAI = async () => {
     if (!rawInput.trim()) { setError("Please paste some scholarship text first."); return; }
-    setError(null); setParsing(true); setParseMeta(null);
+    setError(null); setParsing(true); setParseMeta(null); setBdOverride(false);
     try {
       const res = await fetch("/api/admin/scholarships/parse", {
         method: "POST",
@@ -146,6 +153,8 @@ export default function NewScholarshipPage() {
         deadline: p.deadline ?? "",
         official_url: p.official_url ?? "",
         raw_description: p.raw_description_english ?? rawInput,
+        bangladeshi_eligible: p.bangladeshi_eligible ?? true,
+        bangladeshi_eligibility_note: p.bangladeshi_eligibility_note ?? "",
       }));
       // Auto-check for duplicates after parsing
       if (p.title) {
@@ -342,6 +351,36 @@ export default function NewScholarshipPage() {
                   ✓ Fields auto-filled — review and edit if needed
                 </div>
               )}
+
+              {/* Bangladeshi-eligibility warning */}
+              {parsed && form.bangladeshi_eligible === false && (
+                <div className={dupStyles.dupPanel} data-severity="exact">
+                  <div className={dupStyles.dupHeader}>
+                    <span className={dupStyles.dupIcon}>🚫</span>
+                    <div>
+                      <strong className={dupStyles.dupTitle}>Not applicable for Bangladeshi students</strong>
+                      <p className={dupStyles.dupSubtitle}>
+                        {form.bangladeshi_eligibility_note || "This scholarship appears to exclude Bangladeshi nationals based on a nationality/citizenship restriction."}
+                      </p>
+                    </div>
+                  </div>
+                  <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "var(--ink-700, #2c3e50)", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={bdOverride}
+                      onChange={(e) => setBdOverride(e.target.checked)}
+                      style={{ marginTop: 2, accentColor: "#c0392b" }}
+                    />
+                    I&apos;ve verified this manually and want to add it anyway (e.g. the AI got it wrong)
+                  </label>
+                </div>
+              )}
+              {parsed && form.bangladeshi_eligible === true && form.bangladeshi_eligibility_note && (
+                <div className={styles.confidenceNote}>
+                  ✓ Open to Bangladeshi students — {form.bangladeshi_eligibility_note}
+                </div>
+              )}
+
               <div className={styles.fieldGrid}>
                 <div className={styles.field}>
                   <label>Title *</label>
@@ -501,7 +540,16 @@ export default function NewScholarshipPage() {
             {!parsed && !form.title && (
               <p className={styles.parsePrompt}>← Paste text above and click <strong>Parse with AI</strong> to auto-fill fields, or fill them manually.</p>
             )}
-            <button type="submit" className={styles.primaryBtn} disabled={loading || !form.title || !form.country}>
+            {form.bangladeshi_eligible === false && !bdOverride && (
+              <p className={styles.parsePrompt} style={{ color: "#c0392b" }}>
+                Not applicable for Bangladeshi students — tick the box above to save anyway.
+              </p>
+            )}
+            <button
+              type="submit"
+              className={styles.primaryBtn}
+              disabled={loading || !form.title || !form.country || (form.bangladeshi_eligible === false && !bdOverride)}
+            >
               {loading ? "Saving…" : "Save & continue →"}
             </button>
           </div>

@@ -39,6 +39,7 @@ export async function PATCH(
     "ai_summary", "eligibility_summary", "competitiveness", "tips",
     "tags", "thumbnail_url", "thumbnail_prompt",
     "is_live", "opening_note",
+    "bangladeshi_eligible", "bangladeshi_eligibility_note",
   ];
 
   const updates = Object.fromEntries(
@@ -56,7 +57,7 @@ export async function PATCH(
   const setClauses = keys
     .map((key, i) => {
       if (key === "tags") return `${key} = $${i + 2}::jsonb`;
-      if (key === "is_flagship" || key === "is_live") return `${key} = $${i + 2}::boolean`;
+      if (key === "is_flagship" || key === "is_live" || key === "bangladeshi_eligible") return `${key} = $${i + 2}::boolean`;
       return `${key} = $${i + 2}`;
     })
     .join(", ");

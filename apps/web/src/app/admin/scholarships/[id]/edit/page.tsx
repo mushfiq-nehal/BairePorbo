@@ -15,6 +15,8 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
     is_flagship: false as boolean,
     is_live: true as boolean,
     opening_note: "",
+    bangladeshi_eligible: true as boolean,
+    bangladeshi_eligibility_note: "",
   });
 
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -49,6 +51,8 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
             is_flagship: s.is_flagship ?? false,
             is_live: s.is_live ?? true,
             opening_note: s.opening_note ?? "",
+            bangladeshi_eligible: s.bangladeshi_eligible ?? true,
+            bangladeshi_eligibility_note: s.bangladeshi_eligibility_note ?? "",
           });
           setOriginalThumbnail(s.thumbnail_url);
         }
@@ -146,6 +150,36 @@ export default function EditScholarshipPage({ params }: { params: Promise<{ id: 
           <label htmlFor="is_flagship" style={{ cursor: "pointer", fontWeight: 600, fontSize: 14, color: form.is_flagship ? "var(--amber-700, #b45309)" : "var(--ink-700)" }}>
             ⭐ Mark as Flagship (pinned to top of public list)
           </label>
+        </div>
+
+        {/* Bangladeshi eligibility toggle */}
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16, padding: "12px 16px", background: !form.bangladeshi_eligible ? "#fff1f1" : "var(--sand-100, #f5f4f0)", border: `1.5px solid ${!form.bangladeshi_eligible ? "#f87171" : "var(--sand-200, #e8e5dc)"}`, borderRadius: 10 }}>
+          <input
+            type="checkbox"
+            id="bd_eligible"
+            checked={form.bangladeshi_eligible}
+            onChange={(e) => setBool("bangladeshi_eligible", e.target.checked)}
+            style={{ width: 18, height: 18, accentColor: "#0f8f8d", cursor: "pointer", flexShrink: 0, marginTop: 2 }}
+          />
+          <div>
+            <label htmlFor="bd_eligible" style={{ cursor: "pointer", fontWeight: 600, fontSize: 14, color: !form.bangladeshi_eligible ? "#b91c1c" : "var(--ink-700)", display: "block" }}>
+              🇧🇩 Bangladeshi students can apply
+            </label>
+            {!form.bangladeshi_eligible && (
+              <p style={{ fontSize: 12.5, color: "#b91c1c", margin: "4px 0 0" }}>
+                Unchecked — this scholarship is marked as not applicable for Bangladeshi students.
+              </p>
+            )}
+          </div>
+        </div>
+        <div className={styles.field} style={{ marginBottom: 24 }}>
+          <label>Eligibility note (why / why not applicable for Bangladeshi students)</label>
+          <input
+            type="text"
+            value={form.bangladeshi_eligibility_note}
+            onChange={(e) => set("bangladeshi_eligibility_note", e.target.value)}
+            placeholder="e.g. Restricted to EU/EEA citizens; Bangladesh not included."
+          />
         </div>
 
         {/* Application status selector */}

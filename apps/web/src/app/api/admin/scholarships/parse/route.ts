@@ -23,6 +23,29 @@ CRITICAL ACCURACY RULES:
   the scraped text. If none is given, set it to null.
 - Prefer leaving a field null over guessing. An admin will review everything.
 
+ELIGIBILITY CHECK FOR BANGLADESHI STUDENTS (important):
+This site serves Bangladeshi students exclusively, so you must also determine
+whether a student holding Bangladeshi nationality/citizenship could apply.
+- Set "bangladeshi_eligible" to false ONLY if the source text or your solid
+  knowledge shows an explicit nationality/citizenship/residency restriction
+  that would exclude Bangladeshi nationals — e.g. "open to EU/EEA citizens
+  only", "US citizens and permanent residents only", "for nationals of
+  ASEAN member states", "open only to Indian nationals", scholarships
+  restricted to a specific country's own citizens (that isn't Bangladesh),
+  or a country-specific quota list that does not include Bangladesh.
+- Do NOT set it to false just because the scholarship is hosted in a
+  particular country, is highly competitive, or has no explicit nationality
+  clause — most international scholarships (Chevening, Fulbright, DAAD,
+  Commonwealth, Erasmus Mundus, Australia Awards, etc.) are open to
+  Bangladeshi applicants, and "open to developing/Commonwealth countries" or
+  "open to international students" always includes Bangladesh.
+- If nationality eligibility is not mentioned or is ambiguous, default to
+  true (do not guess a restriction that isn't clearly stated).
+- "bangladeshi_eligibility_note" must be one short sentence explaining the
+  determination (e.g. "No nationality restriction found — open to
+  international applicants." or "Restricted to citizens of EU/EEA member
+  states; Bangladesh is not included.").
+
 Respond with ONLY valid JSON, no markdown, no explanation.
 
 Required JSON shape:
@@ -34,7 +57,9 @@ Required JSON shape:
   "deadline": "Deadline as text (e.g., '31 August 2026', 'Rolling') or null",
   "official_url": "URL string or null",
   "raw_description_english": "A clear English description with all key details",
-  "confidence_note": "1 short sentence on which fields came from knowledge vs source"
+  "confidence_note": "1 short sentence on which fields came from knowledge vs source",
+  "bangladeshi_eligible": true or false,
+  "bangladeshi_eligibility_note": "1 short sentence explaining the determination"
 }`;
 
 const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "deepseek-pro", "minimax-m3"];
@@ -116,6 +141,13 @@ export async function POST(req: NextRequest) {
     parsed = parseJsonFromCompletion(content);
   } catch {
     return NextResponse.json({ error: "AI returned invalid JSON", raw: content }, { status: 422 });
+  }
+
+  // Default to eligible when the model omits the field or returns something
+  // other than a boolean — we'd rather the admin double-check a borderline
+  // case manually than have a missing field silently hide a warning.
+  if (typeof parsed.bangladeshi_eligible !== "boolean") {
+    parsed.bangladeshi_eligible = true;
   }
 
   return NextResponse.json({ parsed, meta: { modelUsed, scrape: scrapeInfo } });
