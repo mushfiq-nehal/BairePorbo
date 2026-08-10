@@ -43,6 +43,21 @@ export default function SharedFooter() {
           >
             {t("footer.cookieSettings")}
           </button>
+          <a
+            href="https://play.google.com/store/apps/details?id=app.baireporbo.android&pcampaignid=web_share"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.footerPlayBadge}
+            aria-label="Get BairePorbo on Google Play"
+          >
+            <Image
+              src="/google-play-badge-logo-svgrepo-com.svg"
+              alt="Get it on Google Play"
+              width={135}
+              height={40}
+              className={styles.footerPlayBadgeImg}
+            />
+          </a>
         </div>
 
         <div className={styles.footerColumns}>
