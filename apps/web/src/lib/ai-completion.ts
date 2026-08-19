@@ -11,6 +11,9 @@
  *   "mistral"      → OpenRouter mistralai/ministral-3b-2512
  *   "deepseek-pro" → OpenRouter deepseek/deepseek-v4-pro (+ web search plugin)
  *   "minimax-m3"   → OpenRouter minimax/minimax-m3 (+ web search plugin)
+ *   "gemini-flash" → OpenRouter google/gemini-3.7-flash
+ *   "glm"          → OpenRouter z-ai/glm-5.2
+ *   "gpt4o-mini"   → OpenRouter openai/gpt-4o-mini
  */
 
 import { logRequest } from "@/lib/nim";
@@ -74,6 +77,9 @@ const resolveOpenRouterModel = (choice: ModelChoice): string => {
   if (choice === "deepseek-pro") return "deepseek/deepseek-v4-pro";
   if (choice === "minimax-m3") return "minimax/minimax-m3";
   if (choice === "mimo") return "xiaomi/mimo-v2.5";
+  if (choice === "gemini-flash") return "google/gemini-3.7-flash";
+  if (choice === "glm") return "z-ai/glm-5.2";
+  if (choice === "gpt4o-mini") return "openai/gpt-4o-mini";
   // Pinned rather than read from OPENROUTER_FALLBACK_MODEL: that env now points
   // at MiMo, and an admin picking "Mistral AI" in the dropdown should get
   // Mistral. Pick "mimo" explicitly for MiMo.

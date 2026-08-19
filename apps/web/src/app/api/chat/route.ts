@@ -39,6 +39,33 @@ const MAX_HISTORY = 12;
 // that's ample in English truncates Bangla replies mid-answer.
 const MAX_OUTPUT_TOKENS = 4096;
 
+// If the upstream goes silent mid-stream (connection stays open but no token
+// arrives) for this long, give up rather than leaving the user staring at a
+// frozen reply with no explanation. Chat never disables reasoning (unlike
+// cv-analyze), and these OpenRouter models can spend 15-35s on invisible
+// "thinking" tokens before the first visible content delta — this must stay
+// safely above that or it will fire on perfectly healthy replies.
+const STREAM_STALL_MS = 45_000;
+// Hard ceiling on total generation time. Production has already logged
+// legitimate 200 OK replies taking up to ~165s, so this is set well above
+// that observed ceiling — it exists only to bound a truly pathological run,
+// not to police normal slow replies. Whatever was already streamed is kept.
+const STREAM_MAX_MS = 180_000;
+
+class StreamStallError extends Error {}
+
+/** Races a single `reader.read()` against a stall timeout that resets every chunk. */
+function readWithTimeout<T>(
+  reader: ReadableStreamDefaultReader<T>,
+  timeoutMs: number,
+): Promise<ReadableStreamReadResult<T>> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new StreamStallError("stream stalled")), timeoutMs);
+  });
+  return Promise.race([reader.read(), timeout]).finally(() => clearTimeout(timer));
+}
+
 type RateLimitErrorBody = {
   error: string;
   scope: "hourly" | "daily" | "global";
@@ -281,10 +308,27 @@ export async function POST(req: NextRequest) {
       const reader = upstreamStream.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
+      const streamStartedAt = Date.now();
+      let stoppedEarly: "stalled" | "max_duration" | null = null;
 
       try {
         while (true) {
-          const { done, value } = await reader.read();
+          if (Date.now() - streamStartedAt > STREAM_MAX_MS) {
+            stoppedEarly = "max_duration";
+            break;
+          }
+
+          let read: ReadableStreamReadResult<Uint8Array>;
+          try {
+            read = await readWithTimeout(reader, STREAM_STALL_MS);
+          } catch (err) {
+            if (err instanceof StreamStallError) {
+              stoppedEarly = "stalled";
+              break;
+            }
+            throw err;
+          }
+          const { done, value } = read;
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
@@ -312,6 +356,21 @@ export async function POST(req: NextRequest) {
               );
             }
           }
+        }
+
+        if (stoppedEarly) {
+          reader.cancel().catch(() => {});
+          logRequest(stoppedEarly === "stalled" ? "chat.stream.stalled" : "chat.stream.max_duration", {
+            ip,
+            model: upstreamModel,
+          });
+          const message = fullAssistantContent
+            ? "\n\n_The mentor's response was cut short — please try again if it looks incomplete._"
+            : "The mentor stopped responding. Please try again.";
+          fullAssistantContent += message;
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ token: message })}\n\n`),
+          );
         }
 
         if (sessionId && fullAssistantContent) {

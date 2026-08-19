@@ -18,9 +18,18 @@ type OpenRouterFetchResult = {
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+// Bounds only the wait for OpenRouter to *start* responding (headers/first
+// byte) — cleared as soon as `fetch()` resolves, so it never cuts off an
+// already-streaming reply. If the primary model hasn't even begun answering
+// within this window, it's faster to fail over than to keep waiting.
+const CONNECT_TIMEOUT_MS = 15_000;
+
 const getOpenRouterModels = () => {
   const primary = process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-  const fallback = process.env.OPENROUTER_FALLBACK_MODEL ?? "xiaomi/mimo-v2.5";
+  // Gemini Flash is fast, cheap and on entirely different infra than the
+  // deepseek primary, so a deepseek-side slow spell doesn't take the fallback
+  // down with it.
+  const fallback = process.env.OPENROUTER_FALLBACK_MODEL ?? "google/gemini-3.7-flash";
   const models = [primary, fallback].filter((value): value is string => Boolean(value));
   return Array.from(new Set(models));
 };
@@ -57,12 +66,16 @@ export const fetchOpenRouterChatWithFallback = async (
 
   for (const model of models) {
     const requestBody: OpenRouterPayload = { ...payload, model };
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), CONNECT_TIMEOUT_MS);
     try {
       const response = await fetch(OPENROUTER_URL, {
         method: "POST",
         headers: buildHeaders(options.apiKey, options.accept),
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       });
+      clearTimeout(timer);
 
       if (!response.ok) {
         const text = await response.text();
@@ -76,10 +89,15 @@ export const fetchOpenRouterChatWithFallback = async (
 
       return { response, model };
     } catch (error) {
-      lastError = new Error(
-        `OpenRouter network error for ${model}: ${String(error)}`,
-      );
-      logRequest("openrouter.network_error", { model, error: String(error) });
+      clearTimeout(timer);
+      const timedOut = error instanceof Error && error.name === "AbortError";
+      lastError = timedOut
+        ? new Error(`OpenRouter request to ${model} did not respond within ${CONNECT_TIMEOUT_MS}ms`)
+        : new Error(`OpenRouter network error for ${model}: ${String(error)}`);
+      logRequest(timedOut ? "openrouter.connect_timeout" : "openrouter.network_error", {
+        model,
+        error: String(error),
+      });
     }
   }
 

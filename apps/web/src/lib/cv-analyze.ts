@@ -1,9 +1,8 @@
 /**
  * AI-powered academic CV analysis.
  *
- * Uses OpenRouter's `deepseek/deepseek-v4-pro` in JSON mode with reasoning
- * disabled, falling back to `deepseek/deepseek-v4-flash` if that is slow or
- * returns unusable JSON, to review an uploaded CV and return structured,
+ * Uses OpenRouter's `deepseek/deepseek-v4-pro` and `z-ai/glm-5.2` in JSON mode
+ * with reasoning disabled, to review an uploaded CV and return structured,
  * actionable feedback. The result is designed to gently push students toward
  * building a fresh, well-structured CV with our builder.
  */
@@ -117,22 +116,63 @@ function parseAnalysis(content: string, modelUsed: string): Record<string, unkno
 }
 
 /**
- * Tried in order. deepseek-v4-pro gives the best critique but its latency is
- * erratic — measured runs on the same prompt ranged from 26s to over 40s — and
- * one slow response is a user-visible failure. deepseek-v4-flash is the safety
- * net: same family, noticeably faster, and a third of the price.
+ * deepseek-v4-pro gives the best critique but its latency is erratic —
+ * measured runs on the same prompt ranged from 26s to over 40s. Running it
+ * one-at-a-time before falling back used to mean a slow spell cost 24s + 20s
+ * = 44s before the student saw anything.
  *
- * The timeouts have to fit *both* attempts plus PDF extraction, auth and the
- * insert inside the route's maxDuration=60, hence 24s + 20s rather than one
- * long window. Anything slower than that isn't usable here anyway.
- *
- * (xiaomi/mimo-v2.5 was tried as primary and was far worse for this task:
- * 90-180s to emit this much structured JSON, invalid JSON in ~half the runs.)
+ * These two are raced concurrently instead: whichever returns usable JSON
+ * first wins, and total wall time is bounded by the *slower* timeout (~22s)
+ * rather than their sum. glm-5.2 — not deepseek-v4-flash — is the race
+ * partner on purpose: flash is noticeably worse at this specific task (this
+ * prompt asks for a lot of structured, opinionated critique, and flash-tier
+ * models tend to either shortcut it or emit invalid JSON under that load), so
+ * racing it against pro would let a weaker result win just by finishing
+ * first. glm-5.2 is full-size, comparable quality, and — being a different
+ * vendor entirely — also fails independently of an OpenRouter/deepseek-side
+ * outage, which is the failure mode actually observed in production.
  */
-const ATTEMPTS: { model: ModelChoice; timeoutMs: number }[] = [
-  { model: "deepseek-pro", timeoutMs: 24_000 },
-  { model: "deepseek", timeoutMs: 20_000 },
+const RACE_ATTEMPTS: { model: ModelChoice; timeoutMs: number }[] = [
+  { model: "deepseek-pro", timeoutMs: 22_000 },
+  { model: "glm", timeoutMs: 18_000 },
 ];
+
+/**
+ * Only reached when *both* raced attempts fail — almost always a genuine
+ * OpenRouter/deepseek outage rather than one model being unlucky. gpt-4o-mini
+ * sits on entirely different infra and is well tested at sticking to a strict
+ * JSON schema, so it's a real safety net rather than another shot at the same
+ * failure. 16s keeps the worst case (22s race + 16s fallback ≈ 38s) well
+ * inside the route's maxDuration=60, leaving headroom for PDF extraction,
+ * auth and the DB insert.
+ */
+const FALLBACK_ATTEMPT: { model: ModelChoice; timeoutMs: number } = {
+  model: "gpt4o-mini",
+  timeoutMs: 16_000,
+};
+
+async function runAttempt(
+  attempt: { model: ModelChoice; timeoutMs: number },
+  trimmed: string,
+): Promise<{ analysis: CVAnalysis; modelUsed: string }> {
+  const { content, modelUsed } = await fetchCompletion({
+    model: attempt.model,
+    system: SYSTEM_PROMPT,
+    user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
+    // Reasoning stays off. These are reasoning-capable models that otherwise
+    // spend 15-35s on invisible thinking tokens before answering, and those
+    // tokens also eat the maxTokens budget, truncating the JSON. Reasoning
+    // adds little to structured extraction. 4000 is ample.
+    maxTokens: 4000,
+    temperature: 0.3,
+    timeoutMs: attempt.timeoutMs,
+    reasoning: { enabled: false },
+    // Provider-enforced valid JSON. Without it models intermittently emit
+    // *almost*-valid JSON that no lenient client-side parse can recover.
+    json: true,
+  });
+  return { analysis: normalizeAnalysis(parseAnalysis(content, modelUsed)), modelUsed };
+}
 
 /** Analyse extracted CV text and return structured feedback. */
 export async function analyzeCVText(
@@ -140,34 +180,24 @@ export async function analyzeCVText(
 ): Promise<{ analysis: CVAnalysis; modelUsed: string }> {
   const trimmed = cvText.slice(0, 16000); // keep prompt within budget
 
-  let lastError: Error = new Error("CV analysis was not attempted");
-
-  for (const attempt of ATTEMPTS) {
-    try {
-      const { content, modelUsed } = await fetchCompletion({
-        model: attempt.model,
-        system: SYSTEM_PROMPT,
-        user: `Here is the extracted text of the CV to analyse:\n\n"""\n${trimmed}\n"""`,
-        // Reasoning stays off. Both models here are reasoning models that
-        // otherwise spend 15-35s on invisible thinking tokens before answering,
-        // and those tokens also eat the maxTokens budget, truncating the JSON.
-        // Reasoning adds little to structured extraction. 4000 is ample.
-        maxTokens: 4000,
-        temperature: 0.3,
-        timeoutMs: attempt.timeoutMs,
-        reasoning: { enabled: false },
-        // Provider-enforced valid JSON. Without it models intermittently emit
-        // *almost*-valid JSON that no lenient client-side parse can recover.
-        json: true,
-      });
-      return { analysis: normalizeAnalysis(parseAnalysis(content, modelUsed)), modelUsed };
-    } catch (err) {
-      // Timeout, upstream error, or unparseable JSON — all are worth retrying
-      // on the next model rather than making the student upload again.
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.warn(`CV analysis attempt with ${attempt.model} failed:`, lastError.message);
+  try {
+    return await Promise.any(RACE_ATTEMPTS.map((attempt) => runAttempt(attempt, trimmed)));
+  } catch (raceError) {
+    // Promise.any only throws once every entry has rejected — log each reason
+    // (timeout, upstream error, or unparseable JSON) before trying the
+    // cross-provider fallback.
+    const reasons = raceError instanceof AggregateError ? raceError.errors : [raceError];
+    for (const reason of reasons) {
+      const err = reason instanceof Error ? reason : new Error(String(reason));
+      console.warn("CV analysis race attempt failed:", err.message);
     }
   }
 
-  throw lastError;
+  try {
+    return await runAttempt(FALLBACK_ATTEMPT, trimmed);
+  } catch (err) {
+    const lastError = err instanceof Error ? err : new Error(String(err));
+    console.warn(`CV analysis fallback attempt with ${FALLBACK_ATTEMPT.model} failed:`, lastError.message);
+    throw lastError;
+  }
 }

@@ -11,7 +11,10 @@ export type ModelChoice =
   | "mistral"
   | "mimo"
   | "deepseek-pro"
-  | "minimax-m3";
+  | "minimax-m3"
+  | "gemini-flash"
+  | "glm"
+  | "gpt4o-mini";
 
 export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
   { value: "deepseek", label: "Deepseek V4 (best quality)" },
@@ -21,6 +24,9 @@ export const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
   { value: "kimi", label: "MiniMax M3 (NIM)" },
   { value: "deepseek-pro", label: "Deepseek V4 Pro + Web Search (experimental)" },
   { value: "minimax-m3", label: "MiniMax M3 + Web Search (experimental)" },
+  { value: "gemini-flash", label: "Gemini 3.7 Flash (fast, cheap)" },
+  { value: "glm", label: "GLM 5.2 (fast, cheap)" },
+  { value: "gpt4o-mini", label: "GPT-4o mini (fast, reliable JSON)" },
 ];
 
 /** Models that support OpenRouter's web-search grounding plugin. */
