@@ -276,6 +276,12 @@ export async function POST(req: NextRequest) {
     temperature: 0.7,
     top_p: 0.95,
     stream: true,
+    // Unlike cv-analyze, this used to be left on, which let these models spend
+    // 15-35s (sometimes much more, per production logs) on invisible thinking
+    // tokens before the first visible reply — the single biggest lever on
+    // perceived chat latency. A mentor Q&A doesn't need deep multi-step
+    // reasoning the way structured CV extraction does, so speed wins here.
+    reasoning: { enabled: false },
   };
 
   let upstreamRes: Response;

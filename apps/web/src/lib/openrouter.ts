@@ -9,6 +9,7 @@ type OpenRouterPayload = {
   temperature?: number;
   top_p?: number;
   stream?: boolean;
+  reasoning?: { enabled?: boolean; effort?: string; exclude?: boolean };
 };
 
 type OpenRouterFetchResult = {
