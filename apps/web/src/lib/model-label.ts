@@ -15,6 +15,7 @@ const KNOWN_MODELS: Record<string, string> = {
   "mistralai/ministral-8b-2410": "Mistral AI",
   "minimaxai/minimax-m3": "MiniMax M3",
   "google/gemma-4-31b-it": "Gemma 4",
+  "google/gemini-3.7-flash": "Gemini 3.7",
   "google/gemini-2.5-flash": "Gemini 2.5",
   "google/gemini-2.5-flash-lite": "Gemini 2.5 Lite",
   "meta-llama/llama-3.3-70b-instruct": "Llama 3.3",

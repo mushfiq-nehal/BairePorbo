@@ -62,7 +62,7 @@ Required JSON shape:
   "bangladeshi_eligibility_note": "1 short sentence explaining the determination"
 }`;
 
-const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "deepseek-pro", "minimax-m3"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "deepseek-pro", "minimax-m3", "gemini-flash"];
 
 const extractUrl = (text: string): string | null => {
   const match = text.match(/https?:\/\/[^\s"'<>)）]+/i);

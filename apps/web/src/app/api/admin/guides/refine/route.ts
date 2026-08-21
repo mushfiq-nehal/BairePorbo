@@ -4,7 +4,7 @@ import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
 
-const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "gemini-flash"];
 
 const GUIDE_REFINE_SYSTEM = `You are an expert content editor for BairePorbo, a study-abroad guidance platform for Bangladeshi students.
 

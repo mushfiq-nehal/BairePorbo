@@ -3,7 +3,7 @@ import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, type ModelChoice } from "@/lib/ai-completion";
 
-const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral"];
+const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "gemini-flash"];
 
 const THUMBNAIL_PROMPT_SYSTEM = `You are an art director who writes prompts for AI image generators (DALL·E, Midjourney, Stable Diffusion).
 

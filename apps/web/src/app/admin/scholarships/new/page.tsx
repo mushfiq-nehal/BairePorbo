@@ -37,12 +37,13 @@ type ParsedFields = {
   bangladeshi_eligibility_note?: string;
 };
 
-type ModelChoice = "deepseek" | "mistral" | "nim" | "kimi";
+type ModelChoice = "deepseek" | "mistral" | "nim" | "kimi" | "gemini-flash";
 const MODEL_OPTIONS: { value: ModelChoice; label: string }[] = [
   { value: "deepseek", label: "Deepseek V4 (best quality)" },
   { value: "mistral", label: "Mistral AI (fast, cheap)" },
   { value: "nim", label: "NVIDIA NIM (env model)" },
   { value: "kimi", label: "MiniMax M3 (NIM)" },
+  { value: "gemini-flash", label: "Gemini 3.7 Flash (fast, cheap)" },
 ];
 
 export default function NewScholarshipPage() {
