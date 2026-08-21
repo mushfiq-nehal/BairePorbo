@@ -78,6 +78,10 @@ export default function AdminDashboard() {
           <span className={styles.linkIcon}>💬</span>
           <span>AI Mentor Chat</span>
         </Link>
+        <Link href="/admin/push" className={styles.linkCard} style={{ borderColor: "rgba(15, 143, 141, 0.35)" }}>
+          <span className={styles.linkIcon}>📣</span>
+          <span>Send Announcement</span>
+        </Link>
       </div>
     </div>
   );
