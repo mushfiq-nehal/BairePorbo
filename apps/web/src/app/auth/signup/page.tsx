@@ -152,9 +152,11 @@ export default function SignupPage() {
         setError("Authentication not ready. Please refresh and try again.");
         return;
       }
+      const callbackUrl = new URL("/auth/callback", window.location.origin);
+      callbackUrl.searchParams.set("next", "/dashboard");
       await clerkInstance.client.signIn.authenticateWithRedirect({
         strategy: "oauth_google",
-        redirectUrl: `${window.location.origin}/auth/callback`,
+        redirectUrl: callbackUrl.toString(),
         redirectUrlComplete: "/dashboard",
       });
     } catch (err: unknown) {

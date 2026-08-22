@@ -144,6 +144,10 @@ export const translations = {
   "login.noAccount": { en: "Don't have an account?", bn: "একাউন্ট নেই?" },
   "login.createOne": { en: "Create one", bn: "তৈরি করুন" },
 
+  // ── Auth — OAuth callback ─────────────────────────────────────────────────
+  "callback.heading": { en: "Signing you in…", bn: "সাইন ইন করা হচ্ছে…" },
+  "callback.sub": { en: "Hang tight while we finish setting up your account.", bn: "আপনার একাউন্ট প্রস্তুত করা হচ্ছে, একটু অপেক্ষা করুন।" },
+
   // ── Auth — Signup ─────────────────────────────────────────────────────────
   "signup.heading": { en: "Create your account", bn: "আপনার একাউন্ট তৈরি করুন" },
   "signup.sub": { en: "Free for students. AI-powered scholarship guidance.", bn: "শিক্ষার্থীদের জন্য বিনামূল্যে। AI-চালিত scholarship গাইডেন্স।" },
