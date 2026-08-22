@@ -4,9 +4,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
 import type { RoadmapMilestone, RoadmapNote } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useLang, useT } from "@/i18n";
 import { Txt } from "@/components/ui";
 import { colors, shadow } from "@/theme";
@@ -618,7 +619,7 @@ export default function RoadmapScreen() {
   const router = useRouter();
   const api = useApi();
   const { data, isLoading, isError, refetch, groups } = useJourney();
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isPending: profileLoading } = useSignedInQuery({
     queryKey: ["profile"],
     queryFn: () => api.getProfile(),
   });

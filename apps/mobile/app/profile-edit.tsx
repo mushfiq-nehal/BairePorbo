@@ -3,9 +3,10 @@ import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, ActivityI
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Profile, ProfileUpdate } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useT } from "@/i18n";
 import type { TranslationKey } from "@/i18n/translations";
 import { Txt, Button } from "@/components/ui";
@@ -68,7 +69,7 @@ export default function ProfileEdit() {
   const [form, setForm] = useState<FormState>({});
   const [error, setError] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({ queryKey: ["profile"], queryFn: () => api.getProfile() });
+  const { data, isLoading } = useSignedInQuery({ queryKey: ["profile"], queryFn: () => api.getProfile() });
 
   useEffect(() => {
     const p = data?.profile;

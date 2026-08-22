@@ -9,7 +9,7 @@
  */
 
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type {
   MilestoneNodeState,
   RoadmapMilestone,
@@ -17,6 +17,7 @@ import type {
   MilestoneStatus,
 } from "@baireporbo/shared";
 import { useApi } from "./api";
+import { useSignedInQuery } from "./query";
 import { colors } from "@/theme";
 import type { Lang } from "@/i18n";
 
@@ -27,7 +28,7 @@ const CONFIDENCE_FLOOR = 40;
 
 export function useRoadmap() {
   const api = useApi();
-  return useQuery({ queryKey: ROADMAP_KEY, queryFn: () => api.getRoadmap() });
+  return useSignedInQuery({ queryKey: ROADMAP_KEY, queryFn: () => api.getRoadmap() });
 }
 
 /** Marking a step done never moves the score by itself — the server returns the

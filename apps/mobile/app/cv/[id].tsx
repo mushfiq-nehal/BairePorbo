@@ -3,9 +3,10 @@ import { View, ScrollView, TextInput, Pressable, KeyboardAvoidingView, ActivityI
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CVData, CVTemplateId, EducationEntry, ExperienceEntry, SkillGroup } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
@@ -69,7 +70,7 @@ export default function CvEditor() {
   const qc = useQueryClient();
   useRateAppEngagement();
 
-  const { data, isLoading, isError } = useQuery({ queryKey: ["cv", id], queryFn: () => api.getCv(id), enabled: !!id });
+  const { data, isLoading, isError } = useSignedInQuery({ queryKey: ["cv", id], queryFn: () => api.getCv(id), enabled: !!id });
 
   const [title, setTitle] = useState("");
   const [template, setTemplate] = useState<CVTemplateId>("classic");

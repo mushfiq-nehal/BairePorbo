@@ -48,16 +48,29 @@ export class ApiError extends Error {
   }
 }
 
+export type GetTokenOpts = { skipCache?: boolean };
+
 export interface ApiClientConfig {
   /** e.g. https://baireporbo.app */
   baseUrl: string;
-  /** Returns a fresh Clerk session token, or null when signed out. */
-  getToken: () => Promise<string | null>;
+  /**
+   * Returns a Clerk session token, or null when signed out.
+   * Pass `{ skipCache: true }` after a 401 so the caller can mint a new JWT
+   * instead of replaying the expired one that just failed.
+   */
+  getToken: (opts?: GetTokenOpts) => Promise<string | null>;
   /** Stable per-install key for anonymous chat rate limiting (optional). */
   getAnonKey?: () => string | null | Promise<string | null>;
   /** Injectable fetch (RN passes `expo/fetch` for streaming). Defaults to global fetch. */
   fetchImpl?: typeof fetch;
 }
+
+type RequestOpts = {
+  /** Public endpoints that 403 if an Authorization header is present. */
+  skipAuth?: boolean;
+  /** Auth-only endpoints: never hit the network without a Bearer token. */
+  requiredAuth?: boolean;
+};
 
 export function createApiClient(config: ApiClientConfig) {
   const { baseUrl, getToken, getAnonKey } = config;
@@ -68,54 +81,102 @@ export function createApiClient(config: ApiClientConfig) {
     return (await getAnonKey()) ?? null;
   }
 
-  async function authHeaders(extra?: Record<string, string>): Promise<Record<string, string>> {
+  async function buildHeaders(
+    extra: Record<string, string> | undefined,
+    opts: RequestOpts & { token?: string },
+  ): Promise<Record<string, string>> {
     const headers: Record<string, string> = { ...extra };
-    const token = await getToken();
+    if (opts.skipAuth) return headers;
+
+    let token = opts.token ?? (await getToken());
+    // An auth-only endpoint is worth one forced mint before giving up: the
+    // cached JWT may have expired while the session itself is still valid.
+    if (!token && opts.requiredAuth) {
+      token = await getToken({ skipCache: true });
+    }
+
     if (token) {
       headers.Authorization = `Bearer ${token}`;
-    } else {
-      // Anonymous callers identify themselves to the session/chat endpoints via
-      // the x-anon-key header. Harmless on endpoints that ignore it.
-      const anonKey = await resolveAnonKey();
-      if (anonKey) headers["x-anon-key"] = anonKey;
+      return headers;
     }
+
+    if (opts.requiredAuth) {
+      throw new ApiError(401, { error: "Unauthorized" }, "Not signed in");
+    }
+
+    // Anonymous callers identify themselves to the session/chat endpoints via
+    // the x-anon-key header. Harmless on endpoints that ignore it.
+    const anonKey = await resolveAnonKey();
+    if (anonKey) headers["x-anon-key"] = anonKey;
     return headers;
+  }
+
+  async function parseErrorBody(res: Response): Promise<Record<string, unknown> | null> {
+    try {
+      return (await res.json()) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * One network attempt, plus a single skip-cache retry on 401. That covers the
+   * Android-resume case where Clerk's cached JWT has expired (typically 60s)
+   * but the long-lived session is still valid — without a retry the Home tab
+   * would keep polling /api/dashboard + /api/roadmap unauthenticated.
+   */
+  async function authorizedFetch(
+    path: string,
+    init: RequestInit = {},
+    opts: RequestOpts = {},
+  ): Promise<Response> {
+    const extra = init.headers as Record<string, string> | undefined;
+    const send = (token?: string) =>
+      buildHeaders(extra, { ...opts, token }).then((headers) =>
+        doFetch(`${baseUrl}${path}`, { ...init, headers }),
+      );
+
+    let res = await send();
+    if (res.status === 401 && !opts.skipAuth) {
+      const fresh = await getToken({ skipCache: true });
+      if (fresh) res = await send(fresh);
+    }
+    return res;
   }
 
   async function request<T>(
     path: string,
     init: RequestInit = {},
-    opts: { skipAuth?: boolean } = {},
+    opts: RequestOpts = {},
   ): Promise<T> {
-    // Some public endpoints (e.g. /api/guides) reject requests that carry an
-    // Authorization header (403). Pass `skipAuth` to fetch them anonymously,
-    // exactly as the web does for public content.
-    const headers = opts.skipAuth
-      ? ((init.headers as Record<string, string> | undefined) ?? {})
-      : await authHeaders(init.headers as Record<string, string> | undefined);
-    const res = await doFetch(`${baseUrl}${path}`, { ...init, headers });
+    const res = await authorizedFetch(path, init, opts);
 
     if (!res.ok) {
-      let body: Record<string, unknown> | null = null;
-      try {
-        body = (await res.json()) as Record<string, unknown>;
-      } catch {
-        /* non-JSON error body */
-      }
-      throw new ApiError(res.status, body);
+      throw new ApiError(res.status, await parseErrorBody(res));
     }
 
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
   }
 
-  async function jsonRequest<T>(path: string, method: string, body?: unknown): Promise<T> {
-    return request<T>(path, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
+  async function jsonRequest<T>(
+    path: string,
+    method: string,
+    body?: unknown,
+    opts: RequestOpts = {},
+  ): Promise<T> {
+    return request<T>(
+      path,
+      {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      },
+      opts,
+    );
   }
+
+  const authed: RequestOpts = { requiredAuth: true };
 
   return {
     ApiError,
@@ -153,61 +214,61 @@ export function createApiClient(config: ApiClientConfig) {
 
     // ── Dashboard (auth) — profile readiness, bookmarks, last chat ──
     getDashboard() {
-      return request<DashboardResponse>(`/api/dashboard`);
+      return request<DashboardResponse>(`/api/dashboard`, {}, authed);
     },
 
     // ── CV Builder (auth) ──
     getCvs() {
-      return request<CvsResponse>(`/api/cv`);
+      return request<CvsResponse>(`/api/cv`, {}, authed);
     },
     getCv(id: string) {
-      return request<CvResponse>(`/api/cv/${encodeURIComponent(id)}`);
+      return request<CvResponse>(`/api/cv/${encodeURIComponent(id)}`, {}, authed);
     },
     createCv(body: { title?: string; template?: CVTemplateId; data?: Partial<CVData> } = {}) {
-      return jsonRequest<CvResponse>(`/api/cv`, "POST", body);
+      return jsonRequest<CvResponse>(`/api/cv`, "POST", body, authed);
     },
     updateCv(id: string, body: { title: string; template: CVTemplateId; data: CVData }) {
-      return jsonRequest<CvResponse>(`/api/cv/${encodeURIComponent(id)}`, "PUT", body);
+      return jsonRequest<CvResponse>(`/api/cv/${encodeURIComponent(id)}`, "PUT", body, authed);
     },
     deleteCv(id: string) {
-      return request<{ ok: boolean }>(`/api/cv/${encodeURIComponent(id)}`, { method: "DELETE" });
+      return request<{ ok: boolean }>(`/api/cv/${encodeURIComponent(id)}`, { method: "DELETE" }, authed);
     },
     /** Analyse pasted CV text. */
     analyzeCvText(text: string) {
-      return jsonRequest<CvAnalyzeResponse>(`/api/cv/analyze`, "POST", { text });
+      return jsonRequest<CvAnalyzeResponse>(`/api/cv/analyze`, "POST", { text }, authed);
     },
     /** Analyse an uploaded file. Pass a FormData with a `file` field (RN: {uri,name,type}). */
     async analyzeCvFile(form: FormData) {
       // No Content-Type: fetch sets the multipart boundary itself.
-      const headers = await authHeaders();
-      const res = await doFetch(`${baseUrl}/api/cv/analyze`, { method: "POST", headers, body: form });
+      const res = await authorizedFetch("/api/cv/analyze", { method: "POST", body: form }, authed);
       if (!res.ok) {
-        let body: Record<string, unknown> | null = null;
-        try {
-          body = (await res.json()) as Record<string, unknown>;
-        } catch {
-          /* non-JSON error */
-        }
-        throw new ApiError(res.status, body);
+        throw new ApiError(res.status, await parseErrorBody(res));
       }
       return (await res.json()) as CvAnalyzeResponse;
     },
 
     // ── Bookmarks (auth) ──
     getBookmarks() {
-      return request<BookmarksResponse>(`/api/bookmarks`);
+      return request<BookmarksResponse>(`/api/bookmarks`, {}, authed);
     },
     addBookmark(scholarshipId: string) {
-      return jsonRequest<{ success: boolean; already?: boolean }>(`/api/bookmarks`, "POST", {
-        scholarship_id: scholarshipId,
-      });
+      return jsonRequest<{ success: boolean; already?: boolean }>(
+        `/api/bookmarks`,
+        "POST",
+        { scholarship_id: scholarshipId },
+        authed,
+      );
     },
     removeBookmark(scholarshipId: string) {
-      return request<{ success: boolean }>(`/api/bookmarks`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scholarship_id: scholarshipId }),
-      });
+      return request<{ success: boolean }>(
+        `/api/bookmarks`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scholarship_id: scholarshipId }),
+        },
+        authed,
+      );
     },
 
     // ── Push tokens (auth) — device registry for FCM fan-out ──
@@ -218,29 +279,29 @@ export function createApiClient(config: ApiClientConfig) {
       lang: string;
       appVersion?: string;
     }) {
-      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "POST", body);
+      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "POST", body, authed);
     },
     unregisterPushToken(body: { token: string }) {
-      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "DELETE", body);
+      return jsonRequest<{ ok: boolean }>(`/api/push/register`, "DELETE", body, authed);
     },
 
     // ── Profile (auth) — the Bearer-token canary (§3.4) ──
     getProfile() {
-      return request<ProfileResponse>(`/api/profile`);
+      return request<ProfileResponse>(`/api/profile`, {}, authed);
     },
     updateProfile(update: ProfileUpdate) {
-      return jsonRequest<ProfileResponse>(`/api/profile`, "PUT", update);
+      return jsonRequest<ProfileResponse>(`/api/profile`, "PUT", update, authed);
     },
 
     // ── Roadmap (auth) ──
     /** The deterministic roadmap. Always complete, whether or not the AI ran. */
     getRoadmap() {
-      return request<RoadmapResponse>(`/api/roadmap`);
+      return request<RoadmapResponse>(`/api/roadmap`, {}, authed);
     },
     /** Asks for fresh narration. Returns 200 with `narration_status: 'failed'`
      *  rather than an error when the model is unreachable. */
     generateRoadmap() {
-      return jsonRequest<RoadmapResponse>(`/api/roadmap/generate`, "POST", {});
+      return jsonRequest<RoadmapResponse>(`/api/roadmap/generate`, "POST", {}, authed);
     },
     /** A status write. Never moves the readiness score. */
     updateMilestone(key: string, body: { status?: MilestoneStatus; progress?: number }) {
@@ -248,6 +309,7 @@ export function createApiClient(config: ApiClientConfig) {
         `/api/roadmap/milestones/${encodeURIComponent(key)}`,
         "PATCH",
         body,
+        authed,
       );
     },
 
@@ -291,11 +353,9 @@ export function createApiClient(config: ApiClientConfig) {
         signal?: AbortSignal;
       },
     ): Promise<void> {
-      const headers = await authHeaders({ "Content-Type": "application/json" });
-
-      const res = await doFetch(`${baseUrl}/api/chat`, {
+      const res = await authorizedFetch("/api/chat", {
         method: "POST",
-        headers,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         signal: opts.signal,
       });

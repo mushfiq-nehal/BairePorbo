@@ -3,8 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useT } from "@/i18n";
 import { useBookmarks } from "@/lib/bookmarks";
 import { useRateAppEngagement } from "@/lib/rate-app";
@@ -28,7 +28,7 @@ export default function Bookmarks() {
   const { toggle } = useBookmarks();
   useRateAppEngagement();
 
-  const { data, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
+  const { data, isLoading } = useSignedInQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
   const bookmarks = data?.bookmarks ?? [];
 
   return (

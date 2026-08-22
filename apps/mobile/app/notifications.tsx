@@ -2,8 +2,8 @@ import { View, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, type Href } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useT } from "@/i18n";
 import { Txt } from "@/components/ui";
 import { colors } from "@/theme";
@@ -23,7 +23,7 @@ export default function Notifications() {
   const t = useT();
   const router = useRouter();
 
-  const { data, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
+  const { data, isLoading } = useSignedInQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
 
   const notes: Note[] = [];
   if (data) {

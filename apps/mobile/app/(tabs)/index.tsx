@@ -7,6 +7,7 @@ import { useUser } from "@clerk/clerk-expo";
 import { useQuery } from "@tanstack/react-query";
 import type { BookmarkScholarship, ScholarshipListItem } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { isExpired } from "@/lib/deadline";
 import { useRateAppPrompt } from "@/lib/rate-app";
 import { fill, readinessView, useRoadmap } from "@/lib/roadmap";
@@ -39,7 +40,7 @@ export default function Home() {
   const { lang, setLang } = useLang();
   useRateAppPrompt();
 
-  const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
+  const { data: dash } = useSignedInQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
   const { data: schData } = useQuery({ queryKey: ["scholarships"], queryFn: () => api.getScholarships() });
 
   const firstName =

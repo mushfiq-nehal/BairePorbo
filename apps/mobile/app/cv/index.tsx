@@ -3,9 +3,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { CVTemplateId } from "@baireporbo/shared";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 import { useRateAppEngagement } from "@/lib/rate-app";
 import { useT } from "@/i18n";
 import { API_BASE } from "@/lib/config";
@@ -43,7 +44,7 @@ export default function CvHub() {
   const qc = useQueryClient();
   useRateAppEngagement();
 
-  const { data, isLoading } = useQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
+  const { data, isLoading } = useSignedInQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
   const cvs = data?.cvs ?? [];
 
   const create = useMutation({

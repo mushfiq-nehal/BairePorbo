@@ -1,6 +1,7 @@
 import { useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useApi } from "@/lib/api";
+import { useSignedInQuery } from "@/lib/query";
 
 const KEY = ["bookmarks"] as const;
 
@@ -13,7 +14,7 @@ export function useBookmarks() {
   const api = useApi();
   const qc = useQueryClient();
 
-  const { data } = useQuery({
+  const { data } = useSignedInQuery({
     queryKey: KEY,
     queryFn: async () => {
       const res = await api.getBookmarks();

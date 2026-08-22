@@ -5,7 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth, useUser } from "@clerk/clerk-expo";
-import { useQuery } from "@tanstack/react-query";
+import { useSignedInQuery } from "@/lib/query";
 import { useApi } from "@/lib/api";
 import { API_BASE } from "@/lib/config";
 import { useLang, useT } from "@/i18n";
@@ -54,8 +54,8 @@ export default function Profile() {
   const { count: bookmarkCount } = useBookmarks();
   useRateAppPrompt();
 
-  const { data: dash } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
-  const { data: cvs } = useQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
+  const { data: dash } = useSignedInQuery({ queryKey: ["dashboard"], queryFn: () => api.getDashboard() });
+  const { data: cvs } = useSignedInQuery({ queryKey: ["cvs"], queryFn: () => api.getCvs() });
 
   // Google Play requires in-app account deletion for apps with sign-in.
   // Clerk's user.delete() removes the account; the user.deleted webhook on the
@@ -143,15 +143,23 @@ export default function Profile() {
             </Pressable>
           </View>
 
-          <View className="bg-white/[0.13] rounded-2xl p-3.5 mt-4">
+          <Pressable
+            onPress={() => router.push("/profile-edit")}
+            accessibilityRole="button"
+            accessibilityLabel={t("profile.edit")}
+            className="bg-white/[0.13] rounded-2xl p-3.5 mt-4"
+          >
             <View className="flex-row items-center justify-between">
               <Txt weight="semibold" className="text-teal-100 text-xs">{t("profile.complete")}</Txt>
-              <Txt font="display" weight="bold" className="text-white text-sm">{readiness}%</Txt>
+              <View className="flex-row items-center gap-1">
+                <Txt font="display" weight="bold" className="text-white text-sm">{readiness}%</Txt>
+                <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+              </View>
             </View>
             <View className="h-[7px] rounded-full bg-white/20 mt-2 overflow-hidden">
               <View style={{ height: "100%", width: `${Math.max(readiness, 4)}%`, backgroundColor: colors.white, borderRadius: 999 }} />
             </View>
-          </View>
+          </Pressable>
         </LinearGradient>
 
         <View className="px-[18px] pt-4">
