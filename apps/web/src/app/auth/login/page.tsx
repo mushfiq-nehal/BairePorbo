@@ -13,6 +13,7 @@ type Step = "form" | "client-trust";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  // `redirect` is set when a guard bounced the visitor off a protected page.
   const redirect = searchParams.get("redirect") ?? "/";
   const t = useT();
   const { signIn, isLoaded, setActive } = useSignIn() as any;

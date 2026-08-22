@@ -7,7 +7,7 @@ import { AuthenticateWithRedirectCallback } from "@clerk/nextjs";
 import { useT } from "@/lib/lang-context";
 import styles from "../auth.module.css";
 
-const DEFAULT_DESTINATION = "/dashboard";
+const DEFAULT_DESTINATION = "/";
 
 /** `next` arrives from the query string, so only same-origin paths are honoured. */
 function safeDestination(next: string | null): string {

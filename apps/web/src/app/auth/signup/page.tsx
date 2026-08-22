@@ -90,7 +90,7 @@ export default function SignupPage() {
 
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/dashboard");
+        router.replace("/");
         return;
       }
 
@@ -118,7 +118,7 @@ export default function SignupPage() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
-        router.replace("/dashboard");
+        router.replace("/");
       } else {
         setError("Couldn't verify that code. Please check it and try again.");
       }
@@ -153,11 +153,11 @@ export default function SignupPage() {
         return;
       }
       const callbackUrl = new URL("/auth/callback", window.location.origin);
-      callbackUrl.searchParams.set("next", "/dashboard");
+      callbackUrl.searchParams.set("next", "/");
       await clerkInstance.client.signIn.authenticateWithRedirect({
         strategy: "oauth_google",
         redirectUrl: callbackUrl.toString(),
-        redirectUrlComplete: "/dashboard",
+        redirectUrlComplete: "/",
       });
     } catch (err: unknown) {
       console.error("Google OAuth error:", err);

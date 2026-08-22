@@ -77,7 +77,7 @@ function ForgotPasswordForm() {
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
         setStep("done");
-        setTimeout(() => router.replace("/dashboard"), 2000);
+        setTimeout(() => router.replace("/"), 2000);
       } else {
         setError("Could not reset password. Please try again.");
       }
