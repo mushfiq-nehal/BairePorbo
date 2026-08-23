@@ -11,3 +11,13 @@ service-account*.json
 # Node modules from migration scripts
 node_modules/
 package-lock.json
+
+# Local AI/tool configs, editor caches, and build artifacts — not used by Vercel
+.agents/
+.claude/
+.codex/
+.commandcode/
+.kiro/
+.next/
+.pnpm-store/
+.puku/
