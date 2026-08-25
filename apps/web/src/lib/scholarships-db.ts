@@ -79,7 +79,7 @@ export const getPublishedScholarshipParams = cache(async (): Promise<{ id: strin
     }));
   } catch {
     // Return empty so the build never fails when the DB is unreachable;
-    // pages then render on-demand and are cached via ISR (`revalidate`).
+    // pages then render on-demand and stay cached until revalidatePath.
     return [];
   }
 });

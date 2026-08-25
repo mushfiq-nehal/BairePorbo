@@ -4,9 +4,9 @@ import ScholarshipDirectory from "./scholarship-directory";
 
 const BASE_URL = "https://baireporbo.app";
 
-// ISR — the crawlable directory below is server-rendered and cached, refreshed
-// hourly so new scholarships get discoverable internal links without a rebuild.
-export const revalidate = 3600;
+// On-demand ISR: the crawlable directory is static until an admin mutation
+// calls revalidateScholarshipPages (publish / edit / archive / thumbnail).
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "International Scholarships for Bangladeshi Students",

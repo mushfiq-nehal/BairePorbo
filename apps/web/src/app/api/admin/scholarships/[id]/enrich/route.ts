@@ -3,6 +3,7 @@ import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { checkRateLimit, getClientIp, logRequest } from "@/lib/nim";
 import { fetchCompletion, parseJsonFromCompletion, type ModelChoice } from "@/lib/ai-completion";
+import { revalidateScholarshipPages } from "@/lib/revalidate-scholarships";
 
 const VALID_MODELS: ModelChoice[] = ["nim", "kimi", "deepseek", "mistral", "deepseek-pro", "minimax-m3", "gemini-flash"];
 
@@ -100,6 +101,13 @@ ${scholarship.raw_description ?? "No description provided"}
     WHERE id = ${id}
     RETURNING *
   `;
+
+  if (updated[0]) {
+    revalidateScholarshipPages({
+      slug: (updated[0].slug as string | null) ?? null,
+      id: (updated[0].id as string) ?? id,
+    });
+  }
 
   return NextResponse.json({ scholarship: updated[0], enriched });
 }

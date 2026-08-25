@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { uploadToR2, getPublicUrl } from "@/utils/r2";
+import { revalidateScholarshipPages } from "@/lib/revalidate-scholarships";
 import sharp from "sharp";
 
 export async function POST(
@@ -18,8 +19,11 @@ export async function POST(
   if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
   const arrayBuffer = await file.arrayBuffer();
+  // 1200px matches the admin 1200×630 hint. We serve this file as-is (no
+  // Vercel Image Optimization), so it needs enough resolution for retina cards
+  // and the detail hero.
   const compressed = await sharp(Buffer.from(arrayBuffer))
-    .resize({ width: 640, withoutEnlargement: true })
+    .resize({ width: 1200, withoutEnlargement: true })
     .webp({ quality: 80 })
     .toBuffer();
 
@@ -39,10 +43,17 @@ export async function POST(
   const publicUrl = `${getPublicUrl(key)}?v=${Date.now()}`;
 
   try {
-    await sql`
+    const rows = await sql`
       UPDATE scholarships SET thumbnail_url = ${publicUrl}, updated_at = NOW()
       WHERE id = ${id}
+      RETURNING slug, id
     `;
+    if (rows[0]) {
+      revalidateScholarshipPages({
+        slug: (rows[0].slug as string | null) ?? null,
+        id: (rows[0].id as string) ?? id,
+      });
+    }
   } catch (err) {
     console.error("Thumbnail DB update error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });

@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   // which is bundler/serverless-friendly and needs no such treatment.)
   serverExternalPackages: ["mammoth"],
   images: {
+    // Serve R2 / public assets as-is. Vercel Hobby caps Image Optimization at
+    // 5,000 transformations/month; next/image would burn that on every unique
+    // thumbnail URL × size. Uploads are already resized to WebP with sharp.
+    unoptimized: true,
     remotePatterns: [
       // Cloudflare R2 public bucket / custom CDN domain
       ...(R2_PUBLIC_DOMAIN

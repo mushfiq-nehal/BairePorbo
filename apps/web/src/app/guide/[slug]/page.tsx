@@ -10,10 +10,10 @@ import remarkGfm from "remark-gfm";
 import GuideAccordion from "./guide-accordion";
 import styles from "./guide-detail.module.css";
 
-// ISR instead of force-dynamic: prerender each published guide and refresh
-// hourly. Guides change rarely, so serving cached HTML massively improves
-// TTFB/LCP and lets crawlers index stable markup.
-export const revalidate = 3600;
+// On-demand ISR: prerender each published guide and keep it until
+// revalidateGuidePages runs. Guides change rarely, so cached HTML improves
+// TTFB/LCP without hourly Vercel ISR writes.
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

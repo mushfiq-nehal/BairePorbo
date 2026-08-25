@@ -15,10 +15,11 @@ import styles from "./detail.module.css";
 
 const BASE_URL = "https://baireporbo.app";
 
-// ISR: prerender every published scholarship at build time and refresh the
-// cached HTML at most once an hour. Combined with generateStaticParams this
-// turns 300+ on-demand SSR pages into fast, crawl-friendly static pages.
-export const revalidate = 3600;
+// On-demand ISR: prerender every published scholarship at build time and keep
+// the HTML until an admin mutation calls revalidateScholarshipPages. Combined
+// with generateStaticParams this turns 300+ pages into crawl-friendly static
+// HTML without hourly Vercel ISR writes.
+export const revalidate = false;
 export const dynamicParams = true;
 
 export async function generateStaticParams() {

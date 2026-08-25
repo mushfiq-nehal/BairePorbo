@@ -2,6 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { sql, sqlQuery } from "@/utils/db";
 import { requireAdmin } from "@/utils/api-auth";
 import { pushNewScholarship } from "@/lib/push-content";
+import { revalidateScholarshipPages } from "@/lib/revalidate-scholarships";
 
 export async function GET(
   _req: NextRequest,
@@ -83,6 +84,11 @@ export async function PATCH(
 
   if (!rows[0]) return NextResponse.json({ error: "Scholarship not found" }, { status: 404 });
 
+  revalidateScholarshipPages({
+    slug: (rows[0].slug as string | null) ?? null,
+    id: (rows[0].id as string) ?? id,
+  });
+
   // Fan out after the admin gets their response — the send is claimed inside,
   // so re-saving an already-announced scholarship is a no-op.
   if (rows[0].status === "published") {
@@ -100,12 +106,20 @@ export async function DELETE(
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  const existing = await sql`SELECT slug, id FROM scholarships WHERE id = ${id} LIMIT 1`;
   const permanent = new URL(req.url).searchParams.get("permanent") === "true";
 
   if (permanent) {
     await sql`DELETE FROM scholarships WHERE id = ${id}`;
   } else {
     await sql`UPDATE scholarships SET status = 'archived', updated_at = NOW() WHERE id = ${id}`;
+  }
+
+  if (existing[0]) {
+    revalidateScholarshipPages({
+      slug: (existing[0].slug as string | null) ?? null,
+      id: (existing[0].id as string) ?? id,
+    });
   }
 
   return NextResponse.json({ ok: true });

@@ -5,9 +5,9 @@ import { fetchPublishedDbGuides, sortGuides } from "@/lib/guides-db";
 import GuidePageClient from "./guide-page-client";
 import styles from "./page.module.css";
 
-// ISR: the guide index is cached and refreshed hourly rather than rebuilt on
-// every request.
-export const revalidate = 3600;
+// On-demand ISR: the guide index stays cached until revalidateGuidePages runs
+// (publish / edit / delete / cover upload).
+export const revalidate = false;
 
 export const metadata: Metadata = {
   title: "Study Abroad Guides & FAQs for Bangladeshi Students",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { sql } from "@/utils/db";
+import { revalidateScholarshipPages } from "@/lib/revalidate-scholarships";
 import { checkRateLimit, getClientIp } from "@/lib/nim";
 import { fetchCompletion, extractJsonObject } from "@/lib/ai-completion";
 import type { RequiredDocuments } from "@/lib/scholarships-db";
@@ -112,8 +112,10 @@ Eligibility notes: ${s.eligibility_summary ?? "Not specified"}
     `;
     // Refresh the statically-cached detail page so future visits (and crawlers)
     // get the unique documents in the server-rendered HTML.
-    const canonical = (s.slug as string | null) ?? (s.id as string);
-    revalidatePath(`/scholarships/${canonical}`);
+    revalidateScholarshipPages({
+      slug: (s.slug as string | null) ?? null,
+      id: s.id as string,
+    });
   } catch {
     // If the write fails we still return the docs for this visitor.
   }
