@@ -38,7 +38,7 @@ describe("generateEmbedding", () => {
     await expect(generateEmbedding("hello", "key")).resolves.toEqual(vector);
   });
 
-  test("requests the OpenRouter NVIDIA embed model at the pgvector dimension", async () => {
+  test("requests the OpenRouter NVIDIA embed model without a dimensions override", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse(200, { data: [{ embedding: embedding1024() }] }),
     );
@@ -51,8 +51,8 @@ describe("generateEmbedding", () => {
       model: DEFAULT_EMBEDDING_MODEL,
       input: "hello",
       input_type: "query",
-      dimensions: EMBEDDING_DIMENSIONS,
     });
+    expect(requestBody(fetchMock)).not.toHaveProperty("dimensions");
   });
 
   test("ignores retired NVIDIA-only embedding model env overrides", async () => {

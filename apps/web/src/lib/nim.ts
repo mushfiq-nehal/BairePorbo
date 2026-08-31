@@ -265,7 +265,8 @@ export const generateEmbedding = async (
       input,
       input_type: inputType,
       encoding_format: "float",
-      dimensions: EMBEDDING_DIMENSIONS,
+      // Nemotron 3 Embed 1B only accepts native 2048-d. We slice + L2-normalize
+      // to VECTOR(1024) in fitEmbeddingDimensions after the response.
     }),
   });
 
