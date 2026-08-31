@@ -26,7 +26,7 @@ Traffic is organic — driven primarily through Facebook community groups and wo
 
 - **AI Mentor Chat** — Students ask scholarship-related questions and get context-aware answers grounded in the actual scholarship catalogue via RAG (Retrieval-Augmented Generation). Anonymous users get a 3-message trial; signed-in users get a higher limit.
 - **Scholarship Discovery** — A filterable, searchable catalogue of international scholarships with AI-generated summaries, eligibility breakdowns, and deadline tracking.
-- **Semantic Matching** — NVIDIA NIM embeddings (`nvidia/nv-embedqa-e5-v5`, 1024-dim, HNSW index) power vector similarity search between student profiles and scholarship content.
+- **Semantic Matching** — OpenRouter embeddings (`nvidia/nemotron-3-embed-1b:free`, stored as 1024-dim, HNSW index) power vector similarity search between student profiles and scholarship content.
 - **Student Dashboard** — Personalised scholarship matches, bookmarks, and an application task tracker.
 - **Admin Scholarship Wizard** — Paste → Parse (AI) → Enrich (AI) → Thumbnail Upload → Publish → RAG Ingest. Admins can go from a raw scholarship URL to a fully published, AI-searchable listing in minutes.
 - **Educational Guides** — CMS-managed long-form guides (IELTS prep, GRE waivers, visa tips) with slugs, FAQs, and cover images.
@@ -45,7 +45,7 @@ Traffic is organic — driven primarily through Facebook community groups and wo
 | **Database** | [Neon](https://neon.tech) Serverless PostgreSQL 18 + **pgvector** |
 | **Storage** | Cloudflare R2 (S3-compatible) — thumbnails, guide covers |
 | **Chat LLM** | [OpenRouter](https://openrouter.ai) — `deepseek/deepseek-v4-flash` with `xiaomi/mimo-v2.5` fallback |
-| **Embeddings / Admin AI** | [NVIDIA NIM](https://build.nvidia.com) — `nvidia/nv-embedqa-e5-v5` embeddings + completions |
+| **Embeddings / Admin AI** | [OpenRouter](https://openrouter.ai) — `nvidia/nemotron-3-embed-1b:free` embeddings; NVIDIA NIM still optional for admin completions |
 | **Rate Limiting** | Redis via `ioredis` (in-memory `Map` fallback) |
 | **Analytics** | Vercel Analytics |
 | **Styling** | Vanilla CSS Modules — no UI framework |
@@ -222,10 +222,10 @@ Fill in `.env.local`:
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk publishable key |
 | `CLERK_SECRET_KEY` | Clerk secret key |
 | `CLERK_WEBHOOK_SECRET` | Clerk webhook signing secret (Svix) |
-| `OPENROUTER_API_KEY` | OpenRouter API key |
+| `OPENROUTER_API_KEY` | OpenRouter API key (chat + embeddings) |
 | `OPENROUTER_MODEL` | Primary chat model (e.g. `deepseek/deepseek-v4-flash`) |
-| `NVIDIA_API_KEY` | NVIDIA NIM API key |
-| `NIM_EMBEDDING_MODEL` | Embedding model (`nvidia/nv-embedqa-e5-v5`) |
+| `OPENROUTER_EMBEDDING_MODEL` | Embedding model (`nvidia/nemotron-3-embed-1b:free`) |
+| `NVIDIA_API_KEY` | NVIDIA NIM API key *(optional; admin parse/enrich NIM models only)* |
 | `R2_ACCOUNT_ID` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Cloudflare R2 credentials |
 | `R2_BUCKET_NAME` | R2 bucket name |
 | `NEXT_PUBLIC_R2_PUBLIC_DOMAIN` | Public CDN domain for assets |

@@ -25,6 +25,9 @@ const KNOWN_MODELS: Record<string, string> = {
   "openai/gpt-4o-mini": "GPT-4o",
   "openai/gpt-5-mini": "GPT-5",
   "nvidia/nv-embedqa-e5-v5": "NVIDIA Embed",
+  "nvidia/llama-nemotron-embed-1b-v2": "NVIDIA Embed",
+  "nvidia/nemotron-3-embed-1b": "NVIDIA Embed",
+  "nvidia/nemotron-3-embed-1b:free": "NVIDIA Embed",
 };
 
 const PROVIDER_BRAND: Record<string, string> = {

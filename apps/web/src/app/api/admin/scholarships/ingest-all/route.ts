@@ -10,8 +10,8 @@ export async function POST(req: NextRequest) {
   const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "NIM API key not configured" }, { status: 500 });
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 });
 
   let ids: string[] | null = null;
   try {

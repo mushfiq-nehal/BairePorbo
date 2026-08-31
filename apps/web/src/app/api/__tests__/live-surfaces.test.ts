@@ -116,6 +116,7 @@ beforeEach(() => {
   state.respond = null;
   state.embeddingQueries = [];
   process.env.NVIDIA_API_KEY = "test-key";
+  process.env.OPENROUTER_API_KEY = "test-key";
 });
 
 // ── PROFILE_FIELDS stays at fourteen ─────────────────────────────────────────

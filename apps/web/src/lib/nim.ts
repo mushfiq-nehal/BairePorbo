@@ -32,7 +32,7 @@ type NimChatPayload = {
 };
 
 const NIM_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const NIM_EMBED_URL = process.env.NIM_EMBEDDING_URL ?? "https://integrate.api.nvidia.com/v1/embeddings";
+const DEFAULT_EMBEDDING_URL = "https://openrouter.ai/api/v1/embeddings";
 const REDIS_PREFIX = process.env.REDIS_PREFIX ?? "bp";
 
 const rateLimitLua = `
@@ -146,7 +146,76 @@ const getNimModels = () => {
   return Array.from(new Set(models));
 };
 
-const getEmbeddingModel = () => process.env.NIM_EMBEDDING_MODEL ?? "nvidia/nv-embedqa-e5-v5";
+/** NVIDIA Nemotron 3 Embed 1B via OpenRouter. Native 2048-d; we store a 1024-d slice. */
+export const DEFAULT_EMBEDDING_MODEL = "nvidia/nemotron-3-embed-1b:free";
+/** Must match `ScholarshipDoc.embedding VECTOR(1024)`. */
+export const EMBEDDING_DIMENSIONS = 1024;
+
+/** Models / hosts that are gone, or NVIDIA-only and not on OpenRouter. */
+const RETIRED_EMBEDDING_MODELS = new Set([
+  "nvidia/nv-embedqa-e5-v5",
+  "nvidia/llama-nemotron-embed-1b-v2",
+]);
+
+let warnedRetiredEmbeddingModel = false;
+
+const getEmbeddingModel = () => {
+  const configured = (
+    process.env.OPENROUTER_EMBEDDING_MODEL ||
+    process.env.NIM_EMBEDDING_MODEL ||
+    ""
+  ).trim();
+  if (!configured || RETIRED_EMBEDDING_MODELS.has(configured)) {
+    if (configured && !warnedRetiredEmbeddingModel) {
+      warnedRetiredEmbeddingModel = true;
+      logRequest("embedding.model.retired", {
+        configured,
+        using: DEFAULT_EMBEDDING_MODEL,
+      });
+    }
+    return DEFAULT_EMBEDDING_MODEL;
+  }
+  return configured;
+};
+
+const getEmbeddingUrl = () => {
+  const configured = (
+    process.env.OPENROUTER_EMBEDDING_URL ||
+    process.env.NIM_EMBEDDING_URL ||
+    ""
+  ).trim();
+  if (!configured || configured.includes("integrate.api.nvidia.com")) {
+    return DEFAULT_EMBEDDING_URL;
+  }
+  return configured;
+};
+
+const embeddingHeaders = (apiKey: string): HeadersInit => {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  const referer = process.env.OPENROUTER_SITE_URL;
+  const title = process.env.OPENROUTER_APP_NAME;
+  if (referer) headers["HTTP-Referer"] = referer;
+  if (title) headers["X-Title"] = title;
+  return headers;
+};
+
+/** Truncate a longer Matryoshka / native vector to VECTOR(1024) and L2-normalize. */
+export const fitEmbeddingDimensions = (embedding: number[]): number[] => {
+  if (embedding.length === EMBEDDING_DIMENSIONS) return embedding;
+  if (embedding.length > EMBEDDING_DIMENSIONS) {
+    const sliced = embedding.slice(0, EMBEDDING_DIMENSIONS);
+    const mag = Math.sqrt(sliced.reduce((sum, x) => sum + x * x, 0));
+    if (mag === 0) throw new Error("Embedding is a zero vector after truncation");
+    return sliced.map((x) => x / mag);
+  }
+  throw new Error(
+    `Embedding dimension mismatch: expected ${EMBEDDING_DIMENSIONS}, got ${embedding.length}`,
+  );
+};
 
 export const fetchNimWithFallback = async (
   payload: Omit<NimChatPayload, "model">,
@@ -188,41 +257,21 @@ export const generateEmbedding = async (
   apiKey: string,
   inputType: "query" | "passage" = "passage"
 ): Promise<number[]> => {
-  const request = async (payload: Record<string, unknown>) =>
-    fetch(NIM_EMBED_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+  const response = await fetch(getEmbeddingUrl(), {
+    method: "POST",
+    headers: embeddingHeaders(apiKey),
+    body: JSON.stringify({
+      model: getEmbeddingModel(),
+      input,
+      input_type: inputType,
+      encoding_format: "float",
+      dimensions: EMBEDDING_DIMENSIONS,
+    }),
+  });
 
-  const basePayload = {
-    model: getEmbeddingModel(),
-    input,
-    input_type: inputType,
-  };
-
-  let response = await request(basePayload);
   if (!response.ok) {
     const text = await response.text();
-    const needsInputType = text.includes("input_type") && text.includes("required");
-    if (!needsInputType) {
-      throw new Error(`NIM embedding error (${response.status}): ${text}`);
-    }
-
-    response = await request({
-      model: getEmbeddingModel(),
-      input: [{ text: input, input_type: inputType }],
-      input_type: inputType,
-    });
-
-    if (!response.ok) {
-      const retryText = await response.text();
-      throw new Error(`NIM embedding error (${response.status}): ${retryText}`);
-    }
+    throw new Error(`Embedding error (${response.status}): ${text}`);
   }
 
   const data = (await response.json()) as {
@@ -231,8 +280,8 @@ export const generateEmbedding = async (
 
   const embedding = data?.data?.[0]?.embedding;
   if (!embedding || !Array.isArray(embedding)) {
-    throw new Error("NIM embedding response missing embedding array");
+    throw new Error("Embedding response missing embedding array");
   }
 
-  return embedding;
+  return fitEmbeddingDimensions(embedding);
 };

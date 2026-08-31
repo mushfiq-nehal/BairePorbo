@@ -17,9 +17,10 @@ import { generateEmbedding, logRequest } from "@/lib/nim";
 import { formatScholarshipFacts, type ScholarshipFactRow } from "@/lib/scholarship-facts";
 
 /**
- * nv-embedqa-e5-v5 puts genuinely relevant query/passage pairs around 0.4-0.6
- * cosine similarity. The previous 0.7 floor discarded almost every match, which
- * left the model answering scholarship questions from parametric memory.
+ * nvidia/nemotron-3-embed-1b (1024-d slice of the 2048-d vector) typically
+ * scores relevant query/passage pairs well above this floor. The previous 0.7
+ * threshold discarded almost every match with the retired e5 model, which left
+ * the mentor answering scholarship questions from parametric memory.
  */
 const MATCH_THRESHOLD = Number(process.env.RAG_MATCH_THRESHOLD ?? 0.35);
 const MATCH_COUNT = Number(process.env.RAG_MATCH_COUNT ?? 10);

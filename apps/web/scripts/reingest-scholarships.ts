@@ -13,9 +13,9 @@ import { sql } from "@/utils/db";
 import { ingestScholarship, type ScholarshipIngestRecord } from "@/lib/rag-ingest";
 
 async function main() {
-  const apiKey = process.env.NVIDIA_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.error("NVIDIA_API_KEY is not set");
+    console.error("OPENROUTER_API_KEY is not set");
     process.exit(1);
   }
 

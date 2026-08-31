@@ -97,14 +97,6 @@ export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
 
   // ── Server config sanity ──
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "NVIDIA_API_KEY is not configured on the server." },
-      { status: 500 },
-    );
-  }
-
   const openRouterKey = process.env.OPENROUTER_API_KEY;
   if (!openRouterKey) {
     return NextResponse.json(
@@ -228,7 +220,7 @@ export async function POST(req: NextRequest) {
   let retrieved: { block: string; scholarshipIds: string[] } = { block: "", scholarshipIds: [] };
   try {
     if (lastUserMessage?.content) {
-      retrieved = await retrieveScholarshipContext(lastUserMessage.content, apiKey);
+      retrieved = await retrieveScholarshipContext(lastUserMessage.content, openRouterKey);
     }
   } catch (err) {
     logRequest("rag.context.error", { ip, error: String(err) });

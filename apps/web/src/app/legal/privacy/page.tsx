@@ -138,13 +138,11 @@ const sections: LegalSection[] = [
           </li>
           <li>
             <strong>OpenRouter</strong> routes your AI mentor questions to models like
-            DeepSeek and Mistral. The contents of your messages are sent to these
-            providers solely to generate a response. We do not include identifying
-            information (your name or email) in the prompt.
-          </li>
-          <li>
-            <strong>NVIDIA NIM</strong> generates the embeddings used to search our
-            scholarship database. Profile snippets used for AI matching are sent here.
+            DeepSeek and Mistral, and generates the embeddings used to search our
+            scholarship database. The contents of your messages and profile snippets
+            used for AI matching are sent to these providers solely to generate a
+            response or a vector. We do not include identifying information (your
+            name or email) in the prompt.
           </li>
           <li>
             <strong>Email delivery.</strong> Clerk sends account emails such as

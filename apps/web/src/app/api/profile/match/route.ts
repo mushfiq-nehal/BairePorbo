@@ -17,8 +17,8 @@ export async function GET() {
   const auth = await getUser();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const apiKey = process.env.NVIDIA_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "NVIDIA_API_KEY is not configured" }, { status: 500 });
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return NextResponse.json({ error: "OPENROUTER_API_KEY is not configured" }, { status: 500 });
 
   const rows = await sql`SELECT * FROM profiles WHERE id = ${auth.userId} LIMIT 1`;
   const profile = rows[0];

@@ -10,8 +10,8 @@ describes how the system is built so future changes are easy to reason about.
 ## 1. High-level overview
 
 BairePorbo is a single **Next.js (App Router) web app** backed by **Supabase**
-(Postgres + Auth + Storage) and two AI providers (**OpenRouter** for chat,
-**NVIDIA NIM** for embeddings + admin helpers). It is deployed on **Vercel** and
+(Postgres + Auth + Storage) and **OpenRouter** for chat and embeddings
+(NVIDIA NIM remains optional for some admin completion models). It is deployed on **Vercel** and
 is also installable as an Android app via a **TWA APK** generated from the PWA.
 
 ```
@@ -31,7 +31,7 @@ is also installable as an Android app via a **TWA APK** generated from the PWA.
    │  Auth (cookies)      │                        │   - deepseek-v4-flash   │
    │  Storage (thumbnails)│                        │   - mimo-v2.5 (fb)      │
    │  RLS policies        │                        │  NVIDIA NIM             │
-   └──────────────────────┘                        │   - nv-embedqa-e5-v5    │
+   └──────────────────────┘                        │   - nemotron-3-embed-1b (OR)│
                                                     │   - chat (admin tools)  │
    ┌──────────────────────┐                        └────────────────────────┘
    │  Redis (optional)    │
@@ -48,7 +48,7 @@ is also installable as an Android app via a **TWA APK** generated from the PWA.
 | DB / Auth / Storage | Supabase (`@supabase/ssr`, `@supabase/supabase-js`) |
 | Vector search | Supabase pgvector (`ScholarshipDoc` table, HNSW index) |
 | Chat LLM | OpenRouter (DeepSeek V4 Flash primary, MiMo V2.5 fallback) |
-| Embeddings | NVIDIA NIM `nv-embedqa-e5-v5` (1024-dim) |
+| Embeddings | OpenRouter `nvidia/nemotron-3-embed-1b:free` (1024-d slice of 2048-d) |
 | Rate limiting | Redis (ioredis) with in-memory fallback |
 | Markdown | react-markdown + remark-gfm |
 | Analytics | Vercel Analytics |
@@ -191,7 +191,7 @@ RLS: admins full access; everyone can read published rows.
 
 ### `ScholarshipDoc`  (RAG)
 Chunked, embedded scholarship text for vector search.
-`embedding VECTOR(1024)` (matches `nv-embedqa-e5-v5`), HNSW cosine index.
+`embedding VECTOR(1024)` (1024-d slice of OpenRouter `nemotron-3-embed-1b`), HNSW cosine index.
 Populated by the ingest routes via `lib/rag-ingest.ts`. Queried via the
 `match_scholarship_docs` RPC (SECURITY DEFINER so it works under a user JWT).
 
@@ -254,14 +254,13 @@ Provider: **OpenRouter** (streaming). Library: `lib/openrouter.ts`.
   limit the UI shows a friendly sign-up wall.
 
 ### 5.2 Embeddings + RAG (`lib/nim.ts`)
-Provider: **NVIDIA NIM** `nv-embedqa-e5-v5` (free, 1024-dim).
+Provider: **OpenRouter** `nvidia/nemotron-3-embed-1b:free` (1024-d slice of the native 2048-d vector).
 - `generateEmbedding(text, apiKey, inputType)` — used by chat RAG, profile match,
   and scholarship ingest.
 - Ingest (`/api/admin/scholarships/[id]/ingest`): chunks the scholarship text
   (900 chars, 120 overlap), embeds each chunk, replaces rows in `ScholarshipDoc`.
-- Why NIM for embeddings: free tier, correct dimension, purpose-built for
-  text retrieval. The slowness that motivated switching chat to OpenRouter was
-  on completion, not embeddings.
+- Embeddings go through OpenRouter so ingest and chat share one key. The
+  vector is sliced to 1024-d to match `ScholarshipDoc.embedding VECTOR(1024)`.
 
 ### 5.3 Admin AI tooling (parse + enrich)
 Provider: **selectable** per request (NIM / DeepSeek / Mistral) via
@@ -351,16 +350,15 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 
-# NVIDIA NIM (embeddings + admin tooling)
+# NVIDIA NIM (optional admin-tool completions)
 NVIDIA_API_KEY=
 NIM_MODEL=                     # admin-tool chat model + legacy fallback
 NIM_FALLBACK_MODEL=
-NIM_EMBEDDING_MODEL=nvidia/nv-embedqa-e5-v5
-NIM_EMBEDDING_URL=
 
-# OpenRouter (user-facing chat)
+# OpenRouter (user-facing chat + embeddings)
 OPENROUTER_API_KEY=
 OPENROUTER_MODEL=deepseek/deepseek-v4-flash
+OPENROUTER_EMBEDDING_MODEL=nvidia/nemotron-3-embed-1b:free
 OPENROUTER_FALLBACK_MODEL=xiaomi/mimo-v2.5
 OPENROUTER_SITE_URL=           # optional attribution
 OPENROUTER_APP_NAME=
