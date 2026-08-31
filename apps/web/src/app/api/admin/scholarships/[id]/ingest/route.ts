@@ -4,6 +4,8 @@ import { requireAdmin } from "@/utils/api-auth";
 import { logRequest } from "@/lib/nim";
 import { ingestScholarship, type ScholarshipIngestRecord } from "@/lib/rag-ingest";
 
+export const maxDuration = 60;
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

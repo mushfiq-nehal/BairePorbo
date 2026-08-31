@@ -209,13 +209,15 @@ export const generateEmbedding = async (
   if (!response.ok) {
     const text = await response.text();
     const needsInputType = text.includes("input_type") && text.includes("required");
-    if (needsInputType) {
-      response = await request({
-        model: getEmbeddingModel(),
-        input: [{ text: input, input_type: inputType }],
-        input_type: inputType,
-      });
+    if (!needsInputType) {
+      throw new Error(`NIM embedding error (${response.status}): ${text}`);
     }
+
+    response = await request({
+      model: getEmbeddingModel(),
+      input: [{ text: input, input_type: inputType }],
+      input_type: inputType,
+    });
 
     if (!response.ok) {
       const retryText = await response.text();

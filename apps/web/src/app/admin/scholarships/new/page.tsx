@@ -232,7 +232,9 @@ export default function NewScholarshipPage() {
         });
         if (!ingestRes.ok) {
           const d = await safeJson(ingestRes);
-          throw new Error(d?.error ?? "RAG ingest failed");
+          throw new Error(
+            `Search indexing failed (thumbnail was saved). ${d?.error ?? "RAG ingest failed"}`
+          );
         }
       }
 
