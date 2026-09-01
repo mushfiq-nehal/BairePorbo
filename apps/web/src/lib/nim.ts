@@ -77,6 +77,13 @@ const getRedis = (): Redis | null => {
 };
 
 export const getClientIp = (req: Request): string => {
+  // Cloudflare overwrites this with the true client IP and strips any
+  // client-supplied copy, so it is both more accurate and harder to spoof than
+  // x-forwarded-for. Checked first because the anonymous chat limit is keyed on
+  // this value — resolving to a proxy IP would put every visitor in one bucket.
+  const cfIp = req.headers.get("cf-connecting-ip");
+  if (cfIp) return cfIp.trim();
+
   const forwarded = req.headers.get("x-forwarded-for");
   if (forwarded) {
     return forwarded.split(",")[0].trim();

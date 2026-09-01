@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Fraunces, Manrope, Hind_Siliguri } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Providers from "./providers";
 import MobileTabBar from "@/components/layout/mobile-tab-bar";
@@ -24,6 +23,9 @@ const bengaliFont = Hind_Siliguri({
 });
 
 const BASE_URL = "https://baireporbo.app";
+
+// Unset means the beacon simply isn't rendered — safe for local and preview.
+const CF_BEACON_TOKEN = process.env.NEXT_PUBLIC_CF_BEACON_TOKEN;
 
 // Keep in sync with DEVICES in scripts/generate-splash-screens.py.
 const APPLE_SPLASH_DEVICES: Array<[width: number, height: number, dpr: number]> = [
@@ -295,7 +297,18 @@ export default function RootLayout({
           <MobileTabBar />
           <CookieConsentBanner />
         </Providers>
-        <Analytics />
+        {/*
+          Cookieless by design, so it sits outside the consent gate that wraps
+          the AdSense tag above.
+        */}
+        {CF_BEACON_TOKEN && (
+          <Script
+            id="cf-web-analytics"
+            strategy="afterInteractive"
+            src="https://static.cloudflareinsights.com/beacon.min.js"
+            data-cf-beacon={JSON.stringify({ token: CF_BEACON_TOKEN })}
+          />
+        )}
         <script
           dangerouslySetInnerHTML={{
             __html: `
