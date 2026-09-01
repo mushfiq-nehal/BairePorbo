@@ -4,7 +4,11 @@
 
 BairePorbo (Bengali: *"let's go abroad"*) helps students find, understand, and apply for scholarships through a curated database, AI-driven matching, and a conversational AI mentor — on the web and in a native Android app. The experience is bilingual (Bengali + English).
 
-[![Get it on Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=app.baireporbo.android)
+<p>
+  <a href="https://play.google.com/store/apps/details?id=app.baireporbo.android">
+    <img alt="Get it on Google Play" src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" height="60">
+  </a>
+</p>
 
 ---
 
@@ -14,7 +18,7 @@ The platform is in active production with real users on both web and Android. Tr
 
 ### Web — last 3 months
 
-![Web traffic — last 3 months](apps/web/public/readme3.jpg)
+<img src="apps/web/public/readme3.jpg" alt="Web traffic — last 3 months" width="480">
 
 | Metric | Last 3 Months |
 |---|---|
@@ -25,9 +29,8 @@ The platform is in active production with real users on both web and Android. Tr
 
 [BairePorbo – Study Abroad](https://play.google.com/store/apps/details?id=app.baireporbo.android) is live on the Play Store (`app.baireporbo.android`).
 
-![BairePorbo on Google Play](apps/web/public/readme1.jpg)
-
-![Android total installs](apps/web/public/readme2.jpg)
+<img src="apps/web/public/readme1.jpg" alt="BairePorbo on Google Play" width="360">
+<img src="apps/web/public/readme2.jpg" alt="Android total installs" width="360">
 
 | Metric | Value |
 |---|---|
