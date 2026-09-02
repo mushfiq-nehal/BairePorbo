@@ -332,13 +332,13 @@ export async function broadcastLocalizedPush(
     sendPushToTokens(byLang.bn, copy.bn),
   ]);
 
-  return results.reduce(
-    (acc, r) => ({
-      sent: acc.sent + r.sent,
-      failed: acc.failed + r.failed,
-      invalid: acc.invalid + r.invalid,
-      targeted: acc.targeted,
-    }),
-    { sent: 0, failed: 0, invalid: 0, targeted },
-  );
+  let sent = 0;
+  let failed = 0;
+  let invalid = 0;
+  for (const r of results) {
+    sent += r.sent;
+    failed += r.failed;
+    invalid += r.invalid;
+  }
+  return { sent, failed, invalid, targeted };
 }
