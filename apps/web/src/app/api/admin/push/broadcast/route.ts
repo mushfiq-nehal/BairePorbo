@@ -24,9 +24,16 @@ export const maxDuration = 300;
 
 const MAX_TITLE = 80;
 const MAX_BODY = 200;
+const MAX_IMAGE_URL = 2000;
 
 function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+/** FCM only fetches https images; anything else is dropped so the text still goes out. */
+function httpsImageUrl(value: unknown): string | null {
+  const url = clean(value, MAX_IMAGE_URL);
+  return url.startsWith("https://") ? url : null;
 }
 
 export async function GET() {
@@ -57,6 +64,7 @@ export async function POST(req: NextRequest) {
   const titleBn = clean(body.titleBn, MAX_TITLE);
   const bodyBn = clean(body.bodyBn, MAX_BODY);
   const url = clean(body.url, 200) || "/chat";
+  const imageUrl = httpsImageUrl(body.imageUrl);
   const includeDisabled = body.includeDisabled === true;
 
   if (!titleEn || !bodyEn || !titleBn || !bodyBn) {
@@ -68,8 +76,8 @@ export async function POST(req: NextRequest) {
 
   const resultPromise = broadcastLocalizedPush(
     {
-      en: { title: titleEn, body: bodyEn, url },
-      bn: { title: titleBn, body: bodyBn, url },
+      en: { title: titleEn, body: bodyEn, url, imageUrl },
+      bn: { title: titleBn, body: bodyBn, url, imageUrl },
     },
     { includeDisabled },
   );

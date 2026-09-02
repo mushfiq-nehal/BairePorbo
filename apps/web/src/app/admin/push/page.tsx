@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
+import { MAX_COVER_IMAGE_BYTES, formatFileSize } from "@/lib/client-image";
 
 type SendResult = { sent: number; failed: number; invalid: number; targeted: number };
 type TokenStats = {
@@ -24,6 +25,9 @@ export default function PushBroadcastPage() {
   );
   const [url, setUrl] = useState("/chat");
   const [includeDisabled, setIncludeDisabled] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
@@ -47,6 +51,49 @@ export default function PushBroadcastPage() {
       .catch(() => {});
   }, [result]);
 
+  const clearThumbnail = () => {
+    setImagePreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setImageUrl(null);
+  };
+
+  const onThumbnailFile = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > MAX_COVER_IMAGE_BYTES) {
+      setError(`Image is too big (${formatFileSize(file.size)}). Please use under ${formatFileSize(MAX_COVER_IMAGE_BYTES)}.`);
+      return;
+    }
+
+    setImagePreview((prev) => {
+      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
+    setImageUrl(null);
+    setError("");
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/push/thumbnail", { method: "POST", body: fd });
+      const json = await res.json();
+      if (!res.ok) {
+        clearThumbnail();
+        setError(json.error ?? "Thumbnail upload failed.");
+        return;
+      }
+      setImageUrl(json.imageUrl as string);
+    } catch (err) {
+      clearThumbnail();
+      setError(String(err));
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSend = async () => {
     setSending(true);
     setError("");
@@ -55,7 +102,7 @@ export default function PushBroadcastPage() {
       const res = await fetch("/api/admin/push/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titleEn, bodyEn, titleBn, bodyBn, url, includeDisabled }),
+        body: JSON.stringify({ titleEn, bodyEn, titleBn, bodyBn, url, includeDisabled, imageUrl }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -76,7 +123,9 @@ export default function PushBroadcastPage() {
     }
   };
 
-  const canSend = titleEn.trim() && bodyEn.trim() && titleBn.trim() && bodyBn.trim();
+  const canSend = Boolean(
+    titleEn.trim() && bodyEn.trim() && titleBn.trim() && bodyBn.trim() && !uploadingImage,
+  );
   const audience = includeDisabled ? (stats?.total ?? null) : (stats?.active ?? null);
 
   return (
@@ -151,6 +200,49 @@ export default function PushBroadcastPage() {
             <label>Tap opens (in-app path)</label>
             <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="/chat" />
           </div>
+          <div className={styles.field} style={{ gridColumn: "1 / -1" }}>
+            <label>
+              Thumbnail{" "}
+              <span style={{ fontWeight: 500, color: "var(--ink-500, #6b7c8d)" }}>(optional — expandable big picture)</span>
+            </label>
+            <div className={styles.uploadArea}>
+              {imagePreview ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imagePreview} alt="Announcement thumbnail preview" className={styles.thumbPreview} />
+              ) : (
+                <div className={styles.uploadPlaceholder}>
+                  <span>🖼</span>
+                  <span>No image — text-only notification</span>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+                <label className={styles.uploadLabel}>
+                  {uploadingImage ? "Uploading…" : imageUrl ? "Change image" : "Choose image"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onThumbnailFile}
+                    disabled={uploadingImage || sending}
+                    style={{ display: "none" }}
+                  />
+                </label>
+                {imagePreview && (
+                  <button
+                    type="button"
+                    className={styles.ghostBtn}
+                    onClick={clearThumbnail}
+                    disabled={uploadingImage || sending}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+              <p className={styles.uploadHint}>
+                Same as scholarship &amp; guide pushes. PNG, JPG, WebP — recommended 1200×630px,
+                max {formatFileSize(MAX_COVER_IMAGE_BYTES)}.
+              </p>
+            </div>
+          </div>
         </div>
 
         {stats && stats.disabled > 0 && (
@@ -194,7 +286,7 @@ export default function PushBroadcastPage() {
             <button
               type="button"
               className={styles.enrichBtn}
-              disabled={!canSend || sending}
+              disabled={!canSend || sending || uploadingImage}
               onClick={() => setConfirming(true)}
             >
               📣 Send to {audience != null ? `${audience} device${audience === 1 ? "" : "s"}` : "all users"}
@@ -207,7 +299,7 @@ export default function PushBroadcastPage() {
               <button type="button" className={styles.ghostBtn} onClick={() => setConfirming(false)} disabled={sending}>
                 Cancel
               </button>
-              <button type="button" className={styles.enrichBtn} onClick={handleSend} disabled={sending}>
+              <button type="button" className={styles.enrichBtn} onClick={handleSend} disabled={sending || uploadingImage || (Boolean(imagePreview) && !imageUrl)}>
                 {sending ? (
                   <>
                     <span className={styles.spinner} />
