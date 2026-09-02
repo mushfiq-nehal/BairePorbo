@@ -4,6 +4,9 @@ import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
 import { pushNewGuide } from "@/lib/push-content";
 
+/** The after() guide push fans out to every device; keep the worker alive. */
+export const maxDuration = 300;
+
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function GET(_req: NextRequest, { params }: RouteParams) {

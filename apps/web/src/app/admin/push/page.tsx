@@ -1,10 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "../admin.module.css";
 
-type SendResult = { sent: number; failed: number; invalid: number };
+type SendResult = { sent: number; failed: number; invalid: number; targeted: number };
+type TokenStats = {
+  configured: boolean;
+  total: number;
+  active: number;
+  disabled: number;
+  seen7d: number;
+};
 
 export default function PushBroadcastPage() {
   const [titleEn, setTitleEn] = useState("AI Mentor & CV Analysis are faster now ⚡");
@@ -16,10 +23,29 @@ export default function PushBroadcastPage() {
     "আগে চ্যাট বা CV বিশ্লেষণ ধীর মনে হলে বা কাজ না করলে, আবার চেষ্টা করুন — আমরা এটি ঠিক করেছি!",
   );
   const [url, setUrl] = useState("/chat");
+  const [includeDisabled, setIncludeDisabled] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SendResult | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [stats, setStats] = useState<TokenStats | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/push/broadcast")
+      .then((r) => r.json())
+      .then((json) => {
+        if (typeof json.active === "number") {
+          setStats({
+            configured: Boolean(json.configured),
+            total: json.total,
+            active: json.active,
+            disabled: json.disabled,
+            seen7d: json.seen7d,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [result]);
 
   const handleSend = async () => {
     setSending(true);
@@ -29,14 +55,19 @@ export default function PushBroadcastPage() {
       const res = await fetch("/api/admin/push/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ titleEn, bodyEn, titleBn, bodyBn, url }),
+        body: JSON.stringify({ titleEn, bodyEn, titleBn, bodyBn, url, includeDisabled }),
       });
       const json = await res.json();
       if (!res.ok) {
         setError(json.error ?? "Failed to send push notification.");
         return;
       }
-      setResult({ sent: json.sent, failed: json.failed, invalid: json.invalid });
+      setResult({
+        sent: json.sent,
+        failed: json.failed,
+        invalid: json.invalid,
+        targeted: json.targeted,
+      });
       setConfirming(false);
     } catch (err) {
       setError(String(err));
@@ -46,6 +77,7 @@ export default function PushBroadcastPage() {
   };
 
   const canSend = titleEn.trim() && bodyEn.trim() && titleBn.trim() && bodyBn.trim();
+  const audience = includeDisabled ? (stats?.total ?? null) : (stats?.active ?? null);
 
   return (
     <div className={styles.page}>
@@ -54,14 +86,38 @@ export default function PushBroadcastPage() {
           <p className={styles.kicker}>Admin → Push</p>
           <h1>Send Announcement</h1>
           <p className={styles.sub}>
-            Sends a real push notification to every device that has the app installed and
-            notifications registered — no app update required.
+            Sends a real push notification to every device that has registered for
+            notifications — not every Play Store install. Installs who never signed in,
+            denied the permission prompt, or uninstalled are not in this list.
           </p>
         </div>
         <Link href="/admin" className={styles.ghostBtn}>
           ← Back
         </Link>
       </header>
+
+      {stats && !stats.configured && (
+        <p className={styles.error}>
+          Push is not configured on this deployment (missing FCM_SERVICE_ACCOUNT). Sends will fail.
+        </p>
+      )}
+
+      {stats && (
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>{stats.active}</span>
+            <span className={styles.statLabel}>Active devices (will receive this)</span>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>{stats.seen7d}</span>
+            <span className={styles.statLabel}>Opened the app in the last 7 days</span>
+          </div>
+          <div className={styles.statCard}>
+            <span className={styles.statValue}>{stats.disabled}</span>
+            <span className={styles.statLabel}>Disabled (uninstalled / stale token)</span>
+          </div>
+        </div>
+      )}
 
       <div className={styles.formCard}>
         <div className={styles.fieldGrid}>
@@ -97,6 +153,22 @@ export default function PushBroadcastPage() {
           </div>
         </div>
 
+        {stats && stats.disabled > 0 && (
+          <label style={{ display: "flex", gap: 10, alignItems: "flex-start", marginTop: 18, fontSize: 13, color: "var(--ink-700, #2c3e50)" }}>
+            <input
+              type="checkbox"
+              checked={includeDisabled}
+              onChange={(e) => setIncludeDisabled(e.target.checked)}
+              style={{ marginTop: 3 }}
+            />
+            <span>
+              Also retry {stats.disabled} previously-invalid token{stats.disabled === 1 ? "" : "s"}.
+              Use this once if an earlier send may have marked live devices as dead. Truly uninstalled
+              apps will be pruned again.
+            </span>
+          </label>
+        )}
+
         {error && <p className={styles.error}>{error}</p>}
 
         {result && (
@@ -111,7 +183,7 @@ export default function PushBroadcastPage() {
               padding: "10px 14px",
             }}
           >
-            ✅ Sent to {result.sent} device{result.sent === 1 ? "" : "s"}
+            ✅ Sent to {result.sent} of {result.targeted} device{result.targeted === 1 ? "" : "s"}
             {result.failed > 0 && ` — ${result.failed} temporarily failed (retry later)`}
             {result.invalid > 0 && ` — ${result.invalid} stale token(s) cleaned up`}
           </p>
@@ -125,12 +197,12 @@ export default function PushBroadcastPage() {
               disabled={!canSend || sending}
               onClick={() => setConfirming(true)}
             >
-              📣 Send to all users
+              📣 Send to {audience != null ? `${audience} device${audience === 1 ? "" : "s"}` : "all users"}
             </button>
           ) : (
             <>
               <p style={{ fontSize: 13, color: "#b14a2a", fontWeight: 600, margin: "0 auto 0 0" }}>
-                This goes out to every registered device right now. Send it?
+                This goes out to {audience != null ? `${audience} registered device${audience === 1 ? "" : "s"}` : "every registered device"} right now. Send it?
               </p>
               <button type="button" className={styles.ghostBtn} onClick={() => setConfirming(false)} disabled={sending}>
                 Cancel

@@ -39,6 +39,16 @@ export async function POST(req: NextRequest) {
     typeof body.appVersion === "string" ? body.appVersion.slice(0, 32) : null;
 
   try {
+    // Profile rows are created by the Clerk user.created webhook, which often
+    // loses the race against this request on first sign-in. push_tokens.user_id
+    // FKs to profiles(id), so a missing profile used to 500 and the device
+    // never registered — until the next cold start, if they ever came back.
+    await sql`
+      INSERT INTO profiles (id)
+      VALUES (${auth.userId})
+      ON CONFLICT (id) DO NOTHING
+    `;
+
     // The same physical device can move between accounts, so a conflicting
     // token is re-pointed at the current user rather than rejected. Re-enabling
     // matters too: a token FCM previously reported as dead can come back after

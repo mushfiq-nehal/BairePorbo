@@ -1,21 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { requireAdmin } from "@/utils/api-auth";
-import { broadcastLocalizedPush, isPushConfigured } from "@/utils/push";
+import {
+  broadcastLocalizedPush,
+  getPushTokenStats,
+  isPushConfigured,
+} from "@/utils/push";
 
 /**
  * One-off custom push announcement, admin-triggered.
  *
  * Unlike pushNewScholarship/pushNewGuide (fired automatically on publish) or
  * push-digest (deadline reminders on a cron), this has no dedup/claim record —
- * it's meant for occasional manual broadcasts (e.g. "AI mentor is faster now"),
+ * it's meant for occasional manual broadcasts (e.g. "AI Mentor is faster now"),
  * so every submit sends. The admin UI is the only guard against double-sends.
+ *
+ * Fan-out is started with `after()` so a proxy timeout (Cloudflare's 100s)
+ * cannot abort the remaining FCM calls. The handler still awaits the same
+ * promise so the admin UI can show sent/failed counts when the send finishes
+ * in time.
  */
+
+export const maxDuration = 300;
 
 const MAX_TITLE = 80;
 const MAX_BODY = 200;
 
 function clean(value: unknown, max: number): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+export async function GET() {
+  const auth = await requireAdmin();
+  if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const stats = await getPushTokenStats();
+  return NextResponse.json({ configured: isPushConfigured(), ...stats });
 }
 
 export async function POST(req: NextRequest) {
@@ -38,6 +57,7 @@ export async function POST(req: NextRequest) {
   const titleBn = clean(body.titleBn, MAX_TITLE);
   const bodyBn = clean(body.bodyBn, MAX_BODY);
   const url = clean(body.url, 200) || "/chat";
+  const includeDisabled = body.includeDisabled === true;
 
   if (!titleEn || !bodyEn || !titleBn || !bodyBn) {
     return NextResponse.json(
@@ -46,12 +66,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const result = await broadcastLocalizedPush({
-    en: { title: titleEn, body: bodyEn, url },
-    bn: { title: titleBn, body: bodyBn, url },
-  });
+  const resultPromise = broadcastLocalizedPush(
+    {
+      en: { title: titleEn, body: bodyEn, url },
+      bn: { title: titleBn, body: bodyBn, url },
+    },
+    { includeDisabled },
+  );
 
-  console.log(`[push] manual broadcast by ${auth.userId}:`, result);
+  after(() =>
+    resultPromise.then(
+      (result) => console.log(`[push] manual broadcast by ${auth.userId}:`, result),
+      (err) => console.error(`[push] manual broadcast by ${auth.userId} failed:`, err),
+    ),
+  );
 
+  const result = await resultPromise;
   return NextResponse.json({ ok: true, ...result });
 }

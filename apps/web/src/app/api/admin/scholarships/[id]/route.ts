@@ -4,6 +4,9 @@ import { requireAdmin } from "@/utils/api-auth";
 import { pushNewScholarship } from "@/lib/push-content";
 import { revalidateScholarshipPages } from "@/lib/revalidate-scholarships";
 
+/** The after() scholarship push fans out to every device; keep the worker alive. */
+export const maxDuration = 300;
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { sql } from "@/utils/db";
+import { isPermanentFcmTokenError } from "@/utils/fcm-error";
 
 /**
  * Push delivery over FCM HTTP v1.
@@ -19,8 +20,13 @@ import { sql } from "@/utils/db";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
-/** FCM v1 has no multicast endpoint — each token is its own request. */
-const CONCURRENCY = 12;
+/**
+ * FCM v1 has no multicast endpoint — each token is its own request.
+ * 12 was too low: Cloudflare's origin timeout is 100s, so a fan-out of
+ * ~800 tokens at ~1.5s/call is all that finished. Newer devices never
+ * received announcements. FCM allows ~1000 concurrent connections.
+ */
+const CONCURRENCY = 48;
 
 interface ServiceAccount {
   project_id: string;
@@ -190,14 +196,9 @@ async function sendOne(
   if (res.ok) return "sent";
 
   const text = await res.text().catch(() => "");
-  // 404 UNREGISTERED = app uninstalled or token rotated; 400 INVALID_ARGUMENT
-  // on the token field = malformed. Neither is worth retrying, ever.
-  const permanentlyGone =
-    res.status === 404 || text.includes("UNREGISTERED") || text.includes("INVALID_ARGUMENT");
-  if (!permanentlyGone) {
-    console.error("[push] FCM rejected a send:", res.status, text.slice(0, 300));
-  }
-  return permanentlyGone ? "invalid" : "failed";
+  if (isPermanentFcmTokenError(res.status, text)) return "invalid";
+  console.error("[push] FCM rejected a send:", res.status, text.slice(0, 300));
+  return "failed";
 }
 
 async function disableTokens(tokens: string[]): Promise<void> {
@@ -252,8 +253,39 @@ export async function sendPushToTokens(
 
 /** Every live device token. Used for "new content" broadcasts. */
 export async function getActiveTokens(): Promise<string[]> {
-  const rows = await sql`SELECT token FROM push_tokens WHERE disabled_at IS NULL`;
+  const rows = await sql`
+    SELECT token FROM push_tokens
+    WHERE disabled_at IS NULL
+    ORDER BY last_seen_at DESC
+  `;
   return rows.map((r) => r.token as string);
+}
+
+export interface PushTokenStats {
+  total: number;
+  active: number;
+  disabled: number;
+  seen7d: number;
+}
+
+export async function getPushTokenStats(): Promise<PushTokenStats> {
+  const rows = await sql`
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE disabled_at IS NULL)::int AS active,
+      COUNT(*) FILTER (WHERE disabled_at IS NOT NULL)::int AS disabled,
+      COUNT(*) FILTER (
+        WHERE disabled_at IS NULL AND last_seen_at > NOW() - INTERVAL '7 days'
+      )::int AS seen_7d
+    FROM push_tokens
+  `;
+  const row = rows[0];
+  return {
+    total: Number(row?.total ?? 0),
+    active: Number(row?.active ?? 0),
+    disabled: Number(row?.disabled ?? 0),
+    seen7d: Number(row?.seen_7d ?? 0),
+  };
 }
 
 /** Live tokens for one user (a user may have several devices). */
@@ -264,15 +296,37 @@ export async function getTokensForUser(userId: string): Promise<string[]> {
   return rows.map((r) => r.token as string);
 }
 
+export interface BroadcastResult {
+  sent: number;
+  failed: number;
+  invalid: number;
+  targeted: number;
+}
+
 /** Send to every registered device, in the language each one registered with. */
-export async function broadcastLocalizedPush(copy: LocalizedPush) {
-  const rows = await sql`SELECT token, lang FROM push_tokens WHERE disabled_at IS NULL`;
+export async function broadcastLocalizedPush(
+  copy: LocalizedPush,
+  opts?: { includeDisabled?: boolean },
+): Promise<BroadcastResult> {
+  // One-shot recovery: tokens previously disabled by a payload-level
+  // INVALID_ARGUMENT (not a dead device) get another try. Truly uninstalled
+  // apps come back as UNREGISTERED and are disabled again.
+  if (opts?.includeDisabled) {
+    await sql`UPDATE push_tokens SET disabled_at = NULL WHERE disabled_at IS NOT NULL`;
+  }
+
+  const rows = await sql`
+    SELECT token, lang FROM push_tokens
+    WHERE disabled_at IS NULL
+    ORDER BY last_seen_at DESC
+  `;
 
   const byLang: Record<PushLang, string[]> = { en: [], bn: [] };
   for (const row of rows) {
     byLang[row.lang === "bn" ? "bn" : "en"].push(row.token as string);
   }
 
+  const targeted = byLang.en.length + byLang.bn.length;
   const results = await Promise.all([
     sendPushToTokens(byLang.en, copy.en),
     sendPushToTokens(byLang.bn, copy.bn),
@@ -283,7 +337,8 @@ export async function broadcastLocalizedPush(copy: LocalizedPush) {
       sent: acc.sent + r.sent,
       failed: acc.failed + r.failed,
       invalid: acc.invalid + r.invalid,
+      targeted: acc.targeted,
     }),
-    { sent: 0, failed: 0, invalid: 0 },
+    { sent: 0, failed: 0, invalid: 0, targeted },
   );
 }

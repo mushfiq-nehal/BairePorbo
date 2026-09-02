@@ -4,6 +4,9 @@ import { requireAdmin } from "@/utils/api-auth";
 import { revalidateGuidePages } from "@/lib/revalidate-guides";
 import { pushNewGuide } from "@/lib/push-content";
 
+/** The after() guide push fans out to every device; keep the worker alive. */
+export const maxDuration = 300;
+
 export async function GET() {
   const auth = await requireAdmin();
   if (!auth) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

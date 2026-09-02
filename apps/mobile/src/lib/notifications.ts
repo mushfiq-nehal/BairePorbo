@@ -215,16 +215,26 @@ async function registerDeviceToken(api: PushRegistrar, lang: Lang): Promise<bool
   }
   if (!token) return false;
 
-  try {
-    await api.registerPushToken({
-      token,
-      platform: Platform.OS,
-      lang,
-      appVersion: Constants.expoConfig?.version ?? undefined,
-    });
-  } catch {
-    return false;
+  const payload = {
+    token,
+    platform: Platform.OS,
+    lang,
+    appVersion: Constants.expoConfig?.version ?? undefined,
+  };
+  // Profile webhook and Clerk JWT both lose a race on first sign-in.
+  // Retrying here is the difference between "token registered this session"
+  // and "this install is invisible to announcements until they reopen the app".
+  let registered = false;
+  for (let attempt = 0; attempt < 3 && !registered; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 1500 * attempt));
+    try {
+      await api.registerPushToken(payload);
+      registered = true;
+    } catch {
+      /* try again */
+    }
   }
+  if (!registered) return false;
 
   await AsyncStorage.setItem(PUSH_TOKEN, token);
   return true;
