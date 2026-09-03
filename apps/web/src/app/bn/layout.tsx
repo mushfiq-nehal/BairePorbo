@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import { LangProvider } from "@/lib/lang-context";
+import { ForcedLang } from "@/lib/lang-context";
 
 /**
- * Layout for the Bangla (/bn) locale subtree. It re-provides the language
- * context in FORCED Bangla mode so every descendant renders Bangla on the
- * server — the HTML crawlers index matches what users see, with no flash and
- * no headers()/cookies() (the whole subtree stays statically renderable).
+ * Layout for the Bangla (/bn) locale subtree. ForcedLang overrides the
+ * *displayed* language for SSR (crawlers index Bangla) without replacing the
+ * root LangProvider — so the language toggle still writes the shared
+ * preference and a second switch back to English does not need a refresh.
  *
  * The root <html lang> is fixed to "en" by the root layout; we correct it to
  * "bn" on the client for accessibility/Bing (a weak, best-effort signal —
@@ -22,9 +22,5 @@ export default function BanglaLayout({ children }: { children: React.ReactNode }
     };
   }, []);
 
-  return (
-    <LangProvider defaultLang="bn" forced>
-      {children}
-    </LangProvider>
-  );
+  return <ForcedLang lang="bn">{children}</ForcedLang>;
 }

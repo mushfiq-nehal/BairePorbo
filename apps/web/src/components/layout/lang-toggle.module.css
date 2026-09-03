@@ -15,6 +15,7 @@
   letter-spacing: 0;
   line-height: 1.4;
   flex-shrink: 0;
+  text-decoration: none;
 }
 
 .toggle:hover {

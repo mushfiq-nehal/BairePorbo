@@ -58,6 +58,22 @@ export function alternatesFor(path: string, locale: Locale) {
   };
 }
 
+/** True when the path is under the Bangla URL prefix. */
+export function isBnPath(pathname: string): boolean {
+  return pathname === "/bn" || pathname === "/bn/" || pathname.startsWith("/bn/");
+}
+
+/**
+ * Locale dictated by the URL, or null when the page is not a localized
+ * counterpart (chrome language then comes from the user's stored preference).
+ */
+export function routeLocale(pathname: string): Locale | null {
+  if (isBnPath(pathname)) return "bn";
+  const logical = pathname || "/";
+  if (localizedPaths.includes(logical)) return "en";
+  return null;
+}
+
 /**
  * Given the current pathname, return where the language toggle should send the
  * user and which locale that is — or null when the page has no localized
@@ -66,8 +82,10 @@ export function alternatesFor(path: string, locale: Locale) {
  */
 export function toggleTarget(pathname: string): { href: string; locale: Locale } | null {
   // On a /bn page → back to the English (unprefixed) equivalent.
-  if (pathname === "/bn" || pathname === "/bn/") return { href: "/", locale: "en" };
-  if (pathname.startsWith("/bn/")) return { href: pathname.slice(3) || "/", locale: "en" };
+  if (isBnPath(pathname)) {
+    const logical = pathname === "/bn" || pathname === "/bn/" ? "/" : pathname.slice(3) || "/";
+    return { href: logical, locale: "en" };
+  }
 
   // On an English page → to /bn, but only if that page is actually localized.
   const logical = pathname || "/";

@@ -1,6 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { routeLocale } from "./i18n";
 import { translations, type Lang, type TranslationKey } from "./translations";
 
 export type { Lang };
@@ -15,19 +17,23 @@ const LangContext = createContext<LangContextType>({
   setLang: () => {},
 });
 
+/**
+ * Route-level display override (used by the /bn layout). This MUST NOT be a
+ * nested LangProvider: a second provider would intercept setLang, so the root
+ * preference would stay stale after navigating back to an English URL.
+ */
+const ForcedLangContext = createContext<Lang | null>(null);
+
+export function ForcedLang({ lang, children }: { lang: Lang; children: ReactNode }) {
+  return <ForcedLangContext.Provider value={lang}>{children}</ForcedLangContext.Provider>;
+}
+
 export function LangProvider({
   children,
   defaultLang = "en",
-  forced = false,
 }: {
   children: ReactNode;
   defaultLang?: Lang;
-  /**
-   * When true, the locale is dictated by the route (e.g. the /bn subtree) and
-   * must NOT be overridden by localStorage/navigator. This keeps the SSR output
-   * deterministic and identical to what crawlers index — no client-side flash.
-   */
-  forced?: boolean;
 }) {
   // Start from English so the server-rendered (crawlable) markup matches the
   // <html lang="en"> attribute — this keeps hydration deterministic and lets
@@ -35,7 +41,6 @@ export function LangProvider({
   const [lang, setLangState] = useState<Lang>(defaultLang);
 
   useEffect(() => {
-    if (forced) return; // route-driven locale — never auto-switch
     try {
       // 1) Explicit user preference always wins.
       const stored = localStorage.getItem("bp_lang") as Lang | null;
@@ -52,7 +57,7 @@ export function LangProvider({
     } catch {
       // ignore
     }
-  }, [forced]);
+  }, []);
 
   const setLang = (l: Lang) => {
     setLangState(l);
@@ -73,7 +78,19 @@ export function LangProvider({
   );
 }
 
-export const useLang = () => useContext(LangContext);
+export function useLang() {
+  const ctx = useContext(LangContext);
+  const forced = useContext(ForcedLangContext);
+  const pathname = usePathname();
+  // Localized URLs win over stored preference so / and /bn match the document
+  // the user actually opened — including after a second toggle, when the root
+  // provider may not have remounted.
+  const fromRoute = routeLocale(pathname ?? "/");
+  return {
+    lang: forced ?? fromRoute ?? ctx.lang,
+    setLang: ctx.setLang,
+  };
+}
 
 /** Returns a translate function scoped to the current language. */
 export function useT() {
