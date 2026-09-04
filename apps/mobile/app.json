@@ -2,7 +2,7 @@
   "expo": {
     "name": "BairePorbo",
     "slug": "baireporbo",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "baireporbo",
     "userInterfaceStyle": "light",
@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "app.baireporbo.android",
-      "versionCode": 8,
+      "versionCode": 9,
       "playStoreUrl": "https://play.google.com/store/apps/details?id=app.baireporbo.android",
       "googleServicesFile": "./android/app/google-services.json",
       "permissions": ["android.permission.POST_NOTIFICATIONS"],
@@ -43,6 +43,13 @@
         }
       ],
       "expo-background-task",
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "BairePorbo uses your photos so the mentor can read screenshots of offer letters and application portals.",
+        },
+      ],
       [
         "expo-notifications",
         {

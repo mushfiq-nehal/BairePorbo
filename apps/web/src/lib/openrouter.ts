@@ -1,6 +1,11 @@
 import { logRequest } from "@/lib/nim";
 
-type OpenRouterMessage = { role: string; content: string };
+export type OpenRouterContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "file"; file: { filename: string; file_data: string } };
+
+type OpenRouterMessage = { role: string; content: string | OpenRouterContentPart[] };
 
 type OpenRouterPayload = {
   model: string;
@@ -10,7 +15,15 @@ type OpenRouterPayload = {
   top_p?: number;
   stream?: boolean;
   reasoning?: { enabled?: boolean; effort?: string; exclude?: boolean };
+  /** PDF parsing. Pin `cloudflare-ai` so OpenRouter never bills Mistral OCR. */
+  plugins?: Array<{ id: string; pdf?: { engine: string } }>;
 };
+
+/** Free text extraction for PDFs. Do not omit this — the default engine can be paid OCR. */
+export const OPENROUTER_FREE_PDF_PLUGIN = {
+  id: "file-parser",
+  pdf: { engine: "cloudflare-ai" },
+} as const;
 
 type OpenRouterFetchResult = {
   response: Response;
@@ -25,15 +38,23 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 // within this window, it's faster to fail over than to keep waiting.
 const CONNECT_TIMEOUT_MS = 15_000;
 
-const getOpenRouterModels = () => {
+/**
+ * Chat model chain. Text turns try DeepSeek V4 Flash first, then Gemini.
+ * Attachment turns skip both — DeepSeek is text-only, and Gemini vision/file
+ * tokens are expensive enough to burn the free-tier budget. Photos and PDFs
+ * go to GPT-5.6 Luna only (`OPENROUTER_VISION_MODEL`).
+ */
+export function getOpenRouterChatModels(opts?: { multimodal?: boolean }): string[] {
   const primary = process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-v4-flash";
-  // Gemini Flash is fast, cheap and on entirely different infra than the
-  // deepseek primary, so a deepseek-side slow spell doesn't take the fallback
-  // down with it.
+  // Gemini Flash is fast and on different infra than DeepSeek, so a DeepSeek
+  // outage does not take text chat down. It is never used for attachments.
   const fallback = process.env.OPENROUTER_FALLBACK_MODEL ?? "google/gemini-3.7-flash";
-  const models = [primary, fallback].filter((value): value is string => Boolean(value));
-  return Array.from(new Set(models));
-};
+  if (opts?.multimodal) {
+    const vision = process.env.OPENROUTER_VISION_MODEL?.trim() || "openai/gpt-5.6-luna";
+    return [vision];
+  }
+  return Array.from(new Set([primary, fallback].filter((value): value is string => Boolean(value))));
+}
 
 const buildHeaders = (apiKey: string, accept: string): HeadersInit => {
   const headers: Record<string, string> = {
@@ -60,9 +81,12 @@ const buildHeaders = (apiKey: string, accept: string): HeadersInit => {
  */
 export const fetchOpenRouterChatWithFallback = async (
   payload: Omit<OpenRouterPayload, "model">,
-  options: { apiKey: string; accept: string },
+  options: { apiKey: string; accept: string; models?: string[] },
 ): Promise<OpenRouterFetchResult> => {
-  const models = getOpenRouterModels();
+  const models = options.models ?? getOpenRouterChatModels();
+  if (models.length === 0) {
+    throw new Error("No OpenRouter models configured");
+  }
   let lastError: Error | null = null;
 
   for (const model of models) {

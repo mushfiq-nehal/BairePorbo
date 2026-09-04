@@ -51,11 +51,27 @@ const DEFAULT_LIMITS: Record<ChatTier, ChatLimits> = {
   admin: { hourly: 50, daily: 200, global: 20000 },
 };
 
+/**
+ * Separate quota for photo/PDF turns (vision tokens). Kept independent of the
+ * text chat windows so 15 text messages/day cannot become 15 Luna calls.
+ * Hourly === daily for users so two screenshots can go in one sitting, but a
+ * UTC-midnight reset cannot be used to send 4 in two minutes.
+ */
+export const CHAT_ATTACHMENT_LIMITS: Record<ChatTier, ChatLimits> = {
+  anonymous: { hourly: 0, daily: 0, global: 300 },
+  user: { hourly: 2, daily: 2, global: 300 },
+  admin: { hourly: 8, daily: 20, global: 300 },
+};
+
 const ONE_HOUR_MS = 60 * 60_000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 
-const resolveLimits = (tier: ChatTier, override?: Partial<ChatLimits>): ChatLimits => {
-  const base = DEFAULT_LIMITS[tier];
+const resolveLimits = (
+  map: Record<ChatTier, ChatLimits>,
+  tier: ChatTier,
+  override?: Partial<ChatLimits>,
+): ChatLimits => {
+  const base = map[tier];
   return {
     hourly: override?.hourly ?? base.hourly,
     daily: override?.daily ?? base.daily,
@@ -71,99 +87,77 @@ const todayKey = () => {
   ).padStart(2, "0")}`;
 };
 
-export const checkChatRateLimit = async (opts: CheckOpts): Promise<RateLimitDecision> => {
-  const limits = resolveLimits(opts.tier, opts.limits);
-  const day = todayKey();
+const inspectLimits = (limits: ChatLimits): RateLimitDecision => ({
+  allowed: true,
+  remaining: {
+    hourly: limits.hourly,
+    daily: limits.daily,
+    global: limits.global,
+  },
+});
 
-  const hourlyKey = `chat:h:${opts.tier}:${opts.callerId}`;
-  const dailyKey = `chat:d:${opts.tier}:${opts.callerId}:${day}`;
-  const globalKey = `chat:g:${day}`;
-
-  // Use the existing checkRateLimit for the increment-and-test primitive.
-  // For inspection-only (the /quota endpoint), we use a dummy key path that
-  // increments a different counter, then immediately decrement is impossible —
-  // so we instead fetch via a 0-cost increment trick: we read the current
-  // counter by allowing the increment but then *not* counting this read in
-  // the user's quota. Implementing that cleanly requires a bespoke read
-  // primitive. Simpler: when inspectOnly is true, we just return the
-  // configured limits without consuming any quota. The UI uses this only
-  // to show "x left" which is a hint anyway.
-  if (opts.inspectOnly) {
-    return {
-      allowed: true,
-      remaining: {
-        hourly: limits.hourly,
-        daily: limits.daily,
-        global: limits.global,
-      },
-    };
-  }
-
+const evaluateWindows = async (
+  limits: ChatLimits,
+  keys: { hourly: string; daily: string; global: string },
+): Promise<RateLimitDecision> => {
   // Increment+check global first so abuse spikes can be detected even
   // before per-user limits would have fired.
-  const globalResult = await checkRateLimit(globalKey, {
+  const globalResult = await checkRateLimit(keys.global, {
     limit: limits.global,
     windowMs: ONE_DAY_MS,
   });
 
-  const hourlyResult = await checkRateLimit(hourlyKey, {
+  const hourlyResult = await checkRateLimit(keys.hourly, {
     limit: limits.hourly,
     windowMs: ONE_HOUR_MS,
   });
 
-  const dailyResult = await checkRateLimit(dailyKey, {
+  const dailyResult = await checkRateLimit(keys.daily, {
     limit: limits.daily,
     windowMs: ONE_DAY_MS,
   });
 
-  // Determine the most restrictive failure (in order of importance to user).
-  if (!globalResult.allowed) {
-    return {
-      allowed: false,
-      scope: "global",
-      resetMs: globalResult.resetMs,
-      remaining: {
-        hourly: hourlyResult.remaining,
-        daily: dailyResult.remaining,
-        global: globalResult.remaining,
-      },
-    };
-  }
-
-  if (!dailyResult.allowed) {
-    return {
-      allowed: false,
-      scope: "daily",
-      resetMs: dailyResult.resetMs,
-      remaining: {
-        hourly: hourlyResult.remaining,
-        daily: dailyResult.remaining,
-        global: globalResult.remaining,
-      },
-    };
-  }
-
-  if (!hourlyResult.allowed) {
-    return {
-      allowed: false,
-      scope: "hourly",
-      resetMs: hourlyResult.resetMs,
-      remaining: {
-        hourly: hourlyResult.remaining,
-        daily: dailyResult.remaining,
-        global: globalResult.remaining,
-      },
-    };
-  }
-
-  return {
-    allowed: true,
-    remaining: {
-      hourly: hourlyResult.remaining,
-      daily: dailyResult.remaining,
-      global: globalResult.remaining,
-    },
+  const remaining = {
+    hourly: hourlyResult.remaining,
+    daily: dailyResult.remaining,
+    global: globalResult.remaining,
   };
+
+  if (!globalResult.allowed) {
+    return { allowed: false, scope: "global", resetMs: globalResult.resetMs, remaining };
+  }
+  if (!dailyResult.allowed) {
+    return { allowed: false, scope: "daily", resetMs: dailyResult.resetMs, remaining };
+  }
+  if (!hourlyResult.allowed) {
+    return { allowed: false, scope: "hourly", resetMs: hourlyResult.resetMs, remaining };
+  }
+  return { allowed: true, remaining };
+};
+
+export const checkChatRateLimit = async (opts: CheckOpts): Promise<RateLimitDecision> => {
+  const limits = resolveLimits(DEFAULT_LIMITS, opts.tier, opts.limits);
+  // inspectOnly is used by /quota as a hint only — it must not consume quota.
+  if (opts.inspectOnly) return inspectLimits(limits);
+
+  const day = todayKey();
+  return evaluateWindows(limits, {
+    hourly: `chat:h:${opts.tier}:${opts.callerId}`,
+    daily: `chat:d:${opts.tier}:${opts.callerId}:${day}`,
+    global: `chat:g:${day}`,
+  });
+};
+
+export const checkChatAttachmentRateLimit = async (opts: CheckOpts): Promise<RateLimitDecision> => {
+  const limits = resolveLimits(CHAT_ATTACHMENT_LIMITS, opts.tier, opts.limits);
+  if (opts.inspectOnly) return inspectLimits(limits);
+
+  const day = todayKey();
+  return evaluateWindows(limits, {
+    hourly: `chat:att:h:${opts.tier}:${opts.callerId}`,
+    daily: `chat:att:d:${opts.tier}:${opts.callerId}:${day}`,
+    global: `chat:att:g:${day}`,
+  });
 };
 
 export const formatResetWindow = (ms: number): string => {

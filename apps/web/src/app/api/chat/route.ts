@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { sql } from "@/utils/db";
 import { getClientIp, logRequest } from "@/lib/nim";
-import { fetchOpenRouterChatWithFallback } from "@/lib/openrouter";
-import { checkChatRateLimit, formatResetWindow, type ChatTier } from "@/lib/rate-limit";
+import { fetchOpenRouterChatWithFallback, getOpenRouterChatModels, OPENROUTER_FREE_PDF_PLUGIN } from "@/lib/openrouter";
+import {
+  ATTACHMENT_SYSTEM_NOTE,
+  buildOpenRouterUserContent,
+  DEFAULT_CHAT_ATTACHMENT_PROMPT,
+  formatStoredUserMessage,
+  parseChatAttachments,
+} from "@/lib/chat-attachments";
+import { checkChatAttachmentRateLimit, checkChatRateLimit, CHAT_ATTACHMENT_LIMITS, formatResetWindow, type ChatTier } from "@/lib/rate-limit";
 import {
   buildProfileBlock,
   loadMentorProfile,
@@ -72,6 +79,8 @@ type RateLimitErrorBody = {
   resetMs: number;
   resetIn: string;
   signinRequired?: boolean;
+  /** `attachment` = document reading only; text chat is still open. */
+  quota?: "chat" | "attachment";
   remaining: { hourly: number; daily: number; global: number };
 };
 
@@ -93,6 +102,43 @@ const rateLimitMessage = (
   return `You're sending messages a bit fast. Resets in ${reset}.`;
 };
 
+const attachmentRateLimitMessage = (
+  scope: "hourly" | "daily" | "global",
+  resetMs: number,
+): string => {
+  const reset = formatResetWindow(resetMs);
+  if (scope === "global") {
+    return "You can keep typing questions — document reading is paused today so the free mentor can stay online.";
+  }
+  const daily = CHAT_ATTACHMENT_LIMITS.user.daily;
+  if (scope === "daily") {
+    return `You can keep typing questions — document reading is limited to ${daily} per day. Resets in ${reset}.`;
+  }
+  return `You can keep typing questions — document reading is paused for a bit. Resets in ${reset}.`;
+};
+
+const json429 = (
+  decision: { scope: "hourly" | "daily" | "global"; resetMs?: number; remaining: RateLimitErrorBody["remaining"] },
+  error: string,
+  extra?: { signinRequired?: boolean; quota?: "chat" | "attachment" },
+) => {
+  const errorBody: RateLimitErrorBody = {
+    error,
+    scope: decision.scope,
+    resetMs: decision.resetMs ?? 0,
+    resetIn: formatResetWindow(decision.resetMs ?? 0),
+    signinRequired: extra?.signinRequired,
+    quota: extra?.quota,
+    remaining: decision.remaining,
+  };
+  return NextResponse.json(errorBody, {
+    status: 429,
+    headers: {
+      "Retry-After": Math.ceil((decision.resetMs ?? 0) / 1000).toString(),
+    },
+  });
+};
+
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
 
@@ -112,6 +158,7 @@ export async function POST(req: NextRequest) {
     userMessage?: string;
     /** Set by the scholarship detail panel so its facts are grounded server-side. */
     scholarshipId?: string;
+    attachments?: unknown;
   };
   try {
     body = await req.json();
@@ -144,10 +191,27 @@ export async function POST(req: NextRequest) {
     .join("\n\n")
     .trim();
 
-  const trimmedMessages = history.slice(-MAX_HISTORY);
+  const trimmedMessages = history.slice(-MAX_HISTORY).map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+  const parsedAttachments = parseChatAttachments(body.attachments);
+  if (!parsedAttachments.ok) {
+    return NextResponse.json({ error: parsedAttachments.error }, { status: 400 });
+  }
+  const attachments = parsedAttachments.attachments;
+  const multimodal = attachments.length > 0;
+
   const sessionId = body.sessionId ?? null;
   const anonKey = req.headers.get("x-anon-key");
   const { userId } = await auth();
+
+  if (multimodal && !userId) {
+    return NextResponse.json(
+      { error: "Sign in to send a document. You can keep typing questions without signing in.", signinRequired: true },
+      { status: 401 },
+    );
+  }
 
   let tier: ChatTier = "anonymous";
   let callerId: string;
@@ -164,21 +228,27 @@ export async function POST(req: NextRequest) {
   // ── Multi-window rate limit ──
   const decision = await checkChatRateLimit({ callerId, tier });
   if (!decision.allowed && decision.scope) {
-    const errorBody: RateLimitErrorBody = {
-      error: rateLimitMessage(decision.scope, tier, decision.resetMs ?? 0),
-      scope: decision.scope,
-      resetMs: decision.resetMs ?? 0,
-      resetIn: formatResetWindow(decision.resetMs ?? 0),
-      signinRequired: tier === "anonymous" && decision.scope !== "global",
-      remaining: decision.remaining,
-    };
     logRequest("chat.rate_limited", { tier, scope: decision.scope, callerId });
-    return NextResponse.json(errorBody, {
-      status: 429,
-      headers: {
-        "Retry-After": Math.ceil((decision.resetMs ?? 0) / 1000).toString(),
+    return json429(
+      { ...decision, scope: decision.scope },
+      rateLimitMessage(decision.scope, tier, decision.resetMs ?? 0),
+      {
+        signinRequired: tier === "anonymous" && decision.scope !== "global",
+        quota: "chat",
       },
-    });
+    );
+  }
+
+  if (multimodal) {
+    const attDecision = await checkChatAttachmentRateLimit({ callerId, tier });
+    if (!attDecision.allowed && attDecision.scope) {
+      logRequest("chat.attachment_rate_limited", { tier, scope: attDecision.scope, callerId });
+      return json429(
+        { ...attDecision, scope: attDecision.scope },
+        attachmentRateLimitMessage(attDecision.scope, attDecision.resetMs ?? 0),
+        { quota: "attachment" },
+      );
+    }
   }
 
   // ── Verify session ownership when a sessionId is supplied ──
@@ -201,14 +271,32 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  if (sessionId && body.userMessage) {
-    sql`
-      INSERT INTO chat_messages (session_id, role, content)
-      VALUES (${sessionId}, 'user', ${body.userMessage})
-    `.catch((err: unknown) => console.error("[chat] failed to save user message:", err));
+  let lastUserIdx = -1;
+  for (let i = trimmedMessages.length - 1; i >= 0; i--) {
+    if (trimmedMessages[i].role === "user") {
+      lastUserIdx = i;
+      break;
+    }
+  }
+  if (multimodal && lastUserIdx >= 0 && !trimmedMessages[lastUserIdx].content.trim()) {
+    trimmedMessages[lastUserIdx] = {
+      ...trimmedMessages[lastUserIdx],
+      content: DEFAULT_CHAT_ATTACHMENT_PROMPT,
+    };
   }
 
   const lastUserMessage = [...trimmedMessages].reverse().find((m) => m.role === "user");
+  const storedUserText = formatStoredUserMessage(
+    body.userMessage ?? lastUserMessage?.content ?? "",
+    attachments,
+  );
+
+  if (sessionId && storedUserText) {
+    sql`
+      INSERT INTO chat_messages (session_id, role, content)
+      VALUES (${sessionId}, 'user', ${storedUserText})
+    `.catch((err: unknown) => console.error("[chat] failed to save user message:", err));
+  }
 
   // ── Profile context ──
   const profileBlock = buildProfileBlock(profile);
@@ -219,8 +307,9 @@ export async function POST(req: NextRequest) {
   // if the question ("Am I eligible?") carries no searchable keywords.
   let retrieved: { block: string; scholarshipIds: string[] } = { block: "", scholarshipIds: [] };
   try {
-    if (lastUserMessage?.content) {
-      retrieved = await retrieveScholarshipContext(lastUserMessage.content, openRouterKey);
+    const ragQuery = (lastUserMessage?.content ?? "").trim();
+    if (ragQuery) {
+      retrieved = await retrieveScholarshipContext(ragQuery, openRouterKey);
     }
   } catch (err) {
     logRequest("rag.context.error", { ip, error: String(err) });
@@ -256,14 +345,30 @@ export async function POST(req: NextRequest) {
     `Today's date is ${today} (Asia/Dhaka). Use it when judging whether a deadline has passed.`,
     profileBlock,
     clientContext ? `PAGE CONTEXT PROVIDED BY THE APP:\n${clientContext}` : "",
+    multimodal ? ATTACHMENT_SYSTEM_NOTE : "",
     contextBlock,
   ]
     .filter(Boolean)
     .join("\n\n");
 
+  const openRouterMessages = trimmedMessages.map((m, i) =>
+    multimodal && i === lastUserIdx && m.role === "user"
+      ? { role: "user" as const, content: buildOpenRouterUserContent(m.content, attachments) }
+      : { role: m.role, content: m.content },
+  );
+
+  const models = getOpenRouterChatModels({ multimodal });
+  if (multimodal && models.length === 0) {
+    return NextResponse.json(
+      { error: "File reading is not configured on the server." },
+      { status: 500 },
+    );
+  }
+
   // ── Live model call ──
+  const hasPdf = attachments.some((a) => a.kind === "file");
   const chatPayload = {
-    messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
+    messages: [{ role: "system", content: systemPrompt }, ...openRouterMessages],
     max_tokens: MAX_OUTPUT_TOKENS,
     temperature: 0.7,
     top_p: 0.95,
@@ -274,6 +379,7 @@ export async function POST(req: NextRequest) {
     // perceived chat latency. A mentor Q&A doesn't need deep multi-step
     // reasoning the way structured CV extraction does, so speed wins here.
     reasoning: { enabled: false },
+    ...(hasPdf ? { plugins: [OPENROUTER_FREE_PDF_PLUGIN] } : {}),
   };
 
   let upstreamRes: Response;
@@ -282,6 +388,7 @@ export async function POST(req: NextRequest) {
     const result = await fetchOpenRouterChatWithFallback(chatPayload, {
       apiKey: openRouterKey,
       accept: "text/event-stream",
+      models,
     });
     upstreamRes = result.response;
     upstreamModel = result.model;
@@ -295,7 +402,7 @@ export async function POST(req: NextRequest) {
   const encoder = new TextEncoder();
   const upstreamStream = upstreamRes.body!;
   let fullAssistantContent = "";
-  logRequest("chat.stream.start", { ip, tier, model: upstreamModel });
+  logRequest("chat.stream.start", { ip, tier, model: upstreamModel, multimodal });
 
   const readable = new ReadableStream({
     async start(controller) {
@@ -377,8 +484,8 @@ export async function POST(req: NextRequest) {
             VALUES (${sessionId}, 'assistant', ${fullAssistantContent})
           `.catch((err: unknown) => console.error("[chat] failed to save assistant message:", err));
 
-          if (body.userMessage) {
-            const title = body.userMessage.slice(0, 60).trim();
+          if (storedUserText) {
+            const title = storedUserText.slice(0, 60).trim();
             sql`
               UPDATE chat_sessions SET title = ${title}
               WHERE id = ${sessionId} AND title = 'New conversation'

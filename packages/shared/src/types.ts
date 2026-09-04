@@ -242,11 +242,50 @@ export interface ChatMessage {
 }
 
 /**
+ * One file the mentor should see on this turn. Bytes go to GPT-5.6 Luna
+ * (vision model) — DeepSeek V4 Flash is text-only and Gemini is not used
+ * for attachments because of token cost.
+ */
+export interface ChatAttachment {
+  /** Display name, e.g. `offer-letter.pdf`. */
+  name: string;
+  mimeType: string;
+  /** Raw base64, without a `data:` URL prefix. */
+  data: string;
+}
+
+/** Images the vision model accepts inline. `image/jpg` is normalized to jpeg.
+ *  Keep in sync with `apps/web/src/lib/chat-attachments.ts`. */
+export const CHAT_IMAGE_MIME_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+] as const;
+
+export const CHAT_FILE_MIME_TYPES = ["application/pdf"] as const;
+
+export const CHAT_ATTACHMENT_MAX_COUNT = 1;
+/** Per-file cap. Tight enough to bound vision tokens; 1 MB fits a photo or a typical PDF. */
+export const CHAT_ATTACHMENT_MAX_BYTES = 1024 * 1024;
+export const CHAT_ATTACHMENT_MAX_TOTAL_BYTES = 1024 * 1024;
+/** Signed-in students. Enforced server-side; keep client copy in sync. */
+export const CHAT_ATTACHMENT_DAILY_LIMIT = 2;
+
+export const DEFAULT_CHAT_ATTACHMENT_PROMPT =
+  "Please look at the attached file(s) and tell me what matters for my scholarship applications.";
+
+/**
  * Request body for `POST /api/chat`. `anonKey` travels as the `x-anon-key` header.
  *
  * The server owns the system prompt: it injects the signed-in student's profile
  * summary and the retrieved scholarship facts on every turn. Any `system`
  * message sent here is folded in as supplementary page context, not used as-is.
+ *
+ * `attachments` apply only to the latest user turn. History stays text so a
+ * follow-up can use DeepSeek again.
  */
 export interface ChatRequestBody {
   messages: ChatMessage[];
@@ -258,6 +297,8 @@ export interface ChatRequestBody {
    * scholarship's exact deadline and eligibility into the prompt.
    */
   scholarshipId?: string;
+  /** Photos / PDFs for this turn. Presence switches the request onto the vision model. */
+  attachments?: ChatAttachment[];
 }
 
 /** SSE frames emitted by `POST /api/chat` (`data: {...}\n\n`). */

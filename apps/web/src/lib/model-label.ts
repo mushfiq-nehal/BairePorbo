@@ -24,6 +24,7 @@ const KNOWN_MODELS: Record<string, string> = {
   "anthropic/claude-haiku-4": "Claude Haiku",
   "openai/gpt-4o-mini": "GPT-4o",
   "openai/gpt-5-mini": "GPT-5",
+  "openai/gpt-5.6-luna": "GPT-5.6 Luna",
   "nvidia/nv-embedqa-e5-v5": "NVIDIA Embed",
   "nvidia/llama-nemotron-embed-1b-v2": "NVIDIA Embed",
   "nvidia/nemotron-3-embed-1b": "NVIDIA Embed",

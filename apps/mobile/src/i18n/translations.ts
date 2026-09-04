@@ -223,6 +223,70 @@ export const translations = {
   "chat.suggest2": { en: "Do I need IELTS for Germany?", bn: "জার্মানিতে IELTS লাগবে?" },
   "chat.suggest3": { en: "Summarize DAAD EPOS requirements", bn: "DAAD EPOS-এর শর্ত সংক্ষেপে বলো" },
   "chat.suggest4": { en: "Create a 90-day prep plan", bn: "৯০ দিনের প্রস্তুতি প্ল্যান দাও" },
+  "chat.attach": { en: "Add a document", bn: "ডকুমেন্ট যোগ করুন" },
+  "chat.attachTitle": { en: "What should the mentor look at?", bn: "মেন্টর কী দেখবে?" },
+  "chat.attachSheetSub": {
+    en: "One document with this message, max 1 MB. You can always keep typing questions.",
+    bn: "এই মেসেজে একটি ডকুমেন্ট, সর্বোচ্চ ১ MB। প্রশ্ন টাইপ করা সবসময় খোলা থাকবে।",
+  },
+  "chat.attachCv": { en: "My CV / resume", bn: "আমার CV / resume" },
+  "chat.attachCvHint": { en: "PDF — strengths, gaps, what to fix first", bn: "PDF — শক্তি, ঘাটতি, আগে কী ঠিক করব" },
+  "chat.attachTranscript": { en: "Transcript / marksheet", bn: "ট্রান্সক্রিপ্ট / মার্কশিট" },
+  "chat.attachTranscriptHint": { en: "PDF or photo — grades and eligibility", bn: "PDF বা ছবি — গ্রেড ও যোগ্যতা" },
+  "chat.attachLetter": { en: "Offer or scholarship letter", bn: "অফার বা scholarship লেটার" },
+  "chat.attachLetterHint": { en: "PDF or photo — deadline, funding, conditions", bn: "PDF বা ছবি — ডেডলাইন, ফান্ডিং, শর্ত" },
+  "chat.attachShot": { en: "Deadline or requirement screenshot", bn: "ডেডলাইন বা শর্তের স্ক্রিনশট" },
+  "chat.attachShotHint": { en: "A page from a portal or email", bn: "পোর্টাল বা ইমেইলের একটি পাতা" },
+  "chat.attachPromptCv": {
+    en: "Please review this CV for scholarship and master's applications. What should I fix first?",
+    bn: "Scholarship ও master's application-এর জন্য এই CV-টা দেখো। আগে কী ঠিক করা উচিত?",
+  },
+  "chat.attachPromptTranscript": {
+    en: "Please read this transcript or marksheet. Summarise my grades and flag anything that matters for scholarship eligibility.",
+    bn: "এই ট্রান্সক্রিপ্ট বা মার্কশিট পড়ো। গ্রেড সারসংক্ষেপ করো, scholarship যোগ্যতার জন্য যা জরুরি তা বলে দাও।",
+  },
+  "chat.attachPromptLetter": {
+    en: "Please read this offer or scholarship letter. Extract the deadline, funding, conditions, and what I should do next.",
+    bn: "এই অফার বা scholarship লেটার পড়ো। ডেডলাইন, ফান্ডিং, শর্ত আর আমার পরের কাজটা বের করে দাও।",
+  },
+  "chat.attachPromptShot": {
+    en: "Please read this screenshot. Quote any deadline, requirement, or figure exactly as written.",
+    bn: "এই স্ক্রিনশট পড়ো। যে ডেডলাইন, শর্ত বা সংখ্যা আছে হুবহু লিখে দাও।",
+  },
+  "chat.attachHint": {
+    en: "1 document per message, max 1 MB. 2 document readings per day — typing is unlimited.",
+    bn: "প্রতি মেসেজে ১টি ডকুমেন্ট, সর্বোচ্চ ১ MB। দিনে ২বার পড়া যাবে — টাইপ করা সীমাহীন।",
+  },
+  "chat.attachTooLarge": {
+    en: "That file is too large (max 1 MB). Try a clearer screenshot or a smaller PDF.",
+    bn: "ফাইলটি বড় (সর্বোচ্চ ১ MB)। পরিষ্কার স্ক্রিনশট বা ছোট PDF চেষ্টা করুন।",
+  },
+  "chat.attachTooMany": { en: "One document per message — remove this one first, or it will be replaced.", bn: "প্রতি মেসেজে একটি ডকুমেন্ট — আগে এটি সরান, নইলে নতুনটি বসবে।" },
+  "chat.attachUnsupported": {
+    en: "Use a photo (JPEG, PNG, WebP) or a PDF.",
+    bn: "ছবি (JPEG, PNG, WebP) অথবা PDF ব্যবহার করুন।",
+  },
+  "chat.attachUnreadable": {
+    en: "Couldn't read that file. Try another one.",
+    bn: "ফাইলটি পড়া যায়নি। অন্যটি চেষ্টা করুন।",
+  },
+  "chat.attachSignIn": {
+    en: "Sign in to send a document. You can keep typing questions.",
+    bn: "ডকুমেন্ট পাঠাতে সাইন ইন করুন। প্রশ্ন টাইপ করা যাবে।",
+  },
+  "chat.attachLimitDaily": {
+    en: "You can keep typing — only document reading is limited (2 per day).",
+    bn: "টাইপ করা যাবে — শুধু ডকুমেন্ট পড়া সীমিত (দিনে ২টি)।",
+  },
+  "chat.attachLimitHourly": {
+    en: "You can keep typing — document reading is paused for a bit (2 per hour).",
+    bn: "টাইপ করা যাবে — ডকুমেন্ট পড়া কিছুক্ষণ বন্ধ (ঘণ্টায় ২টি)।",
+  },
+  "chat.attachLimitGlobal": {
+    en: "You can keep typing — document reading is paused today so the free mentor can stay online.",
+    bn: "টাইপ করা যাবে — ফ্রি মেন্টর চালু রাখতে আজ ডকুমেন্ট পড়া বন্ধ আছে।",
+  },
+  "chat.attachLimitReset": { en: "Resets in", bn: "আবার খুলবে" },
 
   // ── Redesign: Guides ──
   "guides.knowledgeHub": { en: "Knowledge Hub", bn: "নলেজ হাব" },
@@ -327,6 +391,10 @@ export const translations = {
   "profile.edit": { en: "Edit profile", bn: "প্রোফাইল সম্পাদনা" },
   "profile.savedToast": { en: "Profile saved", bn: "প্রোফাইল সংরক্ষিত হয়েছে" },
   "profile.saveError": { en: "Couldn't save. Try again.", bn: "সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।" },
+  "profile.loadError": {
+    en: "Couldn't load your profile. Try again.",
+    bn: "প্রোফাইল লোড করা যায়নি। আবার চেষ্টা করুন।",
+  },
   "profile.sectionBasics": { en: "Basics", bn: "মূল তথ্য" },
   "profile.sectionAcademics": { en: "Academics", bn: "একাডেমিক" },
   "profile.sectionGoals": { en: "Goals & research", bn: "লক্ষ্য ও গবেষণা" },
