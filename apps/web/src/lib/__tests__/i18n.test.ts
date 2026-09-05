@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isBnPath, routeLocale, toggleTarget } from "../i18n";
+import { homeHref, isBnPath, isHomePath, routeLocale, toggleTarget } from "../i18n";
 
 describe("routeLocale", () => {
   test("Bangla prefix is always bn", () => {
@@ -8,13 +8,29 @@ describe("routeLocale", () => {
     expect(routeLocale("/bn/scholarships")).toBe("bn");
   });
 
-  test("localized English homepage is en, even if preference would be bn", () => {
-    expect(routeLocale("/")).toBe("en");
+  test("English homepage follows stored preference rather than forcing en", () => {
+    expect(routeLocale("/")).toBeNull();
   });
 
   test("non-localized pages defer to stored preference", () => {
     expect(routeLocale("/scholarships")).toBeNull();
     expect(routeLocale("/chat")).toBeNull();
+  });
+});
+
+describe("homeHref", () => {
+  test("Bangla preference lands on the localized homepage", () => {
+    expect(homeHref("bn")).toBe("/bn");
+    expect(homeHref("en")).toBe("/");
+  });
+});
+
+describe("isHomePath", () => {
+  test("treats both locale homepages as home", () => {
+    expect(isHomePath("/")).toBe(true);
+    expect(isHomePath("/bn")).toBe(true);
+    expect(isHomePath("/bn/")).toBe(true);
+    expect(isHomePath("/scholarships")).toBe(false);
   });
 });
 

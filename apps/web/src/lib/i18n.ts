@@ -63,14 +63,23 @@ export function isBnPath(pathname: string): boolean {
   return pathname === "/bn" || pathname === "/bn/" || pathname.startsWith("/bn/");
 }
 
+/** Homepage in either locale (`/` or `/bn`). */
+export function isHomePath(pathname: string): boolean {
+  return pathname === "/" || pathname === "/bn" || pathname === "/bn/";
+}
+
+/** Homepage URL for the active UI language. */
+export function homeHref(lang: Locale): string {
+  return lang === "bn" ? "/bn" : "/";
+}
+
 /**
- * Locale dictated by the URL, or null when the page is not a localized
- * counterpart (chrome language then comes from the user's stored preference).
+ * Locale dictated by the URL, or null when chrome should follow the stored
+ * preference. Only `/bn` is forced — `/` is the English SEO URL but still
+ * shows the user's language so it cannot drift from the rest of the app.
  */
 export function routeLocale(pathname: string): Locale | null {
   if (isBnPath(pathname)) return "bn";
-  const logical = pathname || "/";
-  if (localizedPaths.includes(logical)) return "en";
   return null;
 }
 

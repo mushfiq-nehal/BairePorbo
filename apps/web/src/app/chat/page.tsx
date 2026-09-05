@@ -7,9 +7,10 @@ import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/lang-context";
+import { useT, useLang } from "@/lib/lang-context";
 import { useDialog } from "@/components/ui/dialog-provider";
 import PrimaryNav from "@/components/layout/primary-nav";
+import { homeHref } from "@/lib/i18n";
 import styles from "./chat.module.css";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -128,6 +129,7 @@ function ChatContent() {
   const dialog = useDialog();
   const { userId, signOut } = useAuth();
   const t = useT();
+  const { lang } = useLang();
 
   const [anonKey, setAnonKey] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -483,7 +485,7 @@ function ChatContent() {
         <aside className={`${styles.sidebar} ${isSidebarOpen ? styles.sidebarOpen : ""}`}>
           <div className={styles.sidebarHeader}>
             <div className={styles.sidebarBrandRow}>
-              <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Link href={homeHref(lang)} className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
                 <Image src="/logo.png" alt="BairePorbo Logo" width={30} height={30} className={styles.brandLogo} />
                 <div>
                   <p className={styles.brandName}>BairePorbo</p>

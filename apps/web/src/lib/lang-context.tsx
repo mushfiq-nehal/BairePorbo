@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { routeLocale } from "./i18n";
 import { translations, type Lang, type TranslationKey } from "./translations";
@@ -59,7 +59,7 @@ export function LangProvider({
     }
   }, []);
 
-  const setLang = (l: Lang) => {
+  const setLang = useCallback((l: Lang) => {
     setLangState(l);
     try {
       // Persist to localStorage for client-side reads
@@ -69,22 +69,20 @@ export function LangProvider({
     } catch {
       // ignore
     }
-  };
+  }, []);
 
-  return (
-    <LangContext.Provider value={{ lang, setLang }}>
-      {children}
-    </LangContext.Provider>
-  );
+  const value = useMemo(() => ({ lang, setLang }), [lang, setLang]);
+
+  return <LangContext.Provider value={value}>{children}</LangContext.Provider>;
 }
 
 export function useLang() {
   const ctx = useContext(LangContext);
   const forced = useContext(ForcedLangContext);
   const pathname = usePathname();
-  // Localized URLs win over stored preference so / and /bn match the document
-  // the user actually opened — including after a second toggle, when the root
-  // provider may not have remounted.
+  // `/bn` is always Bangla (SEO + shared links). Every other page — including
+  // `/` — follows the stored preference so the switcher cannot desync the
+  // homepage from scholarships/chat/etc.
   const fromRoute = routeLocale(pathname ?? "/");
   return {
     lang: forced ?? fromRoute ?? ctx.lang,

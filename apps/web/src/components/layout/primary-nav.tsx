@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/lang-context";
+import { useT, useLang } from "@/lib/lang-context";
+import { homeHref, isHomePath } from "@/lib/i18n";
 import styles from "./primary-nav.module.css";
 
 type PrimaryNavProps = {
@@ -16,9 +17,15 @@ export default function PrimaryNav({ className, orientation = "horizontal", onNa
   const pathname = usePathname();
   const { role } = useAuth();
   const t = useT();
+  const { lang } = useLang();
 
-  const NAV_LINKS = [
-    { label: t("nav.home"), href: "/" },
+  const NAV_LINKS: Array<{
+    label: string;
+    href: string;
+    desktopOnly?: boolean;
+    home?: boolean;
+  }> = [
+    { label: t("nav.home"), href: homeHref(lang), home: true },
     { label: t("nav.scholarships"), href: "/scholarships" },
     { label: t("nav.guideline"), href: "/guide", desktopOnly: true },
     { label: t("nav.dashboard"), href: "/dashboard" },
@@ -32,7 +39,9 @@ export default function PrimaryNav({ className, orientation = "horizontal", onNa
       className={`${styles.nav} ${orientation === "vertical" ? styles.vertical : ""} ${className ?? ""}`.trim()}
     >
       {NAV_LINKS.map((link) => {
-        const isActive = pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
+        const isActive = link.home
+          ? isHomePath(pathname ?? "/")
+          : pathname === link.href || (link.href !== "/" && pathname?.startsWith(link.href));
         return (
           <Link
             key={link.href}

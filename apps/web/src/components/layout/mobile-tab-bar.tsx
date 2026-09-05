@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { useT } from "@/lib/lang-context";
+import { useLang, useT } from "@/lib/lang-context";
+import { homeHref, isHomePath } from "@/lib/i18n";
 import styles from "./mobile-tab-bar.module.css";
 
 type Tab = {
@@ -12,6 +13,7 @@ type Tab = {
   icon: React.ReactNode;
   /** A path the tab also "owns" — e.g. /scholarships/[id] still highlights Scholarships. */
   matchPrefix?: string;
+  home?: boolean;
 };
 
 const HomeIcon = () => (
@@ -64,6 +66,7 @@ export default function MobileTabBar() {
   const pathname = usePathname() ?? "/";
   const { userId } = useAuth();
   const t = useT();
+  const { lang } = useLang();
 
   // Hide the tab bar on auth flow pages — they're focused, modal-like
   // experiences where extra navigation is a distraction.
@@ -76,7 +79,7 @@ export default function MobileTabBar() {
   }
 
   const tabs: Tab[] = [
-    { href: "/", label: t("tab.home"), icon: <HomeIcon /> },
+    { href: homeHref(lang), label: t("tab.home"), icon: <HomeIcon />, home: true },
     {
       href: "/scholarships",
       label: t("nav.scholarships"),
@@ -96,6 +99,7 @@ export default function MobileTabBar() {
   ];
 
   const isActive = (tab: Tab) => {
+    if (tab.home) return isHomePath(pathname);
     if (tab.matchPrefix) {
       return pathname === tab.matchPrefix || pathname.startsWith(`${tab.matchPrefix}/`);
     }

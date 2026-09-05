@@ -5,7 +5,9 @@ import Image from "next/image";
 import { useState } from "react";
 import PrimaryNav from "@/components/layout/primary-nav";
 import LangToggle from "@/components/layout/lang-toggle";
-import { useT } from "@/lib/lang-context";
+import { useAuth } from "@/lib/auth";
+import { useLang, useT } from "@/lib/lang-context";
+import { homeHref } from "@/lib/i18n";
 import styles from "./app-navbar.module.css";
 
 export type NavAction = {
@@ -22,12 +24,13 @@ type AppNavbarProps = {
 export default function AppNavbar({ actions = [] }: AppNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const t = useT();
+  const { lang } = useLang();
 
   const closeMenu = () => setMenuOpen(false);
 
   return (
     <header className={styles.nav}>
-      <Link href="/" className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Link href={homeHref(lang)} className={styles.brand} style={{ textDecoration: 'none', color: 'inherit' }}>
         <Image src="/logo.png" alt="BairePorbo Logo" width={28} height={28} className={styles.brandLogo} />
         <span>BairePorbo</span>
       </Link>
