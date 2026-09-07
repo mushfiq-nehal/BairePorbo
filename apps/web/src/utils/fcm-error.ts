@@ -39,3 +39,19 @@ export function isPermanentFcmTokenError(status: number, body: string): boolean 
   }
   return /UNREGISTERED|SENDER_ID_MISMATCH/.test(message);
 }
+
+const TRANSIENT_STATUS = new Set([429, 500, 502, 503, 504]);
+
+/** Google 500 INTERNAL / UNAVAILABLE — retry, do not disable the device token. */
+export function isTransientFcmError(status: number, body: string): boolean {
+  if (isPermanentFcmTokenError(status, body)) return false;
+  if (TRANSIENT_STATUS.has(status)) return true;
+  try {
+    const parsed = JSON.parse(body) as FcmErrorBody;
+    const statusName = parsed.error?.status ?? "";
+    const fcmCode = parsed.error?.details?.find((d) => d.errorCode)?.errorCode ?? "";
+    return statusName === "INTERNAL" || statusName === "UNAVAILABLE" || fcmCode === "INTERNAL" || fcmCode === "UNAVAILABLE";
+  } catch {
+    return /INTERNAL|UNAVAILABLE/i.test(body);
+  }
+}

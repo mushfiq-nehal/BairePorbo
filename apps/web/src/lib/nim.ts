@@ -70,6 +70,9 @@ const getRedis = (): Redis | null => {
     globalScope.__bpRedis = new Redis(redisUrl, {
       enableReadyCheck: false,
       maxRetriesPerRequest: 1,
+      // Railway private networking is IPv6. Dual-stack so local REDIS_URL
+      // (IPv4) and Railway (IPv6) both work.
+      family: 0,
     });
   }
 

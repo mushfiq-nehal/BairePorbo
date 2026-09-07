@@ -53,11 +53,10 @@ const MAX_OUTPUT_TOKENS = 4096;
 // "thinking" tokens before the first visible content delta — this must stay
 // safely above that or it will fire on perfectly healthy replies.
 const STREAM_STALL_MS = 45_000;
-// Hard ceiling on total generation time. Production has already logged
-// legitimate 200 OK replies taking up to ~165s, so this is set well above
-// that observed ceiling — it exists only to bound a truly pathological run,
-// not to police normal slow replies. Whatever was already streamed is kept.
-const STREAM_MAX_MS = 180_000;
+// Cloudflare's origin proxy times out at 100s. Cap wall-clock time from the
+// start of this request (RAG + generation) so the client gets a clean stop
+// instead of a hung stream. Whatever was already streamed is kept.
+const CF_ORIGIN_BUDGET_MS = 90_000;
 
 class StreamStallError extends Error {}
 
@@ -140,6 +139,7 @@ const json429 = (
 };
 
 export async function POST(req: NextRequest) {
+  const requestStartedAt = Date.now();
   const ip = getClientIp(req);
 
   // ── Server config sanity ──
@@ -413,19 +413,19 @@ export async function POST(req: NextRequest) {
       const reader = upstreamStream.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      const streamStartedAt = Date.now();
       let stoppedEarly: "stalled" | "max_duration" | null = null;
 
       try {
         while (true) {
-          if (Date.now() - streamStartedAt > STREAM_MAX_MS) {
+          const budgetLeft = CF_ORIGIN_BUDGET_MS - (Date.now() - requestStartedAt);
+          if (budgetLeft <= 1_000) {
             stoppedEarly = "max_duration";
             break;
           }
 
           let read: ReadableStreamReadResult<Uint8Array>;
           try {
-            read = await readWithTimeout(reader, STREAM_STALL_MS);
+            read = await readWithTimeout(reader, Math.min(STREAM_STALL_MS, budgetLeft));
           } catch (err) {
             if (err instanceof StreamStallError) {
               stoppedEarly = "stalled";

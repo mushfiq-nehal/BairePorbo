@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { sql } from "@/utils/db";
-import { isPermanentFcmTokenError } from "@/utils/fcm-error";
+import { isPermanentFcmTokenError, isTransientFcmError } from "@/utils/fcm-error";
 
 /**
  * Push delivery over FCM HTTP v1.
@@ -178,26 +178,38 @@ async function sendOne(
     },
   };
 
-  let res: Response;
-  try {
-    res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    console.error("[push] network error talking to FCM:", err);
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let res: Response;
+    try {
+      res = await fetch(`https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      if (attempt < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 200 * 4 ** (attempt - 1)));
+        continue;
+      }
+      console.error("[push] network error talking to FCM:", err);
+      return "failed";
+    }
+
+    if (res.ok) return "sent";
+
+    const text = await res.text().catch(() => "");
+    if (isPermanentFcmTokenError(res.status, text)) return "invalid";
+    if (attempt < maxAttempts && isTransientFcmError(res.status, text)) {
+      await new Promise((r) => setTimeout(r, 200 * 4 ** (attempt - 1)));
+      continue;
+    }
+    console.error("[push] FCM rejected a send:", res.status, text.slice(0, 300));
     return "failed";
   }
-
-  if (res.ok) return "sent";
-
-  const text = await res.text().catch(() => "");
-  if (isPermanentFcmTokenError(res.status, text)) return "invalid";
-  console.error("[push] FCM rejected a send:", res.status, text.slice(0, 300));
   return "failed";
 }
 

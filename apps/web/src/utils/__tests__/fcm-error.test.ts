@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { isPermanentFcmTokenError } from "../fcm-error";
+import { isPermanentFcmTokenError, isTransientFcmError } from "../fcm-error";
 
 function fcmJson(status: string, message: string, errorCode?: string): string {
   return JSON.stringify({
@@ -73,6 +73,19 @@ describe("isPermanentFcmTokenError", () => {
       isPermanentFcmTokenError(500, fcmJson("INTERNAL", "Internal error")),
     ).toBe(false);
     expect(isPermanentFcmTokenError(503, "upstream timeout")).toBe(false);
+  });
+
+  test("isTransientFcmError matches Google INTERNAL / 5xx and not dead tokens", () => {
+    expect(isTransientFcmError(500, fcmJson("INTERNAL", "Internal error occurred.", "INTERNAL"))).toBe(
+      true,
+    );
+    expect(isTransientFcmError(503, "upstream timeout")).toBe(true);
+    expect(
+      isTransientFcmError(
+        404,
+        fcmJson("NOT_FOUND", "Requested entity was not found.", "UNREGISTERED"),
+      ),
+    ).toBe(false);
   });
 
   test("plain-text UNREGISTERED still matches when JSON parse fails", () => {
