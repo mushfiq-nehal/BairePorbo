@@ -70,8 +70,9 @@ ${scholarship.raw_description ?? "No description provided"}
       model,
       system: ENRICH_SYSTEM,
       user: userPrompt,
-      maxTokens: 1024,
+      maxTokens: 2048,
       temperature: 0.4,
+      json: true,
     });
     raw = result.content;
     modelUsed = result.modelUsed;
@@ -83,8 +84,7 @@ ${scholarship.raw_description ?? "No description provided"}
 
   let enriched: Record<string, unknown>;
   try {
-    const cleaned = raw.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
-    enriched = JSON.parse(cleaned);
+    enriched = parseJsonFromCompletion(raw);
   } catch {
     return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 422 });
   }
@@ -111,6 +111,3 @@ ${scholarship.raw_description ?? "No description provided"}
 
   return NextResponse.json({ scholarship: updated[0], enriched });
 }
-
-// Re-export unused import to satisfy TypeScript
-export { parseJsonFromCompletion };

@@ -43,12 +43,10 @@ type CompletionOpts = {
   timeoutMs?: number;
   /** Many OpenRouter models (e.g. deepseek-v4-pro) are "reasoning" models
    * that, by default, spend 15-35s generating invisible thinking tokens
-   * before writing the actual answer. For latency-sensitive, well-structured
-   * tasks (like JSON extraction) that reasoning adds little value but risks
-   * both truncation (thinking eats the maxTokens budget) and platform
-   * timeouts. Set `enabled: false` to skip reasoning entirely — the fastest,
-   * most reliable option. Use `exclude: true` if you want the model to still
-   * reason but keep the trace out of `content`. */
+   * before writing the actual answer. Unset = leave the model's own default
+   * in place. Pass `{ enabled: false }` only when a caller has measured that
+   * reasoning hurts that specific task (chat latency, CV JSON truncation).
+   * Use `exclude: true` to still reason but keep the trace out of `content`. */
   reasoning?: {
     enabled?: boolean;
     effort?: "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
@@ -159,13 +157,13 @@ const callOpenRouter = async ({
 
     type Annotation = { type: string; url_citation?: { url: string; title?: string } };
     const data = (await res.json()) as {
-      choices?: { message?: { content?: string; annotations?: Annotation[] } }[];
+      choices?: { message?: { content?: unknown; annotations?: Annotation[] } }[];
     };
     const message = data?.choices?.[0]?.message;
     const citations = message?.annotations
       ?.filter((a) => a.type === "url_citation" && a.url_citation)
       .map((a) => ({ url: a.url_citation!.url, title: a.url_citation!.title }));
-    return { content: message?.content ?? "", citations: citations?.length ? citations : undefined };
+    return { content: contentToString(message?.content), citations: citations?.length ? citations : undefined };
   } catch (err) {
     if (err instanceof Error && (err.name === "AbortError" || err.name === "TimeoutError")) {
       throw new Error(`OpenRouter request to ${model} timed out after ${timeoutMs}ms`);
@@ -208,8 +206,8 @@ const callNim = async (
         lastError = new Error(`NIM error (${res.status}) for ${model}: ${await res.text()}`);
         continue;
       }
-      const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-      return { content: data?.choices?.[0]?.message?.content ?? "", model };
+      const data = (await res.json()) as { choices?: { message?: { content?: unknown } }[] };
+      return { content: contentToString(data?.choices?.[0]?.message?.content), model };
     } catch (err) {
       lastError = new Error(`NIM network error for ${model}: ${String(err)}`);
     }
@@ -218,7 +216,18 @@ const callNim = async (
 };
 
 export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionResult> => {
-  const { model, system, user, maxTokens = 1024, temperature = 0.2, webSearch, webSearchMaxResults = 5, timeoutMs, reasoning, json } = opts;
+  const {
+    model,
+    system,
+    user,
+    maxTokens = 1024,
+    temperature = 0.2,
+    webSearch,
+    webSearchMaxResults = 5,
+    timeoutMs,
+    reasoning,
+    json,
+  } = opts;
   const messages: Message[] = [
     { role: "system", content: system },
     { role: "user", content: user },
@@ -252,14 +261,52 @@ export const fetchCompletion = async (opts: CompletionOpts): Promise<CompletionR
   return { content, modelUsed: orModel, citations };
 };
 
-/** Strip markdown code fences and parse JSON from a model response. */
-export const parseJsonFromCompletion = <T = Record<string, unknown>>(raw: string): T => {
-  const cleaned = raw
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
+/** OpenRouter sometimes returns message.content as a string, sometimes as
+ * an array of `{ type, text }` parts. Downstream parsers assume a string. */
+const contentToString = (content: unknown): string => {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && typeof (part as { text?: unknown }).text === "string") {
+          return (part as { text: string }).text;
+        }
+        return "";
+      })
+      .join("");
+  }
+  return "";
+};
+
+/** Strip reasoning-model wrappers that some providers leak into `content`
+ * even when the actual JSON follows afterwards. */
+const stripReasoningWrappers = (raw: string): string =>
+  raw
+    .replace(/<think\b[^>]*>[\s\S]*?<\/think>/gi, "")
+    .replace(/<thinking\b[^>]*>[\s\S]*?<\/thinking>/gi, "")
+    .trim();
+
+const stripJsonFences = (raw: string): string =>
+  raw
+    .replace(/^```(?:json)?\s*/i, "")
     .replace(/```\s*$/i, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+
+/**
+ * Parse JSON from a model response. Strips thinking wrappers and markdown
+ * fences first; if the remainder still isn't a bare object, extracts the
+ * outermost `{...}` (models sometimes add a sentence around the JSON).
+ * Throws if nothing parseable remains — most commonly a response truncated
+ * mid-object by the token budget.
+ */
+export const parseJsonFromCompletion = <T = Record<string, unknown>>(raw: string): T => {
+  const cleaned = stripJsonFences(stripReasoningWrappers(String(raw ?? "")));
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    return extractJsonObject<T>(cleaned);
+  }
 };
 
 /**
@@ -272,10 +319,11 @@ export const parseJsonFromCompletion = <T = Record<string, unknown>>(raw: string
  * a signal to retry with a larger maxTokens.
  */
 export const extractJsonObject = <T = Record<string, unknown>>(raw: string): T => {
-  const start = raw.indexOf("{");
-  const end = raw.lastIndexOf("}");
+  const text = stripJsonFences(stripReasoningWrappers(String(raw ?? "")));
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
     throw new Error("No JSON object found in response");
   }
-  return JSON.parse(raw.slice(start, end + 1)) as T;
+  return JSON.parse(text.slice(start, end + 1)) as T;
 };

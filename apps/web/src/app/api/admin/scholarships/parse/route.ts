@@ -125,8 +125,13 @@ export async function POST(req: NextRequest) {
       model,
       system: PARSE_SYSTEM,
       user: userPrompt,
-      maxTokens: 900,
+      // 900 was too tight once scrape injects up to 8k chars of page text:
+      // the model writes a long `raw_description_english` and the object
+      // gets cut off mid-string → 422 "AI returned invalid JSON". JSON mode
+      // also stops almost-valid JSON (trailing commas, unescaped quotes).
+      maxTokens: 2048,
       temperature: 0.2,
+      json: true,
     });
     content = result.content;
     modelUsed = result.modelUsed;
@@ -140,6 +145,7 @@ export async function POST(req: NextRequest) {
   try {
     parsed = parseJsonFromCompletion(content);
   } catch {
+    logRequest("admin.parse.invalid_json", { ip, model: modelUsed, contentLength: content.length });
     return NextResponse.json({ error: "AI returned invalid JSON", raw: content }, { status: 422 });
   }
 
