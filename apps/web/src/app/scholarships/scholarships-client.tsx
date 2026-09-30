@@ -119,6 +119,7 @@ type Scholarship = {
   is_flagship: boolean;
   is_live: boolean;
   opening_note: string | null;
+  summary: string | null;
 };
 
 const FUNDING_MAP: Record<string, string> = {
@@ -264,13 +265,6 @@ function parseDeadlineDate(d: string): Date | null {
   return null;
 }
 
-function formatDeadline(d: string | null): string {
-  if (!d) return "Open";
-  const date = parseDeadlineDate(d);
-  if (date) return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  return d;
-}
-
 function isClosingSoon(d: string | null): boolean {
   if (!d) return false;
   const date = parseDeadlineDate(d);
@@ -285,57 +279,135 @@ function isExpired(d: string | null): boolean {
   return date ? date.getTime() < Date.now() : false;
 }
 
+// ── Card presentation helpers ────────────────────────────────────────────────
+const FUNDING_PILL: Record<string, string> = {
+  full: "Full Funding",
+  partial: "Partial Funding",
+  tuition_only: "Tuition Only",
+  stipend: "Stipend",
+  other: "Funding Varies",
+};
+
+const LEVEL_CHIP: Record<string, string> = {
+  Bachelors: "Bachelor's",
+  Masters: "Master's",
+  PhD: "PhD",
+  Postdoc: "Postdoc",
+  Any: "Any Level",
+};
+
+// ISO 3166-1 alpha-2 codes for the flag image. Unknown / multi-country
+// values ("Europe", "Commonwealth Countries") simply render without a flag.
+const COUNTRY_CODE: Record<string, string> = {
+  "united kingdom": "gb", uk: "gb", germany: "de", australia: "au", japan: "jp",
+  canada: "ca", china: "cn", italy: "it", usa: "us", "united states": "us",
+  "new zealand": "nz", "united arab emirates": "ae", uae: "ae", netherlands: "nl",
+  turkey: "tr", "türkiye": "tr", switzerland: "ch", hungary: "hu", "south korea": "kr",
+  korea: "kr", "saudi arabia": "sa", malaysia: "my", taiwan: "tw", pakistan: "pk",
+  singapore: "sg", norway: "no", portugal: "pt", philippines: "ph", malta: "mt",
+  lithuania: "lt", thailand: "th", azerbaijan: "az", "czech republic": "cz",
+  czechia: "cz", morocco: "ma", slovakia: "sk", mexico: "mx", "hong kong": "hk",
+  austria: "at", denmark: "dk", "northern cyprus": "cy", cyprus: "cy", brazil: "br",
+  france: "fr", spain: "es", sweden: "se", finland: "fi", ireland: "ie", belgium: "be",
+  poland: "pl", india: "in", indonesia: "id", "south africa": "za", russia: "ru",
+  egypt: "eg", qatar: "qa", brunei: "bn", romania: "ro", estonia: "ee", latvia: "lv",
+  greece: "gr", slovenia: "si", croatia: "hr", iceland: "is", luxembourg: "lu",
+  "european union": "eu", europe: "eu",
+};
+
+const PROVIDER_RE = /universit|institut|college|school|polytechnic|academy|government|govt|ministry|foundation|commission|council|daad|mext|chevening|fulbright|erasmus|commonwealth|trust|\bkaist\b|\beth\b|\bepfl\b/i;
+
+// Tags that just repeat what the card already shows (country, level, funding,
+// provider) or say nothing ("scholarship", "2026") — skipped for the chip row.
+const GENERIC_TAG_RE = /^(scholarships?|international( students)?|bangladesh(i)?( students)?|students?|\d{4}|(fully |full |partial(ly)? )?fund(ed|ing)|full scholarship|undergraduate|graduate|postgraduate|masters?|master's|phd|doctoral|bachelors?|bachelor's|postdoc(toral)?|any level|all levels|prestigious|study abroad)$/i;
+
+function scholarshipProvider(s: Scholarship): string | null {
+  const fromTag = s.tags?.find((tag) => PROVIDER_RE.test(tag) && tag.length <= 40);
+  if (fromTag) return fromTag;
+  const fromTitle = s.title.match(/(?:[A-Z][\w'&.-]*\s)*(?:University|Institute|College)(?:\sof(?:\s[A-Z][\w'.-]*)+)?/);
+  return fromTitle?.[0].trim() ?? null;
+}
+
+function scholarshipChips(s: Scholarship, provider: string | null): string[] {
+  const country = s.country.toLowerCase();
+  const seen = new Set<string>();
+  const chips: string[] = [];
+  for (const tag of s.tags ?? []) {
+    const key = tag.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    if (GENERIC_TAG_RE.test(key)) continue;
+    if (key === country || COUNTRY_CODE[key]) continue;
+    if (provider && key === provider.toLowerCase()) continue;
+    chips.push(tag.trim());
+    if (chips.length === 3) break;
+  }
+  return chips;
+}
+
+function levelChipLabel(degreeLevel: string): string {
+  return normalizeLevels(degreeLevel).map((l) => LEVEL_CHIP[l] ?? l).join(" & ");
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+type CardStatus = "open" | "upcoming" | "closed";
+
+function deadlineInfo(s: Scholarship, status: CardStatus): { label: string; tone: "soon" | "neutral" | "upcoming" | "closed"; icon: "timer" | "calendar" } {
+  if (status === "upcoming") {
+    return { label: s.opening_note ? `Opens ${s.opening_note}` : "Opening Soon", tone: "upcoming", icon: "calendar" };
+  }
+  if (!s.deadline) return { label: "Rolling Deadline", tone: "neutral", icon: "calendar" };
+  const date = parseDeadlineDate(s.deadline);
+  if (!date) return { label: s.deadline, tone: "neutral", icon: "calendar" };
+  const full = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const diff = date.getTime() - Date.now();
+  if (status === "closed" || diff < 0) return { label: `Closed ${full}`, tone: "closed", icon: "calendar" };
+  if (diff < 60 * DAY_MS) {
+    const days = Math.ceil(diff / DAY_MS);
+    return { label: days <= 1 ? "Last Day" : `${days} Days Left`, tone: "soon", icon: "timer" };
+  }
+  return { label: full, tone: "neutral", icon: "calendar" };
+}
+
 // ── Scholarship card ─────────────────────────────────────────────────────────
 function ScholarshipCard({
   s,
-  bookmarkedIds,
-  bookmarkingId,
+  isBookmarked,
+  bookmarking,
   toggleBookmark,
-  isExpired,
-  isClosingSoon,
-  formatDeadline,
   t,
-  isUpcoming = false,
-  isClosed = false,
+  status,
 }: {
   s: Scholarship;
-  bookmarkedIds: string[];
-  bookmarkingId: string | null;
+  isBookmarked: boolean;
+  bookmarking: boolean;
   toggleBookmark: (id: string) => void;
-  isExpired: (d: string | null) => boolean;
-  isClosingSoon: (d: string | null) => boolean;
-  formatDeadline: (d: string | null) => string;
   t: (key: TranslationKey) => string;
-  isUpcoming?: boolean;
-  isClosed?: boolean;
+  status: CardStatus;
 }) {
-  const deadlineBadge = () => {
-    if (isUpcoming) {
-      if (s.opening_note) return `Opens: ${s.opening_note}`;
-      return "Opening Soon";
-    }
-    if (isClosed || isExpired(s.deadline)) return `Closed ${formatDeadline(s.deadline)}`;
-    if (isClosingSoon(s.deadline)) return `⚡ ${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
-    return `${t("scholarships.deadline")} ${formatDeadline(s.deadline)}`;
-  };
-
-  const deadlineClass = () => {
-    if (isUpcoming) return styles.deadlineUpcoming;
-    if (isClosed || isExpired(s.deadline)) return styles.deadlineClosed;
-    if (isClosingSoon(s.deadline)) return styles.deadlineSoon;
-    return "";
-  };
+  const href = `/scholarships/${s.slug ?? s.id}`;
+  const provider = scholarshipProvider(s);
+  const chips = scholarshipChips(s, provider);
+  const flagCode = COUNTRY_CODE[s.country.trim().toLowerCase()];
+  const deadline = deadlineInfo(s, status);
+  const deadlineToneClass = {
+    soon: styles.deadlineSoon,
+    neutral: styles.deadlineNeutral,
+    upcoming: styles.deadlineUpcoming,
+    closed: styles.deadlineClosed,
+  }[deadline.tone];
 
   return (
-    <article className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${isUpcoming ? styles.cardUpcoming : ""} ${isClosed ? styles.cardClosed : ""}`}>
-      <ScholarshipDetailLink
-        href={`/scholarships/${s.slug ?? s.id}`}
-        className={styles.cardLink}
-        aria-label={`View ${s.title}`}
-      />
+    <article
+      className={`${styles.card} ${s.is_flagship ? styles.cardFlagship : ""} ${status === "closed" ? styles.cardClosed : ""}`}
+    >
+      {/* Stretched link — the whole card is one tap/click target. Interactive
+          children (bookmark, CTA) sit above it via z-index. */}
+      <ScholarshipDetailLink href={href} className={styles.cardLink} aria-label={`View ${s.title}`} />
 
-      {s.thumbnail_url ? (
-        <div className={styles.thumbWrap}>
+      <div className={styles.cardMedia}>
+        {s.thumbnail_url ? (
           <Image
             src={s.thumbnail_url}
             alt=""
@@ -343,92 +415,186 @@ function ScholarshipCard({
             width={640}
             height={360}
             loading="lazy"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            sizes="(max-width: 700px) 100vw, (max-width: 1100px) 50vw, 33vw"
           />
-          {s.is_flagship && (
-            <span className={styles.flagshipBadge} aria-label={t("scholarships.featured")}>
-              {t("scholarships.featured")}
-            </span>
-          )}
-          {isUpcoming && (
-            <span className={styles.upcomingBadge} aria-label="Opening Soon">Opening Soon</span>
-          )}
-          {isClosed && (
-            <span className={styles.closedBadge} aria-label="Closed">Closed</span>
-          )}
+        ) : (
+          <div className={styles.cardThumbFallback} aria-hidden="true">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 10 12 5 2 10l10 5 10-5Z" />
+              <path d="M6 12v5c3 2 9 2 12 0v-5" />
+            </svg>
+          </div>
+        )}
+        <div className={styles.mediaShade} aria-hidden="true" />
+
+        <div className={styles.mediaTopLeft}>
+          <span className={`${styles.fundingPill} ${s.funding_type === "full" ? styles.fundingPillFull : ""}`}>
+            <span className={styles.fundingDot} aria-hidden="true" />
+            {FUNDING_PILL[s.funding_type] ?? s.funding_type}
+          </span>
+          {s.is_flagship && <span className={styles.featuredPill}>{t("scholarships.featured")}</span>}
+          {status === "upcoming" && <span className={styles.upcomingPill}>Opening Soon</span>}
+          {status === "closed" && <span className={styles.closedPill}>Closed</span>}
         </div>
-      ) : s.is_flagship ? (
-        <span className={styles.flagshipBadgeCorner} aria-label={t("scholarships.featured")}>
-          {t("scholarships.featured")}
-        </span>
-      ) : null}
 
-      <button
-        className={`${styles.bookmarkIcon} ${bookmarkedIds.includes(s.id) ? styles.bookmarkIconActive : ""}`}
-        type="button"
-        onClick={() => toggleBookmark(s.id)}
-        disabled={bookmarkingId === s.id}
-        aria-label={bookmarkedIds.includes(s.id) ? `Remove bookmark for ${s.title}` : `Bookmark ${s.title}`}
-        aria-pressed={bookmarkedIds.includes(s.id)}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill={bookmarkedIds.includes(s.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-        </svg>
-      </button>
-
-      <div className={styles.cardTop}>
-        <div>
-          <p className={styles.cardLabel}>{s.country}</p>
-          <h3>{s.title}</h3>
-          <p className={styles.cardMeta}>
-            {normalizeLevels(s.degree_level).join(" / ")} · {FUNDING_MAP[s.funding_type] ?? s.funding_type} {t("scholarships.fundingLabel")}
-          </p>
-        </div>
-        <span className={`${styles.deadline} ${deadlineClass()}`}>{deadlineBadge()}</span>
-      </div>
-
-      {s.tags && s.tags.length > 0 && (
-        <div className={styles.tagRow}>
-          {s.tags.slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}
-          {s.tags.length > 4 && (
-            <span className={styles.tagMore} title={s.tags.slice(4).join(", ")}>
-              +{s.tags.length - 4}
-            </span>
-          )}
-        </div>
-      )}
-
-      <div className={styles.cardActions}>
-        <ScholarshipDetailLink className={styles.primaryButton} href={`/scholarships/${s.slug ?? s.id}`}>
-          {t("scholarships.viewDetails")}
-        </ScholarshipDetailLink>
         <button
-          className={`${styles.bookmarkActionBtn} ${bookmarkedIds.includes(s.id) ? styles.bookmarkActive : ""}`}
+          className={`${styles.bookmarkIcon} ${isBookmarked ? styles.bookmarkIconActive : ""}`}
           type="button"
           onClick={() => toggleBookmark(s.id)}
-          disabled={bookmarkingId === s.id}
-          aria-label={
-            bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")
-          }
-          aria-pressed={bookmarkedIds.includes(s.id)}
-          title={bookmarkedIds.includes(s.id) ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
+          disabled={bookmarking}
+          aria-label={isBookmarked ? `Remove bookmark for ${s.title}` : `Bookmark ${s.title}`}
+          aria-pressed={isBookmarked}
+          title={isBookmarked ? t("scholarships.bookmarked") : t("scholarships.bookmark")}
         >
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill={bookmarkedIds.includes(s.id) ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill={isBookmarked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
           </svg>
         </button>
+
+        <div className={styles.mediaBottom}>
+          <span className={styles.mediaCountry}>
+            {flagCode && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`https://flagcdn.com/w40/${flagCode}.png`}
+                alt=""
+                width={18}
+                height={13}
+                className={styles.flag}
+                loading="lazy"
+              />
+            )}
+            {s.country}
+          </span>
+          {provider && <span className={styles.mediaProvider}>{provider}</span>}
+        </div>
+      </div>
+
+      <div className={styles.cardBody}>
+        <div className={styles.cardMetaRow}>
+          <span className={styles.levelChip}>{levelChipLabel(s.degree_level)}</span>
+          {s.competitiveness && (
+            <span className={styles.cardMetaText}>{s.competitiveness} Competition</span>
+          )}
+        </div>
+
+        <h3 className={styles.cardTitle}>{s.title}</h3>
+
+        {s.summary && <p className={styles.cardSummary}>{s.summary}</p>}
+
+        {chips.length > 0 && (
+          <div className={styles.chipRow}>
+            {chips.map((chip, i) => (
+              <span key={chip} className={i === 0 ? styles.chipHighlight : styles.chip}>
+                {i === 0 && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                )}
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className={styles.cardFooter}>
+          <span className={`${styles.deadlineChip} ${deadlineToneClass}`} title={t("scholarships.deadline")}>
+            {deadline.icon === "timer" ? (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2M9 2h6" />
+              </svg>
+            ) : (
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+              </svg>
+            )}
+            <span>{deadline.label}</span>
+          </span>
+          <ScholarshipDetailLink className={styles.viewButton} href={href}>
+            {t("scholarships.viewDetails")}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </ScholarshipDetailLink>
+        </div>
       </div>
     </article>
+  );
+}
+
+// ── Pagination ───────────────────────────────────────────────────────────────
+const PAGE_SIZE = 12;
+
+const TABS: { id: CardStatus; label: string; subtitle: string; dot: "sectionLiveDot" | "sectionUpcomingDot" | "sectionClosedDot" }[] = [
+  { id: "open", label: "Open Now", subtitle: "Applications are currently open — apply before the deadline", dot: "sectionLiveDot" },
+  { id: "upcoming", label: "Opening Soon", subtitle: "Not yet open — bookmark now and prepare early", dot: "sectionUpcomingDot" },
+  { id: "closed", label: "Recently Closed", subtitle: "Deadline passed — these typically recur annually, bookmark to catch next cycle", dot: "sectionClosedDot" },
+];
+
+/** Page numbers with ellipses: 1 … 4 5 6 … 12 */
+function pageList(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = new Set([1, total, current - 1, current, current + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= total).sort((a, b) => a - b);
+  const out: (number | "…")[] = [];
+  sorted.forEach((p, i) => {
+    if (i > 0 && p - sorted[i - 1] > 1) out.push("…");
+    out.push(p);
+  });
+  return out;
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+  return (
+    <nav className={styles.pagination} aria-label="Scholarship pages">
+      <button
+        type="button"
+        className={styles.pageNav}
+        onClick={() => onChange(page - 1)}
+        disabled={page === 1}
+        aria-label="Previous page"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+        <span className={styles.pageNavLabel}>Prev</span>
+      </button>
+      <div className={styles.pageNumbers}>
+        {pageList(page, totalPages).map((p, i) =>
+          p === "…" ? (
+            <span key={`gap-${i}`} className={styles.pageGap} aria-hidden="true">…</span>
+          ) : (
+            <button
+              key={p}
+              type="button"
+              className={`${styles.pageNumber} ${p === page ? styles.pageNumberActive : ""}`}
+              onClick={() => onChange(p)}
+              aria-label={`Page ${p}`}
+              aria-current={p === page ? "page" : undefined}
+            >
+              {p}
+            </button>
+          ),
+        )}
+      </div>
+      <button
+        type="button"
+        className={styles.pageNav}
+        onClick={() => onChange(page + 1)}
+        disabled={page === totalPages}
+        aria-label="Next page"
+      >
+        <span className={styles.pageNavLabel}>Next</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+      </button>
+    </nav>
   );
 }
 
@@ -449,6 +615,7 @@ function ScholarshipsContent() {
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [bookmarkingId, setBookmarkingId] = useState<string | null>(null);
   const [displayCount, setDisplayCount] = useState(0);
+  const resultsRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     fetch("/api/scholarships")
@@ -600,6 +767,62 @@ function ScholarshipsContent() {
     }, 24);
     return () => window.clearInterval(id);
   }, [filtered.length, displayCount]);
+
+  // ── Tab + page live in the URL (?tab=upcoming&page=2) so pages are
+  // shareable and the browser back button steps through them. pushState keeps
+  // it client-only — no server round-trip for the static page.
+  const tabParam = searchParams.get("tab");
+  const tab: CardStatus = tabParam === "upcoming" || tabParam === "closed" ? tabParam : "open";
+  const requestedPage = Math.max(1, Number.parseInt(searchParams.get("page") ?? "1", 10) || 1);
+
+  const tabLists: Record<CardStatus, Scholarship[]> = {
+    open: filteredLive,
+    upcoming: filteredUpcoming,
+    closed: filteredRecentlyClosed,
+  };
+  const activeList = tabLists[tab];
+  const totalPages = Math.max(1, Math.ceil(activeList.length / PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  const pageItems = activeList.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  const setUrlState = useCallback((next: { tab?: CardStatus; page?: number }, mode: "push" | "replace") => {
+    const params = new URLSearchParams(window.location.search);
+    if (next.tab !== undefined) {
+      if (next.tab === "open") params.delete("tab");
+      else params.set("tab", next.tab);
+    }
+    if (next.page !== undefined) {
+      if (next.page <= 1) params.delete("page");
+      else params.set("page", String(next.page));
+    }
+    const qs = params.toString();
+    const url = `${window.location.pathname}${qs ? `?${qs}` : ""}`;
+    if (mode === "push") window.history.pushState(null, "", url);
+    else window.history.replaceState(null, "", url);
+  }, []);
+
+  const scrollToResults = () => {
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const changePage = (p: number) => {
+    setUrlState({ page: p }, "push");
+    scrollToResults();
+  };
+
+  const changeTab = (next: CardStatus) => {
+    if (next === tab) return;
+    setUrlState({ tab: next, page: 1 }, "push");
+  };
+
+  // Any filter/search/sort change invalidates the current page — go back to 1.
+  const filterKey = JSON.stringify([searchTerm, selectedCountries, selectedFunding, selectedLevels, sortBy]);
+  const prevFilterKey = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKey.current === filterKey) return;
+    prevFilterKey.current = filterKey;
+    if (requestedPage !== 1) setUrlState({ page: 1 }, "replace");
+  }, [filterKey, requestedPage, setUrlState]);
 
   const toggleBookmark = async (id: string) => {
     if (!userId) {
@@ -804,119 +1027,85 @@ function ScholarshipsContent() {
           </div>
         )}
 
-        {/* ── Live Scholarships Section ── */}
-        <section className={styles.results}>
+        {/* ── Results: tabbed by status, paginated ── */}
+        <section className={styles.results} ref={resultsRef}>
           <div className={styles.resultsHeader}>
             {/* Mobile-only — replaces the hero snapshot panel (hidden on
                 mobile) as the one place the total tracked count still shows.
-                Rendered first so it sits above the heading on mobile. */}
+                Rendered first so it sits above the tabs on mobile. */}
             {!loading && scholarships.length > 0 && (
               <p className={styles.mobileTrackedNote}>
                 <span className={styles.mobileTrackedDot} aria-hidden="true" />
                 <strong>{displayCount}</strong> scholarships tracked
               </p>
             )}
-            <h2>
-              <span className={styles.sectionLiveDot} aria-hidden="true" />
-              Open Now
-              <span className={styles.resultsCount}>{filteredLive.length}</span>
-            </h2>
-            <p className={styles.sectionSubtitle}>Applications are currently open — apply before the deadline</p>
+            <div className={styles.tabs} role="tablist" aria-label="Scholarship status">
+              {TABS.map((tb) => (
+                <button
+                  key={tb.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === tb.id}
+                  className={`${styles.tab} ${tab === tb.id ? styles.tabActive : ""}`}
+                  onClick={() => changeTab(tb.id)}
+                >
+                  <span className={styles[tb.dot]} aria-hidden="true" />
+                  {tb.label}
+                  <span className={styles.resultsCount}>{loading ? "–" : tabLists[tb.id].length}</span>
+                </button>
+              ))}
+            </div>
+            <p className={styles.sectionSubtitle}>{TABS.find((tb) => tb.id === tab)!.subtitle}</p>
           </div>
 
           {loading ? (
-            <div className={styles.emptyState}><p>{t("scholarships.loading")}</p></div>
-          ) : filteredLive.length ? (
-            <div className={styles.cardGrid}>
-              {filteredLive.map((s) => (
-                <ScholarshipCard
-                  key={s.id}
-                  s={s}
-                  bookmarkedIds={bookmarkedIds}
-                  bookmarkingId={bookmarkingId}
-                  toggleBookmark={toggleBookmark}
-                  isExpired={isExpired}
-                  isClosingSoon={isClosingSoon}
-                  formatDeadline={formatDeadline}
-                  t={t}
-                />
-              ))}
+            <div className={styles.cardGrid} aria-busy="true">
+              {Array.from({ length: 6 }, (_, i) => <div key={i} className={styles.cardSkeleton} />)}
+              <span className={styles.srOnly}>{t("scholarships.loading")}</span>
             </div>
-          ) : !loading && scholarships.length > 0 ? (
+          ) : pageItems.length ? (
+            <>
+              <div className={styles.cardGrid}>
+                {pageItems.map((s) => (
+                  <ScholarshipCard
+                    key={s.id}
+                    s={s}
+                    isBookmarked={bookmarkedIds.includes(s.id)}
+                    bookmarking={bookmarkingId === s.id}
+                    toggleBookmark={toggleBookmark}
+                    t={t}
+                    status={tab}
+                  />
+                ))}
+              </div>
+              <div className={styles.paginationRow}>
+                <p className={styles.pageSummary}>
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, activeList.length)} of {activeList.length}
+                </p>
+                <Pagination page={currentPage} totalPages={totalPages} onChange={changePage} />
+              </div>
+            </>
+          ) : scholarships.length > 0 ? (
             <div className={styles.emptyState}>
-              <p>{t("scholarships.noMatch")}</p>
-              <p className={styles.emptyHint}>{t("scholarships.youMightLike")}</p>
-              {emptySuggestions.length > 0 && (
-                <div className={styles.emptySuggestions}>
-                  {emptySuggestions.map((sug) => (
-                    <button key={sug} type="button" className={styles.suggestionPill} onClick={() => setSearchTerm(sug)}>{sug}</button>
-                  ))}
-                </div>
+              {hasActiveFilters ? (
+                <>
+                  <p>{t("scholarships.noMatch")}</p>
+                  <p className={styles.emptyHint}>{t("scholarships.youMightLike")}</p>
+                  {emptySuggestions.length > 0 && (
+                    <div className={styles.emptySuggestions}>
+                      {emptySuggestions.map((sug) => (
+                        <button key={sug} type="button" className={styles.suggestionPill} onClick={() => setSearchTerm(sug)}>{sug}</button>
+                      ))}
+                    </div>
+                  )}
+                  <button className={styles.primaryButton} type="button" onClick={clearFilters}>{t("scholarships.resetFilters")}</button>
+                </>
+              ) : (
+                <p>Nothing here right now — check the other tabs.</p>
               )}
-              <button className={styles.primaryButton} type="button" onClick={clearFilters}>{t("scholarships.resetFilters")}</button>
             </div>
           ) : null}
         </section>
-
-        {/* ── Upcoming / Opening Soon Section ── */}
-        {!loading && filteredUpcoming.length > 0 && (
-          <section className={styles.results}>
-            <div className={styles.resultsHeader}>
-              <h2>
-                <span className={styles.sectionUpcomingDot} aria-hidden="true" />
-                Opening Soon
-                <span className={styles.resultsCount}>{filteredUpcoming.length}</span>
-              </h2>
-              <p className={styles.sectionSubtitle}>Not yet open — bookmark now and prepare early</p>
-            </div>
-            <div className={styles.cardGrid}>
-              {filteredUpcoming.map((s) => (
-                <ScholarshipCard
-                  key={s.id}
-                  s={s}
-                  bookmarkedIds={bookmarkedIds}
-                  bookmarkingId={bookmarkingId}
-                  toggleBookmark={toggleBookmark}
-                  isExpired={isExpired}
-                  isClosingSoon={isClosingSoon}
-                  formatDeadline={formatDeadline}
-                  t={t}
-                  isUpcoming
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Recently Closed Section ── */}
-        {!loading && filteredRecentlyClosed.length > 0 && (
-          <section className={styles.results}>
-            <div className={styles.resultsHeader}>
-              <h2>
-                <span className={styles.sectionClosedDot} aria-hidden="true" />
-                Recently Closed
-                <span className={styles.resultsCount}>{filteredRecentlyClosed.length}</span>
-              </h2>
-              <p className={styles.sectionSubtitle}>Deadline passed — these typically recur annually, bookmark to catch next cycle</p>
-            </div>
-            <div className={styles.cardGrid}>
-              {filteredRecentlyClosed.map((s) => (
-                <ScholarshipCard
-                  key={s.id}
-                  s={s}
-                  bookmarkedIds={bookmarkedIds}
-                  bookmarkingId={bookmarkingId}
-                  toggleBookmark={toggleBookmark}
-                  isExpired={isExpired}
-                  isClosingSoon={isClosingSoon}
-                  formatDeadline={formatDeadline}
-                  t={t}
-                  isClosed
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Empty state when no results anywhere */}
         {!loading && filteredLive.length === 0 && filteredUpcoming.length === 0 && filteredRecentlyClosed.length === 0 && scholarships.length === 0 && (

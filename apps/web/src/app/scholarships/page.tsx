@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ScholarshipsClient from "./scholarships-client";
 import ScholarshipDirectory from "./scholarship-directory";
+import SharedFooter from "@/components/layout/shared-footer";
+import styles from "./scholarships.module.css";
 
 const BASE_URL = "https://baireporbo.app";
 
@@ -44,7 +46,12 @@ export default function ScholarshipsPage() {
     <>
       <ScholarshipsClient />
       {/* Server-rendered crawlable index of every scholarship (see component). */}
-      <ScholarshipDirectory />
+      {/* Same side gutters as the client page wrapper above, so the directory
+          and footer line up with the card grid instead of hugging the edges. */}
+      <div className={styles.pageTail}>
+        <ScholarshipDirectory />
+        <SharedFooter />
+      </div>
     </>
   );
 }

@@ -3,7 +3,13 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
-  padding: 16px 8vw 64px;
+  padding: 16px 8vw 32px;
+}
+
+/* Server-rendered tail (directory + footer) lives outside .page — mirror its
+   side padding so everything shares one column. */
+.pageTail {
+  padding: 0 8vw 32px;
 }
 
 .main {
@@ -599,12 +605,15 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  /* Page changes scroll back here — leave room for the sticky filter bar. */
+  scroll-margin-top: 88px;
 }
 
 .resultsHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
 }
 
 .resultsCount {
@@ -645,165 +654,184 @@
   transform: translateY(-1px);
 }
 
-/* Icon-only bookmark action next to "View details" — a text pill here
-   duplicated the primary CTA's visual weight for a secondary action.
-   The icon communicates "save" at a glance without competing for attention. */
-.bookmarkActionBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  padding: 0;
-  border-radius: 12px;
-  background: var(--sand-100);
-  border: 1px solid var(--sand-200);
-  color: var(--ink-700);
-  cursor: pointer;
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
-}
-
-.bookmarkActionBtn:hover {
-  background: var(--sand-200);
-}
-
-.bookmarkActionBtn:active {
-  transform: scale(0.93);
-}
-
-.bookmarkActive {
-  background: rgba(15, 143, 141, 0.1);
-  color: var(--teal-700);
-  border: 1.5px solid rgba(15, 143, 141, 0.22);
-}
-
 /* ── Cards ── */
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
 }
 
 .card {
   position: relative;
-  background: rgba(255, 255, 255, 0.92);
-  border-radius: 20px;
-  padding: 18px;
-  border: 1px solid var(--sand-200);
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  box-shadow: 0 16px 32px rgba(15, 34, 52, 0.08);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  background: #ffffff;
+  border: 1px solid var(--sand-200);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(15, 34, 52, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 22px 44px rgba(15, 34, 52, 0.12);
+  transform: translateY(-3px);
+  border-color: var(--sand-300);
+  box-shadow: 0 18px 36px rgba(15, 34, 52, 0.12);
 }
 
-/* ── Flagship card ── */
 .cardFlagship {
-  border-color: rgba(245, 158, 11, 0.45);
-  box-shadow:
-    0 0 0 1.5px rgba(245, 158, 11, 0.22),
-    0 16px 32px rgba(15, 34, 52, 0.08);
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.97) 0%,
-    rgba(255, 251, 235, 0.9) 100%
-  );
+  border-color: rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25), 0 4px 14px rgba(15, 34, 52, 0.06);
 }
 
-.cardFlagship:hover {
-  box-shadow:
-    0 0 0 2px rgba(245, 158, 11, 0.3),
-    0 22px 44px rgba(15, 34, 52, 0.14);
+.cardClosed .cardMedia {
+  filter: grayscale(0.45);
 }
 
-.flagshipBadge {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #ffffff;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
-  pointer-events: none;
+.cardClosed .cardBody {
+  opacity: 0.85;
 }
 
-/* Fallback when there's no thumbnail — sits in the card corner */
-.flagshipBadgeCorner {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  z-index: 3;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: #ffffff;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.35);
-  pointer-events: none;
-}
-
-/* Wrapper that gives the thumbnail a positioning context for the badge */
-.thumbWrap {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  margin-bottom: -4px;
-}
-
-.thumbWrap .cardThumb {
-  margin-bottom: 0;
-  border-radius: 0;
-  display: block;
-}
-
-
-/* Stretched link covers the whole card on mobile (whole-card tap target).
-   Hidden on desktop where the explicit "View details" button does the job. */
+/* Stretched link: the whole card is the click target. Bookmark + CTA sit
+   above it (z-index 2) so they keep their own behaviour. */
 .cardLink {
-  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  -webkit-tap-highlight-color: rgba(15, 143, 141, 0.06);
 }
 
-/* Compact icon-only bookmark button — only shown on mobile in the card corner */
+.cardLink:focus-visible {
+  outline: 2px solid var(--teal-500);
+  outline-offset: 2px;
+}
+
+/* ── Card media (image + overlays) ── */
+.cardMedia {
+  position: relative;
+  aspect-ratio: 16 / 8;
+  overflow: hidden;
+  background: var(--teal-800);
+}
+
+.cardThumb {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .cardThumb {
+  transform: scale(1.04);
+}
+
+.cardThumbFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.55);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.14), transparent 55%),
+    linear-gradient(135deg, var(--teal-600) 0%, var(--teal-800) 100%);
+}
+
+/* Bottom fade so the country / provider text stays readable on any photo */
+.mediaShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(6, 20, 22, 0.78) 0%, rgba(6, 20, 22, 0.25) 38%, transparent 60%);
+  pointer-events: none;
+}
+
+.mediaTopLeft {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 56px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.fundingPill,
+.featuredPill,
+.upcomingPill,
+.closedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.fundingPill {
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--ink-800);
+}
+
+.fundingPillFull {
+  color: var(--teal-800);
+}
+
+.fundingDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+}
+
+.fundingPillFull .fundingDot {
+  background: #16a34a;
+}
+
+.featuredPill {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+}
+
+.upcomingPill {
+  background: rgba(245, 158, 11, 0.95);
+  color: #ffffff;
+}
+
+.closedPill {
+  background: rgba(60, 54, 48, 0.88);
+  color: #ffffff;
+}
+
 .bookmarkIcon {
-  display: none;
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 2;
-  width: 36px;
-  height: 36px;
+  display: flex;
   align-items: center;
   justify-content: center;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border-radius: 50%;
+  border: none;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid var(--sand-200);
   color: var(--ink-700);
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 2px 8px rgba(15, 34, 52, 0.08);
-  transition: color 0.2s ease, transform 0.15s ease, background 0.2s ease;
+  transition: color 0.15s ease, background 0.15s ease, transform 0.15s ease;
+}
+
+.bookmarkIcon:hover {
+  color: var(--teal-700);
 }
 
 .bookmarkIcon:active {
@@ -811,34 +839,103 @@
 }
 
 .bookmarkIconActive {
-  color: var(--teal-700);
-  background: rgba(15, 143, 141, 0.12);
-  border-color: rgba(15, 143, 141, 0.25);
+  background: var(--teal-700);
+  color: #ffffff;
 }
 
-.cardTop {
+.bookmarkIconActive:hover {
+  color: #ffffff;
+  background: var(--teal-800);
+}
+
+.mediaBottom {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
 }
 
-.cardLabel {
-  font-size: 11px;
-  color: var(--teal-700);
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  margin-bottom: 6px;
-}
-
-/* Reserve space for 2 lines up front — titles that fit on 1 line no longer
-   leave the row shorter than a 2-line neighbor, which is what was causing
-   the action row to land at a different height card to card. */
-.card h3 {
-  font-size: 16px;
-  line-height: 1.35;
+.mediaCountry {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #ffffff;
+  font-size: 13px;
   font-weight: 700;
-  min-height: calc(1.35em * 2);
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.flag {
+  width: 18px;
+  height: 13px;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.mediaProvider {
+  min-width: 0;
+  color: #6ee7b7;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+/* ── Card body ── */
+.cardBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.cardMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+
+.levelChip {
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--sand-100);
+  border: 1px solid var(--sand-200);
+  color: var(--ink-700);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.cardMetaText {
+  color: var(--ink-400);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMetaText::before {
+  content: "•";
+  margin-right: 6px;
+}
+
+.cardTitle {
+  font-size: 17px;
+  line-height: 1.3;
+  font-weight: 800;
+  color: var(--ink-900);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -846,84 +943,266 @@
   overflow: hidden;
 }
 
-.cardMeta {
-  font-size: 12px;
+.cardSummary {
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ink-500);
-  margin-top: 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.deadline {
+/* Single line of chips — overflow is clipped so every card keeps the same
+   height regardless of tag length. */
+.chipRow {
+  display: flex;
+  gap: 6px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.chip,
+.chipHighlight {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 116px;
-  max-width: 160px;
-  padding: 6px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-  line-height: 1.3;
-  color: var(--coral-500);
-  font-weight: 600;
-  background: rgba(255, 120, 92, 0.12);
-  white-space: normal;
-  text-align: center;
+  gap: 5px;
   flex-shrink: 0;
-  align-self: flex-start;
+  max-width: 100%;
+  padding: 4px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-transform: capitalize;
 }
 
-.deadlineSoon {
-  color: #c0392b;
-  background: rgba(220, 53, 69, 0.18);
-}
-
-.deadlineClosed {
-  color: #8a3a2a;
-  background: rgba(160, 60, 40, 0.1);
-  text-decoration: line-through;
-  opacity: 0.75;
-}
-
-.cardThumb {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
-  max-height: 160px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: -4px;
-}
-
-.tagRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.tagRow span {
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--sand-100);
-  font-size: 11px;
+.chip {
+  background: #f1f4f8;
   color: var(--ink-700);
 }
 
-.tagMore {
-  background: transparent !important;
-  border: 1px solid var(--sand-200);
-  color: var(--ink-500);
-  font-weight: 600;
+.chipHighlight {
+  background: #e3f7ee;
+  color: #11794a;
 }
 
-.cardActions {
+.cardFooter {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  /* Push the action row to the bottom of the card regardless of how many
-     lines the title/tags above take up, so buttons line up across a grid
-     row even when neighboring cards have 1-line vs 2-line titles. */
   margin-top: auto;
+  padding-top: 12px;
+}
+
+.deadlineChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.deadlineChip span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deadlineChip svg {
+  flex-shrink: 0;
+}
+
+.deadlineNeutral {
+  background: #f1f4f8;
+  color: var(--ink-700);
+}
+
+.deadlineSoon {
+  background: #fdecea;
+  color: #c0392b;
+}
+
+.deadlineUpcoming {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.deadlineClosed {
+  background: var(--sand-100);
+  color: var(--ink-500);
+}
+
+.viewButton {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--teal-800);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.viewButton:hover {
+  background: #053a39;
+}
+
+.viewButton:hover svg {
+  transform: translateX(2px);
+}
+
+.viewButton svg {
+  transition: transform 0.18s ease;
+}
+
+.cardSkeleton {
+  height: 400px;
+  border-radius: 18px;
+  border: 1px solid var(--sand-200);
+  background: linear-gradient(90deg, var(--sand-100) 0%, #ffffff 50%, var(--sand-100) 100%);
+  background-size: 200% 100%;
+  animation: skeletonSweep 1.3s ease-in-out infinite;
+}
+
+@keyframes skeletonSweep {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ── Status tabs ── */
+.tabs {
+  display: flex;
+  max-width: 100%;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--sand-100);
+  border: 1px solid var(--sand-200);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-500);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tab:hover {
+  color: var(--ink-900);
+}
+
+.tabActive {
+  background: #ffffff;
+  color: var(--ink-900);
+  box-shadow: 0 2px 8px rgba(15, 34, 52, 0.08);
+}
+
+.tab .resultsCount {
+  margin-left: 8px;
+}
+
+.tabActive .resultsCount {
+  background: var(--teal-100);
+  color: var(--teal-800);
+}
+
+/* ── Pagination ── */
+.paginationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.pageSummary {
+  font-size: 13px;
+  color: var(--ink-500);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageNav,
+.pageNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--sand-200);
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--ink-700);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.pageNav:hover:not(:disabled),
+.pageNumber:hover {
+  border-color: var(--teal-500);
+  color: var(--teal-700);
+}
+
+.pageNav:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pageNumberActive,
+.pageNumberActive:hover {
+  background: var(--teal-800);
+  border-color: var(--teal-800);
+  color: #ffffff;
+}
+
+.pageGap {
+  min-width: 20px;
+  text-align: center;
+  color: var(--ink-400);
 }
 
 .emptyState {
@@ -1022,67 +1301,6 @@
   flex-shrink: 0;
 }
 
-/* Upcoming card variant — slightly muted */
-.cardUpcoming {
-  opacity: 0.92;
-}
-
-.cardUpcoming::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1.5px dashed rgba(245, 158, 11, 0.35);
-  pointer-events: none;
-}
-
-/* Closed card variant */
-.cardClosed {
-  opacity: 0.72;
-  filter: grayscale(0.35);
-}
-
-.cardClosed::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  border: 1.5px dashed rgba(120, 110, 100, 0.3);
-  pointer-events: none;
-}
-
-/* Upcoming badge on thumbnail */
-.upcomingBadge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(245, 158, 11, 0.92);
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-/* Closed badge on thumbnail */
-.closedBadge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(80, 70, 60, 0.82);
-  color: #fff;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
 /* Section dot for recently closed */
 .sectionClosedDot {
   display: inline-block;
@@ -1096,28 +1314,20 @@
   box-shadow: 0 0 0 3px rgba(120, 110, 100, 0.12);
 }
 
-/* Deadline badge for upcoming scholarships */
-.deadlineUpcoming {
-  background: rgba(245, 158, 11, 0.1);
-  color: var(--amber-700, #b45309);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
 /* ── Responsive ── */
 @media (max-width: 1100px) {
   .hero {
     grid-template-columns: 1fr;
   }
   .cardGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  /* The 2-line reservation on the title only earns its keep in the 2-column
-     grid above, where sibling cards sit side by side and need matching
-     heights. Single-column below this point — no neighbor to align with,
-     so a 1-line title shouldn't carry a phantom second line of blank space. */
-  .card h3 {
-    min-height: 0;
+@media (max-width: 700px) {
+  .cardGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 }
 
@@ -1203,6 +1413,9 @@
     padding: 16px 5vw 50px;
     gap: 16px;
   }
+  .pageTail {
+    padding: 0 5vw 24px;
+  }
   .main {
     gap: 14px;
   }
@@ -1221,106 +1434,28 @@
     flex-basis: auto;
   }
 
-  /* ── Compact card for mobile ────────────────────────────────────────── */
-  .card {
-    padding: 0;
-    gap: 0;
-    overflow: hidden;
-    /* Border-radius cleaner without extra padding around the image */
-    border-radius: 18px;
+  .cardTitle {
+    font-size: 16px;
   }
 
-  /* Whole card becomes a tap target — covers everything beneath */
-  .cardLink {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    border-radius: inherit;
-    -webkit-tap-highlight-color: rgba(15, 143, 141, 0.06);
+  .paginationRow {
+    justify-content: center;
   }
 
-  /* Image fills full width, capped height — keeps aspirational visual */
-  .cardThumb {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    max-height: 160px;
-    object-fit: cover;
-    border-radius: 0;
-    margin-bottom: 0;
-  }
-
-  /* Bookmark icon — overlay on top-right of the thumbnail.
-     White-glass background so it stays readable on any image. */
-  .bookmarkIcon {
-    display: flex;
-    top: 10px;
-    right: 10px;
-    z-index: 3;
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-  }
-
-  /* Text content sits below the image with consistent inner padding */
-  .cardTop {
-    flex-direction: column;
-    gap: 8px;
-    padding: 14px 16px 0;
-  }
-
-  .cardLabel {
-    margin-bottom: 4px;
-  }
-
-  .card h3 {
-    font-size: 15px;
-    line-height: 1.3;
-    /* Cap title to 2 lines so cards stay equal-height */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .cardMeta {
-    margin-top: 0;
-    font-size: 12px;
-  }
-
-  .deadline {
-    align-self: flex-start;
-    min-width: 0;
-    font-size: 11.5px;
-    padding: 4px 9px;
-  }
-
-  /* Hide the chip-tag wall on mobile — too noisy, full tag list lives
-     on the detail page anyway */
-  .tagRow {
-    display: none;
-  }
-
-  /* Single full-width primary action; the bookmark icon overlay replaces
-     the secondary "Bookmark" button. */
-  .cardActions {
-    padding: 12px 16px 16px;
-    gap: 0;
-  }
-
-  .cardActions .bookmarkActionBtn {
-    display: none;
-  }
-
-  .cardActions .primaryButton {
+  .pageSummary {
     width: 100%;
     text-align: center;
-    padding: 10px 14px;
-    font-size: 13.5px;
-    /* Sits above .cardLink so the explicit button still works as a tap target */
-    position: relative;
-    z-index: 2;
+  }
+
+  .pageNavLabel {
+    display: none;
+  }
+
+  .pageNav,
+  .pageNumber {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 8px;
   }
 }
 
